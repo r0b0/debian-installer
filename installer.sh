@@ -50,14 +50,14 @@ else
     cryptsetup luksFormat ${DISK}2 --type luks2 --batch-mode --key-file $KEYFILE
 fi
 
-if [ ! -e /dev/mapper/target ]; then
+if [ ! -e /dev/mapper/luksroot ]; then
     echo open luks
-    cryptsetup luksOpen ${DISK}2 target --key-file $KEYFILE
+    cryptsetup luksOpen ${DISK}2 luksroot --key-file $KEYFILE
 fi
 
 if [ ! -f btrfs_created.txt ]; then
     echo create root filesystem
-    mkfs.btrfs /dev/mapper/target
+    mkfs.btrfs /dev/mapper/luksroot
     touch btrfs_created.txt
 fi
 if [ ! -f vfat_created.txt ]; then
@@ -71,7 +71,7 @@ if grep -qs "${DISK}2 " /proc/mounts ; then
 else
     echo mount root filesystem
     mkdir -p /mnt/btrfs1
-    mount /dev/mapper/target /mnt/btrfs1 -o compress=zstd:1
+    mount /dev/mapper/luksroot /mnt/btrfs1 -o compress=zstd:1
 fi
 
 if [ ! -e /mnt/btrfs1/@ ]; then
@@ -105,7 +105,13 @@ fi
 
 echo setup crypttab
 cat <<EOF > /mnt/btrfs1/@/etc/crypttab
-luks UUID=${luks_uuid}
+luksroot UUID=${luks_uuid} initramfs luks
+EOF
+
+echo setup fstab
+cat <<EOF > /mnt/btrfs1/@/etc/fstab
+/dev/mapper/luksroot / btrfs subvol=@,compress=zstd:1 0 1
+UUID=${efi_uuid} /boot/efi vfat defaults 0 2
 EOF
 
 echo setup sources.list
@@ -136,7 +142,7 @@ echo install systemd from backports
 cat <<EOF > /mnt/btrfs1/@/tmp/run1.sh
 export DEBIAN_FRONTEND=noninteractive
 apt-get update -y
-apt-get install -t ${DEBIAN_VERSION}-backports systemd cryptsetup efibootmgr -y
+apt-get install -t ${DEBIAN_VERSION}-backports systemd cryptsetup efibootmgr btrfs-progs cryptsetup-initramfs -y
 EOF
 chroot /mnt/btrfs1/@/ sh /tmp/run1.sh
 
@@ -188,7 +194,7 @@ if grep -qs "${efi_uuid}" /tmp/efi.txt ; then
     echo efibootmgr already set up
 else
     echo setting up efibootmgr
-    efibootmgr -c -g -L "Debian efistub" -l '\EFI\Debian\vmlinuz' -u "root=/dev/mapper/target rw quiet rootfstype=btrfs rootflags=subvol=@ splash add_efi_mmap initrd='\EFI\Debian\initrd.img'"
+    efibootmgr -c -g -L "Debian efistub" -l "\\EFI\\debian\\vmlinuz" -u "root=/dev/mapper/luksroot rw quiet rootfstype=btrfs rootflags=subvol=@,compress=zstd:1 splash add_efi_mmap initrd=\\EFI\\debian\\initrd.img"
 fi
 EOF
 chroot /mnt/btrfs1/@/ sh /tmp/run3.sh
@@ -202,7 +208,7 @@ umount /mnt/btrfs1/@/boot/efi
 umount /mnt/btrfs1
 
 echo closing luks
-cryptsetup luksClose target
+cryptsetup luksClose luksroot
 
 echo "INSTALLATION FINISHED"
 echo "You will want to store the luks.key file safely"
