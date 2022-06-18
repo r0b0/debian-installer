@@ -5,17 +5,18 @@ KEYFILE=luks.key
 
 DEBIAN_VERSION=bullseye
 
-if [ ! -f efi.uuid ]; then
+if [ ! -f efi-part.uuid ]; then
     echo generate uuid for efi partition
-    uuidgen > efi.uuid
+    uuidgen > efi-part.uuid
 fi
-if [ ! -f luks.uuid ]; then
+if [ ! -f luks-part.uuid ]; then
     echo generate uuid for luks partition
-    uuidgen > luks.uuid
+    uuidgen > luks-part.uuid
 fi
 
-efi_uuid=$(cat efi.uuid)
-luks_uuid=$(cat luks.uuid)
+efi_uuid=$(cat efi-part.uuid)
+luks_uuid=$(cat luks-part.uuid)
+target=/target
 
 if [ ! -f partitions_created.txt ]; then
 echo create 2 partitions
@@ -46,13 +47,16 @@ if [ ! -f $KEYFILE ]; then
     uuidgen > $KEYFILE
 fi
 
-if cryptsetup isLuks ${DISK}2 ; then
-    echo luks already set up
-else
+if [ ! -f luks.uuid ]; then
     echo setup luks
     read -p "Enter to continue"
     cryptsetup luksFormat ${DISK}2 --type luks2 --batch-mode --key-file $KEYFILE
+    cryptsetup luksUUID ${DISK}2 > luks.uuid
+else
+    echo luks already set up
 fi
+
+luks_crypt_uuid=$(cat luks.uuid)
 
 if [ ! -e /dev/mapper/luksroot ]; then
     echo open luks
@@ -73,7 +77,7 @@ if [ ! -f vfat_created.txt ]; then
     touch vfat_created.txt
 fi
 
-if grep -qs "${DISK}2 " /proc/mounts ; then
+if grep -qs "/mnt/btrfs1" /proc/mounts ; then
     echo root already mounted
 else
     echo mount root filesystem
@@ -89,83 +93,103 @@ if [ ! -e /mnt/btrfs1/@ ]; then
     btrfs subvolume create /mnt/btrfs1/@home
 fi
 
-if [ ! -f /mnt/btrfs1/@/etc/debian_version ]; then
-    echo install debian
+if grep -qs "${target}" /proc/mounts ; then
+    echo target already mounted
+else
+    echo mount target
+    mkdir -p /target
     read -p "Enter to continue"
-    debootstrap ${DEBIAN_VERSION} "/mnt/btrfs1/@" http://deb.debian.org/debian
+    mount /dev/mapper/luksroot ${target} -o compress=zstd:1,subvol=@
 fi
 
-if grep -qs "/mnt/btrfs1/@/proc" /proc/mounts ; then
+if [ ! -f ${target}/etc/debian_version ]; then
+    echo install debian
+    read -p "Enter to continue"
+    debootstrap ${DEBIAN_VERSION} ${target} http://deb.debian.org/debian
+fi
+
+if grep -qs "${target}/proc" /proc/mounts ; then
     echo bind mounts already set up
 else
-    echo bind mount dev, proc, etc
+    echo bind mount dev, proc, sys, run
     read -p "Enter to continue"
-    mount --make-rslave --rbind /proc /mnt/btrfs1/@/proc
-    mount --make-rslave --rbind /sys /mnt/btrfs1/@/sys
-    mount --make-rslave --rbind /dev /mnt/btrfs1/@/dev
-    mount --make-rslave --rbind /run /mnt/btrfs1/@/run
+    mount -t proc none ${target}/proc
+    mount --make-rslave --rbind /sys ${target}/sys
+    mount --make-rslave --rbind /dev ${target}/dev
+    mount --make-rslave --rbind /run ${target}/run
 fi
 
 if grep -qs "${DISK}1 " /proc/mounts ; then
     echo efi already mounted
 else
     echo mount efi
-    mkdir -p /mnt/btrfs1/@/boot/efi
+    mkdir -p ${target}/boot/efi
     read -p "Enter to continue"
-    mount ${DISK}1 /mnt/btrfs1/@/boot/efi
+    mount ${DISK}1 ${target}/boot/efi
 fi
 
 echo setup crypttab
 read -p "Enter to continue"
-cat <<EOF > /mnt/btrfs1/@/etc/crypttab
-luksroot UUID=${luks_uuid} initramfs luks
+mkdir -p ${target}/root/btrfs1
+cat <<EOF > ${target}/etc/crypttab
+luksroot UUID=${luks_crypt_uuid} none initramfs,luks
 EOF
 
 echo setup fstab
 read -p "Enter to continue"
-cat <<EOF > /mnt/btrfs1/@/etc/fstab
+cat <<EOF > ${target}/etc/fstab
 /dev/mapper/luksroot / btrfs subvol=@,compress=zstd:1 0 1
-UUID=${efi_uuid} /boot/efi vfat defaults 0 2
+/dev/mapper/luksroot /home btrfs subvol=@home,compress=zstd:1 0 1
+/dev/mapper/luksroot /root/btrfs1 btrfs subvolid=5,compress=zstd:1 0 1
+PARTUUID=${efi_uuid} /boot/efi vfat defaults 0 2
 EOF
 
 echo setup sources.list
 read -p "Enter to continue"
-cat <<EOF > /mnt/btrfs1/@/etc/apt/sources.list
+cat <<EOF > ${target}/etc/apt/sources.list
 deb http://deb.debian.org/debian ${DEBIAN_VERSION} main contrib non-free
 deb http://security.debian.org/ ${DEBIAN_VERSION}-security main contrib non-free
 deb http://deb.debian.org/debian ${DEBIAN_VERSION}-backports main contrib non-free
 EOF
 
-echo setup efistup scripts
-mkdir -p /mnt/btrfs1/@/etc/kernel/postinst.d
-mkdir -p /mnt/btrfs1/@/boot/efi/EFI/debian/
+echo setup efistub scripts
+mkdir -p ${target}/etc/kernel/postinst.d
+mkdir -p ${target}/boot/efi/EFI/debian/
 read -p "Enter to continue"
-cat <<EOF > /mnt/btrfs1/@/etc/kernel/postinst.d/zz-update-efistub
+cat <<EOF > ${target}/etc/kernel/postinst.d/zz-update-efistub
 #!/bin/bash
 
 cp -L /vmlinuz /boot/efi/EFI/debian/
 EOF
-chmod +x /mnt/btrfs1/@/etc/kernel/postinst.d/zz-update-efistub
-mkdir -p /mnt/btrfs1/@/etc/initramfs/post-update.d
-cat <<EOF > /mnt/btrfs1/@/etc/initramfs/post-update.d/zz-update-efistub
+chmod +x ${target}/etc/kernel/postinst.d/zz-update-efistub
+mkdir -p ${target}/etc/initramfs/post-update.d
+cat <<EOF > ${target}/etc/initramfs/post-update.d/zz-update-efistub
 #!/bin/bash
 
 cp -L /initrd.img /boot/efi/EFI/debian/
 EOF
-chmod +x /mnt/btrfs1/@/etc/initramfs/post-update.d/zz-update-efistub
+chmod +x ${target}/etc/initramfs/post-update.d/zz-update-efistub
+
+if grep -qs 'root:\$' ${target}/etc/shadow ; then
+    echo root password already set up
+else
+    echo set up root password
+    read -p "Enter to continue"
+    chroot ${target}/ passwd
+fi
 
 echo install systemd from backports
-cat <<EOF > /mnt/btrfs1/@/tmp/run1.sh
+cat <<EOF > ${target}/tmp/run1.sh
 #!/bin/bash
 export DEBIAN_FRONTEND=noninteractive
 apt-get update -y
 apt-get install -t ${DEBIAN_VERSION}-backports systemd cryptsetup efibootmgr btrfs-progs cryptsetup-initramfs -y
 EOF
 read -p "Enter to continue"
-chroot /mnt/btrfs1/@/ sh /tmp/run1.sh
+chroot ${target}/ sh /tmp/run1.sh
 
 echo install kernel and firmware
-cat <<EOF > /mnt/btrfs1/@/tmp/packages.txt
+cat <<EOF > ${target}/tmp/packages.txt
 linux-image-amd64
 firmware-linux
 atmel-firmware
@@ -200,15 +224,15 @@ hdmi2usb-fx2-firmware
 midisport-firmware
 sigrok-firmware-fx2lafw
 EOF
-cat <<EOF > /mnt/btrfs1/@/tmp/run2.sh
+cat <<EOF > ${target}/tmp/run2.sh
 #!/bin/bash
 export DEBIAN_FRONTEND=noninteractive
 xargs apt-get install -t ${DEBIAN_VERSION}-backports -y < /tmp/packages.txt
 EOF
 read -p "Enter to continue"
-chroot /mnt/btrfs1/@/ bash /tmp/run2.sh
+chroot ${target}/ bash /tmp/run2.sh
 
-cat <<EOF > /mnt/btrfs1/@/tmp/run3.sh
+cat <<EOF > ${target}/tmp/run3.sh
 #!/bin/bash
 efibootmgr -v > /tmp/efi.txt
 if grep -qs "${efi_uuid}" /tmp/efi.txt ; then
@@ -216,18 +240,18 @@ if grep -qs "${efi_uuid}" /tmp/efi.txt ; then
 else
     echo setting up efibootmgr
     read -p "Enter to continue"
-    efibootmgr -c -g -L "Debian efistub" -l "\\EFI\\debian\\vmlinuz" -u "root=/dev/mapper/luksroot rw quiet rootfstype=btrfs rootflags=subvol=@,compress=zstd:1 splash add_efi_mmap initrd=\\EFI\\debian\\initrd.img"
+    efibootmgr -c -g -L "Debian efistub" -d ${DISK} -l "\\EFI\\debian\\vmlinuz" -u "root=/dev/mapper/luksroot rw quiet rootfstype=btrfs rootflags=subvol=@,compress=zstd:1 splash add_efi_mmap initrd=\\EFI\\debian\\initrd.img"
 fi
 EOF
-chroot /mnt/btrfs1/@/ bash /tmp/run3.sh
+chroot ${target}/ bash /tmp/run3.sh
 
 echo umounting all filesystems
 read -p "Enter to continue"
-umount /mnt/btrfs1/@/proc
-umount /mnt/btrfs1/@/sys
-umount /mnt/btrfs1/@/dev
-umount /mnt/btrfs1/@/run
-umount /mnt/btrfs1/@/boot/efi
+umount ${target}/proc
+umount ${target}/sys
+umount ${target}/dev
+umount ${target}/run
+umount ${target}/boot/efi
 umount /mnt/btrfs1
 
 echo closing luks
