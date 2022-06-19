@@ -2,7 +2,7 @@
 
 DISK=/dev/vda
 KEYFILE=luks.key
-
+USERNAME=user
 DEBIAN_VERSION=bullseye
 
 if [ ! -f efi-part.uuid ]; then
@@ -17,9 +17,12 @@ fi
 efi_uuid=$(cat efi-part.uuid)
 luks_uuid=$(cat luks-part.uuid)
 target=/target
+luks_device=luksroot
+root_device=/dev/mapper/${luks_device}
+kernel_params="root=${root_device} rw quiet rootfstype=btrfs rootflags=subvol=@,compress=zstd:1 splash add_efi_mmap"
 
 if [ ! -f partitions_created.txt ]; then
-echo create 2 partitions
+echo create 2 partitions on ${DISK}
 read -p "Enter to continue"
 sfdisk $DISK <<EOF
 label: gpt
@@ -30,7 +33,7 @@ ${DISK}1: start=2048, size=409600, type=C12A7328-F81F-11D2-BA4B-00A0C93EC93B, na
 ${DISK}2: start=411648, size=4096000, type=CA7D7CCB-63ED-4C53-861C-1742536059CC, name="LUKS partition", uuid=${luks_uuid}
 EOF
 
-echo resize the second partition to fill available space
+echo resize the second partition on ${DISK} to fill available space
 read -p "Enter to continue"
 echo ", +" | sfdisk -N 2 $DISK
 
@@ -40,17 +43,19 @@ fi
 echo install required packages
 read -p "Enter to continue"
 apt-get update -y
-apt-get install -y cryptsetup debootstrap
+DEBIAN_FRONTEND=noninteractive apt-get install -y cryptsetup debootstrap kexec-tools
 
 if [ ! -f $KEYFILE ]; then
     echo generate key file for luks
-    uuidgen > $KEYFILE
+    dd if=/dev/random of=${KEYFILE} bs=512 count=1
 fi
 
 if [ ! -f luks.uuid ]; then
-    echo setup luks
+    echo setup luks on ${DISK}2
     read -p "Enter to continue"
     cryptsetup luksFormat ${DISK}2 --type luks2 --batch-mode --key-file $KEYFILE
+    echo setup luks password
+    cryptsetup --key-file=luks.key luksAddKey ${DISK}2
     cryptsetup luksUUID ${DISK}2 > luks.uuid
 else
     echo luks already set up
@@ -58,60 +63,60 @@ fi
 
 luks_crypt_uuid=$(cat luks.uuid)
 
-if [ ! -e /dev/mapper/luksroot ]; then
+if [ ! -e ${root_device} ]; then
     echo open luks
     read -p "Enter to continue"
-    cryptsetup luksOpen ${DISK}2 luksroot --key-file $KEYFILE
+    cryptsetup luksOpen ${DISK}2 ${luks_device} --key-file $KEYFILE
 fi
 
 if [ ! -f btrfs_created.txt ]; then
-    echo create root filesystem
+    echo create root filesystem on ${root_device}
     read -p "Enter to continue"
-    mkfs.btrfs /dev/mapper/luksroot
+    mkfs.btrfs ${root_device}
     touch btrfs_created.txt
 fi
 if [ ! -f vfat_created.txt ]; then
-    echo create esp filesystem
+    echo create esp filesystem on ${DISK}1
     read -p "Enter to continue"
     mkfs.vfat ${DISK}1
     touch vfat_created.txt
 fi
 
 if grep -qs "/mnt/btrfs1" /proc/mounts ; then
-    echo root already mounted
+    echo top-level subvolume already mounted on /mnt/btrfs1
 else
-    echo mount root filesystem
+    echo mount top-level subvolume on /mnt/btrfs1
     mkdir -p /mnt/btrfs1
     read -p "Enter to continue"
-    mount /dev/mapper/luksroot /mnt/btrfs1 -o compress=zstd:1
+    mount ${root_device} /mnt/btrfs1 -o compress=zstd:1
 fi
 
 if [ ! -e /mnt/btrfs1/@ ]; then
-    echo create subvolumes
+    echo create @ and @home subvolumes on /mnt/btrfs1
     read -p "Enter to continue"
     btrfs subvolume create /mnt/btrfs1/@
     btrfs subvolume create /mnt/btrfs1/@home
 fi
 
 if grep -qs "${target}" /proc/mounts ; then
-    echo target already mounted
+    echo root subvolume already mounted on ${target}
 else
-    echo mount target
+    echo mount root subvolume on ${target}
     mkdir -p /target
     read -p "Enter to continue"
-    mount /dev/mapper/luksroot ${target} -o compress=zstd:1,subvol=@
+    mount ${root_device} ${target} -o compress=zstd:1,subvol=@
 fi
 
 if [ ! -f ${target}/etc/debian_version ]; then
-    echo install debian
+    echo install debian on ${target}
     read -p "Enter to continue"
     debootstrap ${DEBIAN_VERSION} ${target} http://deb.debian.org/debian
 fi
 
 if grep -qs "${target}/proc" /proc/mounts ; then
-    echo bind mounts already set up
+    echo bind mounts already set up on ${target}
 else
-    echo bind mount dev, proc, sys, run
+    echo bind mount dev, proc, sys, run on ${target}
     read -p "Enter to continue"
     mount -t proc none ${target}/proc
     mount --make-rslave --rbind /sys ${target}/sys
@@ -120,9 +125,9 @@ else
 fi
 
 if grep -qs "${DISK}1 " /proc/mounts ; then
-    echo efi already mounted
+    echo efi esp partition ${DISK}1 already mounted on ${target}/boot/efi
 else
-    echo mount efi
+    echo mount efi esp partition ${DISK}1 on ${target}/boot/efi
     mkdir -p ${target}/boot/efi
     read -p "Enter to continue"
     mount ${DISK}1 ${target}/boot/efi
@@ -132,15 +137,15 @@ echo setup crypttab
 read -p "Enter to continue"
 mkdir -p ${target}/root/btrfs1
 cat <<EOF > ${target}/etc/crypttab
-luksroot UUID=${luks_crypt_uuid} none initramfs,luks
+${luks_device} UUID=${luks_crypt_uuid} none initramfs,luks
 EOF
 
 echo setup fstab
 read -p "Enter to continue"
 cat <<EOF > ${target}/etc/fstab
-/dev/mapper/luksroot / btrfs subvol=@,compress=zstd:1 0 1
-/dev/mapper/luksroot /home btrfs subvol=@home,compress=zstd:1 0 1
-/dev/mapper/luksroot /root/btrfs1 btrfs subvolid=5,compress=zstd:1 0 1
+${root_device} / btrfs subvol=@,compress=zstd:1 0 1
+${root_device} /home btrfs subvol=@home,compress=zstd:1 0 1
+${root_device} /root/btrfs1 btrfs subvolid=5,compress=zstd:1 0 1
 PARTUUID=${efi_uuid} /boot/efi vfat defaults 0 2
 EOF
 
@@ -178,17 +183,24 @@ else
     chroot ${target}/ passwd
 fi
 
-echo install systemd from backports
+if grep -qs "^${USERNAME}:" ${target}/etc/shadow ; then
+    echo ${USERNAME} user already set up
+else
+    echo set up ${USERNAME} user
+    chroot ${target}/ adduser ${USERNAME}
+fi
+
+echo install required packages on ${target}
 cat <<EOF > ${target}/tmp/run1.sh
 #!/bin/bash
 export DEBIAN_FRONTEND=noninteractive
 apt-get update -y
-apt-get install -t ${DEBIAN_VERSION}-backports systemd cryptsetup efibootmgr btrfs-progs cryptsetup-initramfs -y
+apt-get install -t ${DEBIAN_VERSION}-backports systemd cryptsetup efibootmgr btrfs-progs cryptsetup-initramfs tasksel network-manager -y
 EOF
 read -p "Enter to continue"
 chroot ${target}/ sh /tmp/run1.sh
 
-echo install kernel and firmware
+echo install kernel and firmware on ${target}
 cat <<EOF > ${target}/tmp/packages.txt
 linux-image-amd64
 firmware-linux
@@ -240,25 +252,32 @@ if grep -qs "${efi_uuid}" /tmp/efi.txt ; then
 else
     echo setting up efibootmgr
     read -p "Enter to continue"
-    efibootmgr -c -g -L "Debian efistub" -d ${DISK} -l "\\EFI\\debian\\vmlinuz" -u "root=/dev/mapper/luksroot rw quiet rootfstype=btrfs rootflags=subvol=@,compress=zstd:1 splash add_efi_mmap initrd=\\EFI\\debian\\initrd.img"
+    efibootmgr -c -g -L "Debian efistub" -d ${DISK} -l "\\EFI\\debian\\vmlinuz" -u "${kernel_params} initrd=\\EFI\\debian\\initrd.img"
 fi
 EOF
 chroot ${target}/ bash /tmp/run3.sh
 
+echo running tasksel
+chroot ${target}/ tasksel
+
+echo loading kernel for kexec reboot
+kexec -l ${target}/boot/efi/EFI/debian/vmlinuz "--command-line=${kernel_params}" --initrd=${target}/boot/efi/EFI/debian/initrd.img
+
 echo umounting all filesystems
 read -p "Enter to continue"
-umount ${target}/proc
-umount ${target}/sys
-umount ${target}/dev
-umount ${target}/run
-umount ${target}/boot/efi
-umount /mnt/btrfs1
+umount -R ${target}/proc
+umount -R ${target}/sys
+umount -R ${target}/dev
+umount -R ${target}/run
+umount -R ${target}/boot/efi
+umount -R ${target}
+umount -R /mnt/btrfs1
 
 echo closing luks
 read -p "Enter to continue"
-cryptsetup luksClose luksroot
+cryptsetup luksClose ${luks_device}
 
 echo "INSTALLATION FINISHED"
 echo "You will want to store the luks.key file safely"
-echo "You will also want to set up a new luks password by running "
-echo cryptsetup --key-file=luks.key luksAddKey ${DISK}2
+read -p "Enter to reboot to your new system"
+kexec -e
