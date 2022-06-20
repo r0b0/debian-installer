@@ -1,6 +1,6 @@
 #!/bin/bash
 
-DISK=/dev/vda
+DISK=/dev/sda
 KEYFILE=luks.key
 USERNAME=user
 DEBIAN_VERSION=bullseye
@@ -43,7 +43,7 @@ fi
 echo install required packages
 read -p "Enter to continue"
 apt-get update -y
-DEBIAN_FRONTEND=noninteractive apt-get install -y cryptsetup debootstrap kexec-tools
+DEBIAN_FRONTEND=noninteractive apt-get install -y cryptsetup debootstrap
 
 if [ ! -f $KEYFILE ]; then
     echo generate key file for luks
@@ -101,10 +101,12 @@ fi
 if grep -qs "${target}" /proc/mounts ; then
     echo root subvolume already mounted on ${target}
 else
-    echo mount root subvolume on ${target}
-    mkdir -p /target
+    echo mount root and home subvolume on ${target}
+    mkdir -p ${target}
     read -p "Enter to continue"
     mount ${root_device} ${target} -o compress=zstd:1,subvol=@
+    mkdir -p ${target}/home
+    mount ${root_device} ${target}/home -o compress=zstd:1,subvol=@home
 fi
 
 if [ ! -f ${target}/etc/debian_version ]; then
@@ -133,19 +135,23 @@ else
     mount ${DISK}1 ${target}/boot/efi
 fi
 
-echo setup crypttab
-read -p "Enter to continue"
-mkdir -p ${target}/root/btrfs1
-cat <<EOF > ${target}/etc/crypttab
-${luks_device} UUID=${luks_crypt_uuid} none initramfs,luks
+if [ ! -f ${target}/etc/crypttab ]; then
+    echo setup crypttab
+    read -p "Enter to continue"
+    mkdir -p ${target}/root/btrfs1
+    cat <<EOF > ${target}/etc/crypttab
+${luks_device} UUID=${luks_crypt_uuid} none luks
 EOF
+else
+    echo crypttab already set up
+fi
 
 echo setup fstab
 read -p "Enter to continue"
 cat <<EOF > ${target}/etc/fstab
-${root_device} / btrfs subvol=@,compress=zstd:1 0 1
-${root_device} /home btrfs subvol=@home,compress=zstd:1 0 1
-${root_device} /root/btrfs1 btrfs subvolid=5,compress=zstd:1 0 1
+${root_device} / btrfs defaults,subvol=@,compress=zstd:1 0 1
+${root_device} /home btrfs defaults,subvol=@home,compress=zstd:1 0 1
+${root_device} /root/btrfs1 btrfs defaults,subvolid=5,compress=zstd:1 0 1
 PARTUUID=${efi_uuid} /boot/efi vfat defaults 0 2
 EOF
 
@@ -157,23 +163,27 @@ deb http://security.debian.org/ ${DEBIAN_VERSION}-security main contrib non-free
 deb http://deb.debian.org/debian ${DEBIAN_VERSION}-backports main contrib non-free
 EOF
 
-echo setup efistub scripts
-mkdir -p ${target}/etc/kernel/postinst.d
-mkdir -p ${target}/boot/efi/EFI/debian/
-read -p "Enter to continue"
-cat <<EOF > ${target}/etc/kernel/postinst.d/zz-update-efistub
+if [ ! -f ${target}/etc/kernel/postinst.d/zz-update-efistub ]; then
+    echo setup efistub scripts
+    mkdir -p ${target}/etc/kernel/postinst.d
+    mkdir -p ${target}/boot/efi/EFI/debian/
+    read -p "Enter to continue"
+    cat <<EOF > ${target}/etc/kernel/postinst.d/zz-update-efistub
 #!/bin/bash
 
 cp -L /vmlinuz /boot/efi/EFI/debian/
 EOF
-chmod +x ${target}/etc/kernel/postinst.d/zz-update-efistub
-mkdir -p ${target}/etc/initramfs/post-update.d
-cat <<EOF > ${target}/etc/initramfs/post-update.d/zz-update-efistub
+    chmod +x ${target}/etc/kernel/postinst.d/zz-update-efistub
+    mkdir -p ${target}/etc/initramfs/post-update.d
+    cat <<EOF > ${target}/etc/initramfs/post-update.d/zz-update-efistub
 #!/bin/bash
 
 cp -L /initrd.img /boot/efi/EFI/debian/
 EOF
-chmod +x ${target}/etc/initramfs/post-update.d/zz-update-efistub
+    chmod +x ${target}/etc/initramfs/post-update.d/zz-update-efistub
+else
+    echo efistub scripts already set up
+fi
 
 if grep -qs 'root:\$' ${target}/etc/shadow ; then
     echo root password already set up
@@ -195,7 +205,8 @@ cat <<EOF > ${target}/tmp/run1.sh
 #!/bin/bash
 export DEBIAN_FRONTEND=noninteractive
 apt-get update -y
-apt-get install -t ${DEBIAN_VERSION}-backports systemd cryptsetup efibootmgr btrfs-progs cryptsetup-initramfs tasksel network-manager -y
+apt-get upgrade -y
+apt-get install -t ${DEBIAN_VERSION}-backports systemd libtss2-esys-3.0.2-0 libtss2-rc0 efibootmgr btrfs-progs tasksel network-manager -y
 EOF
 read -p "Enter to continue"
 chroot ${target}/ sh /tmp/run1.sh
@@ -243,6 +254,7 @@ xargs apt-get install -t ${DEBIAN_VERSION}-backports -y < /tmp/packages.txt
 EOF
 read -p "Enter to continue"
 chroot ${target}/ bash /tmp/run2.sh
+chroot ${target}/ apt-get install -t ${DEBIAN_VERSION}-backports dracut -y
 
 cat <<EOF > ${target}/tmp/run3.sh
 #!/bin/bash
@@ -260,8 +272,21 @@ chroot ${target}/ bash /tmp/run3.sh
 echo running tasksel
 chroot ${target}/ tasksel
 
-echo loading kernel for kexec reboot
-kexec -l ${target}/boot/efi/EFI/debian/vmlinuz "--command-line=${kernel_params}" --initrd=${target}/boot/efi/EFI/debian/initrd.img
+echo checking for tpm
+cat <<EOF > ${target}/tmp/run4.sh
+systemd-cryptenroll --tpm2-device=list > /tmp/tpm-list.txt
+if grep -qs "/dev/tpm" /tmp/tpm-list.txt ; then
+    echo tpm available, enrolling
+    read -p "Enter to continue"
+    systemd-cryptenroll --tpm2-device=auto ${DISK}2
+    cat <<TARGETEOF > /etc/crypttab
+${luks_device} UUID=${luks_crypt_uuid} none luks,tpm2-device=auto
+TARGETEOF
+else
+    echo tpm not avaialble
+fi
+EOF
+chroot ${target}/ bash /tmp/run4.sh
 
 echo umounting all filesystems
 read -p "Enter to continue"
@@ -279,5 +304,3 @@ cryptsetup luksClose ${luks_device}
 
 echo "INSTALLATION FINISHED"
 echo "You will want to store the luks.key file safely"
-read -p "Enter to reboot to your new system"
-kexec -e
