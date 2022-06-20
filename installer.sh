@@ -206,7 +206,7 @@ cat <<EOF > ${target}/tmp/run1.sh
 export DEBIAN_FRONTEND=noninteractive
 apt-get update -y
 apt-get upgrade -y
-apt-get install -t ${DEBIAN_VERSION}-backports systemd libtss2-esys-3.0.2-0 libtss2-rc0 efibootmgr btrfs-progs tasksel network-manager -y
+apt-get install -t ${DEBIAN_VERSION}-backports systemd libtss2-esys-3.0.2-0 libtss2-rc0 efibootmgr btrfs-progs tasksel network-manager cryptsetup cryptsetup-initramfs -y
 EOF
 read -p "Enter to continue"
 chroot ${target}/ sh /tmp/run1.sh
@@ -254,7 +254,6 @@ xargs apt-get install -t ${DEBIAN_VERSION}-backports -y < /tmp/packages.txt
 EOF
 read -p "Enter to continue"
 chroot ${target}/ bash /tmp/run2.sh
-chroot ${target}/ apt-get install -t ${DEBIAN_VERSION}-backports dracut -y
 
 cat <<EOF > ${target}/tmp/run3.sh
 #!/bin/bash
