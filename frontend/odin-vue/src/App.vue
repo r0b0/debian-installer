@@ -8,7 +8,9 @@ export default {
       backend_pin: "",
       logged_in_backend: "",
       block_devices: [],
-      top_device: ""
+      top_device: "",
+      install_to_device_process_key: "",
+      install_to_device_status: {},
     }
   },
   methods: {
@@ -27,12 +29,33 @@ export default {
             this.block_devices = response.blockdevices;
           });
     },
-
-    fetch_from_backend(path) {
+    install_on_device(device_path) {
+      this.fetch_from_backend("/install",  {device_path: device_path})
+          .then(response => {
+            console.debug(response);
+            this.install_to_device_process_key = response.subprocess_key;
+            setTimeout(this.check_install_status, 5000, response.subprocess_key);
+          });
+    },
+    check_install_status(subprocess_key) {
+      this.fetch_from_backend("/process_status/" + subprocess_key)
+          .then(response => {
+            console.debug(response);
+            this.install_to_device_status = response;
+            if(response.status == "RUNNING") {
+              setTimeout(this.check_install_status, 5000, response.key);
+            }
+          })
+    },
+    fetch_from_backend(path, searchParams={}) {
       const BACKEND_PORT="5000";
       let url = new URL(path, `http://${this.backend_addr}:${BACKEND_PORT}`);
-      url.searchParams.append("pin", this.backend_pin);
-      return fetch(url.href)
+      let cred = btoa(`:${this.backend_pin}`);
+      let auth = {"Authorization": `Basic ${cred}`};
+      for (const [k, v] of Object.entries(searchParams))
+        url.searchParams.append(k, v);
+      // url.searchParams.append("pin", this.backend_pin);
+      return fetch(url.href, {headers: auth})
           .then(response => response.json());
     }
   }
@@ -51,7 +74,7 @@ export default {
 
     <div class="form_line">
       <label for="backend_pin">Backend PIN</label>
-      <input id="backend_pin" type="number" v-model="backend_pin" :disabled="this.logged_in_backend.length>0"/>
+      <input id="backend_pin" type="text" pattern="[0-9]{5}" v-model="backend_pin" :disabled="this.logged_in_backend.length>0"/>
     </div>
 
     <button @click="login()" :disabled="this.logged_in_backend.length>0">Login</button>
@@ -60,11 +83,15 @@ export default {
      <div class="form_line">
       <label for="top_device">Device for Installation</label>
       <select id="top_device"  v-model="top_device">
-        <option v-for="item in block_devices" :value="item.path">{{item.path}} ({{item.size}})</option>
+        <option v-for="item in block_devices" :value="item.path">{{item.path}} {{item.model}} {{item.size}}</option>
       </select>
     </div>
 
-    <div v-if="this.top_device.length>0">Will install debian to device {{top_device}} on {{logged_in_backend}}</div>
+    <div v-if="this.top_device.length>0">Will install debian to device {{top_device}} on {{backend_addr}} (hostname {{logged_in_backend}})</div>
+
+    <button @click="install_on_device(this.top_device)" :disabled="this.top_device.length==0">Install debian on {{top_device}}</button>
+
+    <div>{{install_to_device_status.status}}</div>
   </main>
 </template>
 
