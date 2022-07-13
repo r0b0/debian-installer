@@ -181,6 +181,7 @@ EOF
 cp -L /initrd.img /boot/efi/EFI/debian/
 EOF
     chmod +x ${target}/etc/initramfs/post-update.d/zz-update-efistub
+    # TODO this does not work for dracut
 else
     echo efistub scripts already set up
 fi
@@ -206,7 +207,7 @@ cat <<EOF > ${target}/tmp/run1.sh
 export DEBIAN_FRONTEND=noninteractive
 apt-get update -y
 apt-get upgrade -y
-apt-get install -t ${DEBIAN_VERSION}-backports systemd libtss2-esys-3.0.2-0 libtss2-rc0 efibootmgr btrfs-progs tasksel network-manager cryptsetup cryptsetup-initramfs -y
+apt-get install -t ${DEBIAN_VERSION}-backports systemd libtss2-esys-3.0.2-0 libtss2-rc0 tpm2-tools efibootmgr btrfs-progs tasksel network-manager cryptsetup -y
 EOF
 read -p "Enter to continue"
 chroot ${target}/ sh /tmp/run1.sh
@@ -254,6 +255,14 @@ xargs apt-get install -t ${DEBIAN_VERSION}-backports -y < /tmp/packages.txt
 EOF
 read -p "Enter to continue"
 chroot ${target}/ bash /tmp/run2.sh
+chroot ${target}/ apt-get install -t ${DEBIAN_VERSION}-backports dracut -y
+
+echo configuring dracut
+read -p "Enter to continue"
+cat <<EOF > ${target}/etc/dracut.conf.d/90-luks.conf
+add_dracutmodules+=" systemd btrfs tpm2-tss "
+EOF
+chroot ${target}/ dracut --regenerate-all --force
 
 cat <<EOF > ${target}/tmp/run3.sh
 #!/bin/bash
@@ -269,6 +278,7 @@ EOF
 chroot ${target}/ bash /tmp/run3.sh
 
 echo running tasksel
+read -p "Enter to continue"
 chroot ${target}/ tasksel
 
 echo checking for tpm
