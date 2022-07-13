@@ -5,7 +5,7 @@ This tool can be used to create a modern installation of Debian. Our opinions of
  - Backports and non-free enabled
  - Firmware installed
  - Installed on btrfs subvolumes
- - Full disk encryption using luks2, ~~unlocked by TPM (if available) *to be added*~~
+ - Full disk encryption using luks2, unlocked by TPM (if available)
  - Boot using EFIStub
   
 ## Current limitations

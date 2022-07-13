@@ -172,16 +172,9 @@ if [ ! -f ${target}/etc/kernel/postinst.d/zz-update-efistub ]; then
 #!/bin/bash
 
 cp -L /vmlinuz /boot/efi/EFI/debian/
-EOF
-    chmod +x ${target}/etc/kernel/postinst.d/zz-update-efistub
-    mkdir -p ${target}/etc/initramfs/post-update.d
-    cat <<EOF > ${target}/etc/initramfs/post-update.d/zz-update-efistub
-#!/bin/bash
-
 cp -L /initrd.img /boot/efi/EFI/debian/
 EOF
-    chmod +x ${target}/etc/initramfs/post-update.d/zz-update-efistub
-    # TODO this does not work for dracut
+    chmod +x ${target}/etc/kernel/postinst.d/zz-update-efistub
 else
     echo efistub scripts already set up
 fi
@@ -263,6 +256,7 @@ cat <<EOF > ${target}/etc/dracut.conf.d/90-luks.conf
 add_dracutmodules+=" systemd btrfs tpm2-tss "
 EOF
 chroot ${target}/ dracut --regenerate-all --force
+cp -L ${target}/initrd.img ${target}/boot/efi/EFI/debian/initrd.img
 
 cat <<EOF > ${target}/tmp/run3.sh
 #!/bin/bash
@@ -287,7 +281,7 @@ systemd-cryptenroll --tpm2-device=list > /tmp/tpm-list.txt
 if grep -qs "/dev/tpm" /tmp/tpm-list.txt ; then
     echo tpm available, enrolling
     read -p "Enter to continue"
-    systemd-cryptenroll --tpm2-device=auto ${DISK}2
+    systemd-cryptenroll --tpm2-device=auto ${DISK}2 --tpm2-pcrs=
     cat <<TARGETEOF > /etc/crypttab
 ${luks_device} UUID=${luks_crypt_uuid} none luks,tpm2-device=auto
 TARGETEOF
@@ -299,11 +293,6 @@ chroot ${target}/ bash /tmp/run4.sh
 
 echo umounting all filesystems
 read -p "Enter to continue"
-umount -R ${target}/proc
-umount -R ${target}/sys
-umount -R ${target}/dev
-umount -R ${target}/run
-umount -R ${target}/boot/efi
 umount -R ${target}
 umount -R /mnt/btrfs1
 
