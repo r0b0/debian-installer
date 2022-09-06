@@ -1,6 +1,6 @@
 #!/bin/bash
 
-DISK=/dev/sda
+DISK=/dev/vda
 KEYFILE=luks.key
 USERNAME=user
 DEBIAN_VERSION=bullseye
@@ -19,7 +19,7 @@ luks_uuid=$(cat luks-part.uuid)
 target=/target
 luks_device=luksroot
 root_device=/dev/mapper/${luks_device}
-kernel_params="root=${root_device} rw quiet rootfstype=btrfs rootflags=subvol=@,compress=zstd:1 splash add_efi_mmap"
+kernel_params="root=${root_device} rw quiet rootfstype=btrfs rootflags=subvol=@,compress=zstd:1 splash"
 
 if [ ! -f partitions_created.txt ]; then
 echo create 2 partitions on ${DISK}
@@ -163,28 +163,6 @@ deb http://security.debian.org/ ${DEBIAN_VERSION}-security main contrib non-free
 deb http://deb.debian.org/debian ${DEBIAN_VERSION}-backports main contrib non-free
 EOF
 
-if [ ! -f ${target}/etc/kernel/postinst.d/zz-update-efistub ]; then
-    echo setup efistub scripts
-    mkdir -p ${target}/etc/kernel/postinst.d
-    mkdir -p ${target}/boot/efi/EFI/debian/
-    read -p "Enter to continue"
-    cat <<EOF > ${target}/etc/kernel/postinst.d/zz-update-efistub
-#!/bin/bash
-
-cp -L /vmlinuz /boot/efi/EFI/debian/
-EOF
-    chmod +x ${target}/etc/kernel/postinst.d/zz-update-efistub
-    mkdir -p ${target}/etc/initramfs/post-update.d
-    cat <<EOF > ${target}/etc/initramfs/post-update.d/zz-update-efistub
-#!/bin/bash
-
-cp -L /initrd.img /boot/efi/EFI/debian/
-EOF
-    chmod +x ${target}/etc/initramfs/post-update.d/zz-update-efistub
-else
-    echo efistub scripts already set up
-fi
-
 if grep -qs 'root:\$' ${target}/etc/shadow ; then
     echo root password already set up
 else
@@ -200,19 +178,47 @@ else
     chroot ${target}/ adduser ${USERNAME}
 fi
 
+echo configuring dracut and kernel command line
+read -p "Enter to continue"
+mkdir -p ${target}/etc/dracut.conf.d
+cat <<EOF > ${target}/etc/dracut.conf.d/90-luks.conf
+add_dracutmodules+=" systemd btrfs tpm2-tss "
+EOF
+cat <<EOF > ${target}/etc/kernel/cmdline
+${kernel_params}
+EOF
+
 echo install required packages on ${target}
 cat <<EOF > ${target}/tmp/run1.sh
 #!/bin/bash
 export DEBIAN_FRONTEND=noninteractive
 apt-get update -y
 apt-get upgrade -y
-apt-get install -t ${DEBIAN_VERSION}-backports systemd libtss2-esys-3.0.2-0 libtss2-rc0 efibootmgr btrfs-progs tasksel network-manager cryptsetup cryptsetup-initramfs -y
+apt-get install -t ${DEBIAN_VERSION}-backports systemd systemd-boot dracut btrfs-progs tasksel network-manager cryptsetup tpm2-tools libtss2-esys-3.0.2-0 libtss2-rc0 -y
+bootctl install
 EOF
 read -p "Enter to continue"
 chroot ${target}/ sh /tmp/run1.sh
 
+echo checking for tpm
+cat <<EOF > ${target}/tmp/run4.sh
+systemd-cryptenroll --tpm2-device=list > /tmp/tpm-list.txt
+if grep -qs "/dev/tpm" /tmp/tpm-list.txt ; then
+    echo tpm available, enrolling
+    read -p "Enter to continue"
+    systemd-cryptenroll --tpm2-device=auto ${DISK}2 --tpm2-pcrs=
+    cat <<TARGETEOF > /etc/crypttab
+${luks_device} UUID=${luks_crypt_uuid} none luks,tpm2-device=auto
+TARGETEOF
+else
+    echo tpm not avaialble
+fi
+EOF
+chroot ${target}/ bash /tmp/run4.sh
+
 echo install kernel and firmware on ${target}
 cat <<EOF > ${target}/tmp/packages.txt
+dracut
 linux-image-amd64
 firmware-linux
 atmel-firmware
@@ -255,45 +261,12 @@ EOF
 read -p "Enter to continue"
 chroot ${target}/ bash /tmp/run2.sh
 
-cat <<EOF > ${target}/tmp/run3.sh
-#!/bin/bash
-efibootmgr -v > /tmp/efi.txt
-if grep -qs "${efi_uuid}" /tmp/efi.txt ; then
-    echo efibootmgr already set up
-else
-    echo setting up efibootmgr
-    read -p "Enter to continue"
-    efibootmgr -c -g -L "Debian efistub" -d ${DISK} -l "\\EFI\\debian\\vmlinuz" -u "${kernel_params} initrd=\\EFI\\debian\\initrd.img"
-fi
-EOF
-chroot ${target}/ bash /tmp/run3.sh
-
 echo running tasksel
+read -p "Enter to continue"
 chroot ${target}/ tasksel
-
-echo checking for tpm
-cat <<EOF > ${target}/tmp/run4.sh
-systemd-cryptenroll --tpm2-device=list > /tmp/tpm-list.txt
-if grep -qs "/dev/tpm" /tmp/tpm-list.txt ; then
-    echo tpm available, enrolling
-    read -p "Enter to continue"
-    systemd-cryptenroll --tpm2-device=auto ${DISK}2
-    cat <<TARGETEOF > /etc/crypttab
-${luks_device} UUID=${luks_crypt_uuid} none luks,tpm2-device=auto
-TARGETEOF
-else
-    echo tpm not avaialble
-fi
-EOF
-chroot ${target}/ bash /tmp/run4.sh
 
 echo umounting all filesystems
 read -p "Enter to continue"
-umount -R ${target}/proc
-umount -R ${target}/sys
-umount -R ${target}/dev
-umount -R ${target}/run
-umount -R ${target}/boot/efi
 umount -R ${target}
 umount -R /mnt/btrfs1
 
