@@ -3,7 +3,10 @@
 DISK=/dev/vda
 KEYFILE=luks.key
 USERNAME=user
-DEBIAN_VERSION=bullseye
+DEBIAN_VERSION=bookworm
+
+# TODO enable backports here when it becomes available for bookworm
+DEBIAN_SOURCE=${DEBIAN_VERSION}
 
 if [ ! -f efi-part.uuid ]; then
     echo generate uuid for efi partition
@@ -13,13 +16,23 @@ if [ ! -f luks-part.uuid ]; then
     echo generate uuid for luks partition
     uuidgen > luks-part.uuid
 fi
+if [ ! -f luks.uuid ]; then
+    echo generate uuid for luks device
+    uuidgen > luks.uuid
+fi
+if [ ! -f btrfs.uuid ]; then
+    echo generate uuid for btrfs filesystem
+    uuidgen > btrfs.uuid
+fi
 
 efi_uuid=$(cat efi-part.uuid)
-luks_uuid=$(cat luks-part.uuid)
+luks_part_uuid=$(cat luks-part.uuid)
+luks_uuid=$(cat luks.uuid)
+btrfs_uuid=$(cat btrfs.uuid)
 target=/target
 luks_device=luksroot
 root_device=/dev/mapper/${luks_device}
-kernel_params="root=${root_device} rw quiet rootfstype=btrfs rootflags=subvol=@,compress=zstd:1 splash"
+kernel_params="rd.luks.name=${luks_uuid}=${luks_device} rd.luks.options=${luks_uuid}=tpm2-device=auto root=UUID=${btrfs_uuid} rw quiet rootfstype=btrfs rootflags=subvol=@,compress=zstd:1 rd.auto=1 splash"
 
 if [ ! -f partitions_created.txt ]; then
 echo create 2 partitions on ${DISK}
@@ -30,7 +43,7 @@ unit: sectors
 sector-size: 512
 
 ${DISK}1: start=2048, size=409600, type=C12A7328-F81F-11D2-BA4B-00A0C93EC93B, name="EFI system partition", uuid=${efi_uuid}
-${DISK}2: start=411648, size=4096000, type=CA7D7CCB-63ED-4C53-861C-1742536059CC, name="LUKS partition", uuid=${luks_uuid}
+${DISK}2: start=411648, size=4096000, type=CA7D7CCB-63ED-4C53-861C-1742536059CC, name="LUKS partition", uuid=${luks_part_uuid}
 EOF
 
 echo resize the second partition on ${DISK} to fill available space
@@ -50,7 +63,8 @@ if [ ! -f $KEYFILE ]; then
     dd if=/dev/random of=${KEYFILE} bs=512 count=1
 fi
 
-if [ ! -f luks.uuid ]; then
+cryptsetup isLuks ${DISK}2
+if [ ! $? ]; then
     echo setup luks on ${DISK}2
     read -p "Enter to continue"
     cryptsetup luksFormat ${DISK}2 --type luks2 --batch-mode --key-file $KEYFILE
@@ -61,8 +75,6 @@ else
     echo luks already set up
 fi
 
-luks_crypt_uuid=$(cat luks.uuid)
-
 if [ ! -e ${root_device} ]; then
     echo open luks
     read -p "Enter to continue"
@@ -72,7 +84,7 @@ fi
 if [ ! -f btrfs_created.txt ]; then
     echo create root filesystem on ${root_device}
     read -p "Enter to continue"
-    mkfs.btrfs ${root_device}
+    mkfs.btrfs -U ${btrfs_uuid} ${root_device}
     touch btrfs_created.txt
 fi
 if [ ! -f vfat_created.txt ]; then
@@ -135,23 +147,13 @@ else
     mount ${DISK}1 ${target}/boot/efi
 fi
 
-if [ ! -f ${target}/etc/crypttab ]; then
-    echo setup crypttab
-    read -p "Enter to continue"
-    mkdir -p ${target}/root/btrfs1
-    cat <<EOF > ${target}/etc/crypttab
-${luks_device} UUID=${luks_crypt_uuid} none luks
-EOF
-else
-    echo crypttab already set up
-fi
-
 echo setup fstab
+mkdir -p ${target}/root/btrfs1
 read -p "Enter to continue"
 cat <<EOF > ${target}/etc/fstab
-${root_device} / btrfs defaults,subvol=@,compress=zstd:1 0 1
-${root_device} /home btrfs defaults,subvol=@home,compress=zstd:1 0 1
-${root_device} /root/btrfs1 btrfs defaults,subvolid=5,compress=zstd:1 0 1
+UUID=${btrfs_uuid} / btrfs defaults,subvol=@,compress=zstd:1 0 1
+UUID=${btrfs_uuid} /home btrfs defaults,subvol=@home,compress=zstd:1 0 1
+UUID=${btrfs_uuid} /root/btrfs1 btrfs defaults,subvolid=5,compress=zstd:1 0 1
 PARTUUID=${efi_uuid} /boot/efi vfat defaults 0 2
 EOF
 
@@ -182,7 +184,8 @@ echo configuring dracut and kernel command line
 read -p "Enter to continue"
 mkdir -p ${target}/etc/dracut.conf.d
 cat <<EOF > ${target}/etc/dracut.conf.d/90-luks.conf
-add_dracutmodules+=" systemd btrfs tpm2-tss "
+add_dracutmodules+=" systemd crypt btrfs tpm2-tss "
+kernel_cmdline="${kernel_params}"
 EOF
 cat <<EOF > ${target}/etc/kernel/cmdline
 ${kernel_params}
@@ -194,27 +197,28 @@ cat <<EOF > ${target}/tmp/run1.sh
 export DEBIAN_FRONTEND=noninteractive
 apt-get update -y
 apt-get upgrade -y
-apt-get install -t ${DEBIAN_VERSION}-backports systemd systemd-boot dracut btrfs-progs tasksel network-manager cryptsetup tpm2-tools libtss2-esys-3.0.2-0 libtss2-rc0 -y
+apt-get install -t ${DEBIAN_SOURCE} locales systemd systemd-boot dracut btrfs-progs tasksel network-manager cryptsetup tpm2-tools -y
 bootctl install
 EOF
 read -p "Enter to continue"
 chroot ${target}/ sh /tmp/run1.sh
 
 echo checking for tpm
+cp ${KEYFILE} ${target}/
+chmod 600 ${target}/${KEYFILE}
 cat <<EOF > ${target}/tmp/run4.sh
 systemd-cryptenroll --tpm2-device=list > /tmp/tpm-list.txt
 if grep -qs "/dev/tpm" /tmp/tpm-list.txt ; then
     echo tpm available, enrolling
     read -p "Enter to continue"
-    systemd-cryptenroll --tpm2-device=auto ${DISK}2 --tpm2-pcrs=
-    cat <<TARGETEOF > /etc/crypttab
-${luks_device} UUID=${luks_crypt_uuid} none luks,tpm2-device=auto
-TARGETEOF
+    cp $KEYFILE /target
+    systemd-cryptenroll --unlock-key-file=/${KEYFILE} --tpm2-device=auto ${DISK}2 --tpm2-pcrs=
 else
     echo tpm not avaialble
 fi
 EOF
 chroot ${target}/ bash /tmp/run4.sh
+rm ${target}/${KEYFILE}
 
 echo install kernel and firmware on ${target}
 cat <<EOF > ${target}/tmp/packages.txt
@@ -232,7 +236,6 @@ firmware-bnx2x
 firmware-brcm80211
 firmware-cavium
 firmware-intel-sound
-firmware-intelwimax
 firmware-iwlwifi
 firmware-libertas
 firmware-misc-nonfree
@@ -254,9 +257,9 @@ midisport-firmware
 sigrok-firmware-fx2lafw
 EOF
 cat <<EOF > ${target}/tmp/run2.sh
-#!/bin/bash
+!/bin/bash
 export DEBIAN_FRONTEND=noninteractive
-xargs apt-get install -t ${DEBIAN_VERSION}-backports -y < /tmp/packages.txt
+xargs apt-get install -t ${DEBIAN_SOURCE} -y < /tmp/packages.txt
 EOF
 read -p "Enter to continue"
 chroot ${target}/ bash /tmp/run2.sh

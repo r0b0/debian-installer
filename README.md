@@ -1,6 +1,6 @@
 # Opinionated Debian Installer
 
-This tool can be used to create a modern installation of Debian. Our opinions of what a modern installation of Debian should look like in 2022 are as follows:
+This tool can be used to create a modern installation of Debian. Our opinions of what a modern installation of Debian should look like in 2023 are as follows:
 
  - Backports and non-free enabled
  - Firmware installed
@@ -10,7 +10,7 @@ This tool can be used to create a modern installation of Debian. Our opinions of
 ## Current limitations
 
  - **The installer will take over your whole disk**
- - Bullseye (debian 11) amd64 only
+ - Bookworm (debian 12) amd64 only
 
 ## Instructions
  
@@ -23,6 +23,7 @@ This tool can be used to create a modern installation of Debian. Our opinions of
  7. Execute the installer using `bash ./installer.sh`
  8. You will be interactively prompted for LUKS passphrase, root password and user password
  9. The installer will inform you before each step and ask to confirm by pressing Enter. Press Ctrl+C if you are unsure and re-start the script after you investigate. It should pick up roughly where it left off. 
+ 10. If you happen to get locked out in the GUI session, the password to unlock is _live_
  10. Store the generated file `luks.key` in a safe place - you can use it to recover the data if decryption by TPM or passphrase fails for some reason.
  11. Reboot and enjoy
 
@@ -32,7 +33,7 @@ This tool can be used to create a modern installation of Debian. Our opinions of
 - Btrfs subvolumes will be called `@` for `/` and `@home` for `/home`, the top-level subvolume will be mounted to `/root/btrfs1`
 - Base system is installed using [debootstrap](https://wiki.debian.org/Debootstrap)
 - The rest of the system is installed using [tasksel](https://wiki.debian.org/tasksel),
-- Dracut is used instead of initramfs-tools
+- [Dracut](https://github.com/dracutdevs/dracut/wiki/) is used instead of initramfs-tools
 - Systemd-boot is used instead of grub
-- Network-manager is used for networking
+- [Network-manager](https://wiki.debian.org/NetworkManager) is used for networking
 - Systemd-cryptenroll is used to unlock the disk, using TPM (if available)
