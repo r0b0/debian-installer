@@ -18,7 +18,7 @@ This tool can be used to create a modern installation of Debian. Our opinions of
  2. Boot the live ISO
  3. Connect to the internet
  4. Open a root shell
- 5. Download the installer using `wget -O installer.sh https://odin.lamac.cc`
+ 5. Download the installer using `wget -O installer.sh https://odin.lamac.cc/12`
  6. Edit the file - especially the `DISK` variable containing name of the disk drive you want to install to
  7. Execute the installer using `bash ./installer.sh`
  8. You will be interactively prompted for LUKS passphrase, root password and user password
