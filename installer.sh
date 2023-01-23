@@ -1,13 +1,16 @@
 #!/bin/bash
 
+# edit this:
 DISK=/dev/vda
-KEYFILE=luks.key
 USERNAME=user
 DEBIAN_VERSION=bookworm
-
 # TODO enable backports here when it becomes available for bookworm
 DEBIAN_SOURCE=${DEBIAN_VERSION}
+# TODO enable 7 and 14 here?
+# see https://www.freedesktop.org/software/systemd/man/systemd-cryptenroll.html#--tpm2-device=PATH
+TPM_PCRS=
 
+KEYFILE=luks.key
 if [ ! -f efi-part.uuid ]; then
     echo generate uuid for efi partition
     uuidgen > efi-part.uuid
@@ -212,7 +215,7 @@ if grep -qs "/dev/tpm" /tmp/tpm-list.txt ; then
     echo tpm available, enrolling
     read -p "Enter to continue"
     cp $KEYFILE /target
-    systemd-cryptenroll --unlock-key-file=/${KEYFILE} --tpm2-device=auto ${DISK}2 --tpm2-pcrs=
+    systemd-cryptenroll --unlock-key-file=/${KEYFILE} --tpm2-device=auto ${DISK}2 --tpm2-pcrs=${TPM_PCRS}
 else
     echo tpm not avaialble
 fi
