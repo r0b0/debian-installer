@@ -1,14 +1,19 @@
 #!/bin/bash
 
 # edit this:
-DISK=/dev/vda
+DISK=/dev/vdb
+
 USERNAME=user
 DEBIAN_VERSION=bookworm
 # TODO enable backports here when it becomes available for bookworm
 DEBIAN_SOURCE=${DEBIAN_VERSION}
-# TODO enable 7 and 14 here?
 # see https://www.freedesktop.org/software/systemd/man/systemd-cryptenroll.html#--tpm2-device=PATH
-TPM_PCRS=
+TPM_PCRS="7+14"
+
+echo install required packages
+read -p "Enter to continue"
+apt-get update -y
+DEBIAN_FRONTEND=noninteractive apt-get install -y cryptsetup debootstrap uuid-runtime
 
 KEYFILE=luks.key
 if [ ! -f efi-part.uuid ]; then
@@ -28,14 +33,15 @@ if [ ! -f btrfs.uuid ]; then
     uuidgen > btrfs.uuid
 fi
 
+root_part_type="4f68bce3-e8cd-4db1-96e7-fbcaf984b709"  # X86_64
 efi_uuid=$(cat efi-part.uuid)
 luks_part_uuid=$(cat luks-part.uuid)
 luks_uuid=$(cat luks.uuid)
 btrfs_uuid=$(cat btrfs.uuid)
 target=/target
-luks_device=luksroot
+luks_device=root
 root_device=/dev/mapper/${luks_device}
-kernel_params="rd.luks.name=${luks_uuid}=${luks_device} rd.luks.options=${luks_uuid}=tpm2-device=auto root=UUID=${btrfs_uuid} rw quiet rootfstype=btrfs rootflags=subvol=@,compress=zstd:1 rd.auto=1 splash"
+kernel_params="rd.luks.options=${luks_uuid}=tpm2-device=auto rw quiet rootfstype=btrfs rootflags=compress=zstd:1 rd.auto=1 splash"
 
 if [ ! -f partitions_created.txt ]; then
 echo create 2 partitions on ${DISK}
@@ -45,8 +51,8 @@ label: gpt
 unit: sectors
 sector-size: 512
 
-${DISK}1: start=2048, size=409600, type=C12A7328-F81F-11D2-BA4B-00A0C93EC93B, name="EFI system partition", uuid=${efi_uuid}
-${DISK}2: start=411648, size=4096000, type=CA7D7CCB-63ED-4C53-861C-1742536059CC, name="LUKS partition", uuid=${luks_part_uuid}
+${DISK}1: start=2048, size=2097152, type=C12A7328-F81F-11D2-BA4B-00A0C93EC93B, name="EFI system partition", uuid=${efi_uuid}
+${DISK}2: start=2099200, size=4096000, type=${root_part_type}, name="LUKS partition", uuid=${luks_part_uuid}
 EOF
 
 echo resize the second partition on ${DISK} to fill available space
@@ -56,18 +62,14 @@ echo ", +" | sfdisk -N 2 $DISK
 sfdisk -d $DISK > partitions_created.txt
 fi
 
-echo install required packages
-read -p "Enter to continue"
-apt-get update -y
-DEBIAN_FRONTEND=noninteractive apt-get install -y cryptsetup debootstrap
-
 if [ ! -f $KEYFILE ]; then
     echo generate key file for luks
     dd if=/dev/random of=${KEYFILE} bs=512 count=1
 fi
 
 cryptsetup isLuks ${DISK}2
-if [ ! $? ]; then
+retVal=$?
+if [ $retVal -ne 0 ]; then
     echo setup luks on ${DISK}2
     read -p "Enter to continue"
     cryptsetup luksFormat ${DISK}2 --type luks2 --batch-mode --key-file $KEYFILE
@@ -111,6 +113,7 @@ if [ ! -e /mnt/btrfs1/@ ]; then
     read -p "Enter to continue"
     btrfs subvolume create /mnt/btrfs1/@
     btrfs subvolume create /mnt/btrfs1/@home
+    btrfs subvolume set-default /mnt/btrfs1/@
 fi
 
 if grep -qs "${target}" /proc/mounts ; then
@@ -228,7 +231,6 @@ cat <<EOF > ${target}/tmp/packages.txt
 dracut
 linux-image-amd64
 firmware-linux
-atmel-firmware
 bluez-firmware
 dahdi-firmware-nonfree
 firmware-amd-graphics
@@ -251,7 +253,6 @@ firmware-qlogic
 firmware-realtek
 firmware-samsung
 firmware-siano
-firmware-sof-signed
 firmware-ti-connectivity
 firmware-tomu
 firmware-zd1211
@@ -260,7 +261,7 @@ midisport-firmware
 sigrok-firmware-fx2lafw
 EOF
 cat <<EOF > ${target}/tmp/run2.sh
-!/bin/bash
+#!/bin/bash
 export DEBIAN_FRONTEND=noninteractive
 xargs apt-get install -t ${DEBIAN_SOURCE} -y < /tmp/packages.txt
 EOF

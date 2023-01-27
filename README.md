@@ -11,7 +11,6 @@ This tool can be used to create a modern installation of Debian. Our opinions of
 
  - **The installer will take over your whole disk**
  - Bookworm (debian 12) amd64 only
- - TPM Platform Configuration Registers are not bound at all. This is probably sub-optimal from security point of view.
 
 ## Instructions
  
@@ -30,7 +29,8 @@ This tool can be used to create a modern installation of Debian. Our opinions of
 
 ## Details
 
-- 2 GPT disk partitions are created on the designated disk drive: UEFI ESP partition (200MB) and a [LUKS](https://cryptsetup-team.pages.debian.net/cryptsetup/README.Debian.html) device (rest of the drive)
+- 2 GPT disk partitions are created on the designated disk drive: UEFI ESP partition (1GB) and a [LUKS](https://cryptsetup-team.pages.debian.net/cryptsetup/README.Debian.html) device (rest of the drive)
+- GPT root partition is [auto-discoverable](https://www.freedesktop.org/software/systemd/man/systemd-gpt-auto-generator.html)
 - Btrfs subvolumes will be called `@` for `/` and `@home` for `/home`, the top-level subvolume will be mounted to `/root/btrfs1`
 - Base system is installed using [debootstrap](https://wiki.debian.org/Debootstrap)
 - The rest of the system is installed using [tasksel](https://wiki.debian.org/tasksel),
