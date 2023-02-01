@@ -172,9 +172,9 @@ EOF
 echo setup sources.list
 read -p "Enter to continue"
 cat <<EOF > ${target}/etc/apt/sources.list
-deb http://deb.debian.org/debian ${DEBIAN_VERSION} main contrib non-free
-deb http://security.debian.org/ ${DEBIAN_VERSION}-security main contrib non-free
-deb http://deb.debian.org/debian ${DEBIAN_VERSION}-backports main contrib non-free
+deb http://deb.debian.org/debian ${DEBIAN_VERSION} main contrib non-free non-free-firmware
+deb http://security.debian.org/ ${DEBIAN_VERSION}-security main contrib non-free non-free-firmware
+deb http://deb.debian.org/debian ${DEBIAN_VERSION}-backports main contrib non-free non-free-firmware
 EOF
 
 if [ "$SHARE_APT_ARCHIVE" = true ] ; then
