@@ -4,11 +4,15 @@
 DISK=/dev/vdb
 
 USERNAME=user
+HOSTNAME=debian12
 DEBIAN_VERSION=bookworm
 # TODO enable backports here when it becomes available for bookworm
 DEBIAN_SOURCE=${DEBIAN_VERSION}
 # see https://www.freedesktop.org/software/systemd/man/systemd-cryptenroll.html#--tpm2-device=PATH
 TPM_PCRS="7+14"
+# do not enable this on a live-cd
+SHARE_APT_ARCHIVE=true
+FSFLAGS="compress=zstd:1"
 
 echo install required packages
 read -p "Enter to continue"
@@ -41,7 +45,7 @@ btrfs_uuid=$(cat btrfs.uuid)
 target=/target
 luks_device=root
 root_device=/dev/mapper/${luks_device}
-kernel_params="rd.luks.options=${luks_uuid}=tpm2-device=auto rw quiet rootfstype=btrfs rootflags=compress=zstd:1 rd.auto=1 splash"
+kernel_params="rd.luks.options=${luks_uuid}=tpm2-device=auto rw quiet rootfstype=btrfs rootflags=${FSFLAGS} rd.auto=1 splash"
 
 if [ ! -f partitions_created.txt ]; then
 echo create 2 partitions on ${DISK}
@@ -105,7 +109,7 @@ else
     echo mount top-level subvolume on /mnt/btrfs1
     mkdir -p /mnt/btrfs1
     read -p "Enter to continue"
-    mount ${root_device} /mnt/btrfs1 -o compress=zstd:1
+    mount ${root_device} /mnt/btrfs1 -o ${FSFLAGS}
 fi
 
 if [ ! -e /mnt/btrfs1/@ ]; then
@@ -122,9 +126,9 @@ else
     echo mount root and home subvolume on ${target}
     mkdir -p ${target}
     read -p "Enter to continue"
-    mount ${root_device} ${target} -o compress=zstd:1,subvol=@
+    mount ${root_device} ${target} -o ${FSFLAGS},subvol=@
     mkdir -p ${target}/home
-    mount ${root_device} ${target}/home -o compress=zstd:1,subvol=@home
+    mount ${root_device} ${target}/home -o ${FSFLAGS},subvol=@home
 fi
 
 if [ ! -f ${target}/etc/debian_version ]; then
@@ -153,13 +157,15 @@ else
     mount ${DISK}1 ${target}/boot/efi
 fi
 
+echo setup hostname
+echo "$HOSTNAME" > ${target}/etc/hostname
+
 echo setup fstab
 mkdir -p ${target}/root/btrfs1
 read -p "Enter to continue"
 cat <<EOF > ${target}/etc/fstab
-UUID=${btrfs_uuid} / btrfs defaults,subvol=@,compress=zstd:1 0 1
-UUID=${btrfs_uuid} /home btrfs defaults,subvol=@home,compress=zstd:1 0 1
-UUID=${btrfs_uuid} /root/btrfs1 btrfs defaults,subvolid=5,compress=zstd:1 0 1
+UUID=${btrfs_uuid} /home btrfs defaults,subvol=@home,${FSFLAGS} 0 1
+UUID=${btrfs_uuid} /root/btrfs1 btrfs defaults,subvolid=5,${FSFLAGS} 0 1
 PARTUUID=${efi_uuid} /boot/efi vfat defaults 0 2
 EOF
 
@@ -170,6 +176,16 @@ deb http://deb.debian.org/debian ${DEBIAN_VERSION} main contrib non-free
 deb http://security.debian.org/ ${DEBIAN_VERSION}-security main contrib non-free
 deb http://deb.debian.org/debian ${DEBIAN_VERSION}-backports main contrib non-free
 EOF
+
+if [ "$SHARE_APT_ARCHIVE" = true ] ; then
+    mkdir -p ${target}/var/cache/apt/archives
+    if grep -qs "${target}/var/cache/apt/archives" /proc/mounts ; then
+        echo apt cache directory already bind mounted on target
+    else
+        echo bind mounting apt cache directory to target
+        mount /var/cache/apt/archives ${target}/var/cache/apt/archives -o bind
+    fi
+fi
 
 if grep -qs 'root:\$' ${target}/etc/shadow ; then
     echo root password already set up
