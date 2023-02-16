@@ -12,6 +12,8 @@ FSFLAGS="compress=zstd:9"
 target=/target
 root_device=${DISK}2
 overlay_top_device=${DISK}3
+overlay_flags="lowerdir=/mnt/btrfs1,upperdir=/mnt/btrfs2/upper,workdir=/mnt/btrfs2/work"
+kernel_params="rootfstype=overlay rootflags=${overlay_flags} rw quiet splash"
 
 DEVICE_SLACK=$(cat device_slack.txt)
 efi_uuid=$(cat efi-part.uuid)
@@ -77,6 +79,7 @@ if grep -qs "${target}/var/cache/apt/archives" /proc/mounts ; then
     echo apt cache directory already bind mounted on target
 else
     echo bind mounting apt cache directory to target
+    read -p "Enter to continue"
     mount /var/cache/apt/archives ${target}/var/cache/apt/archives -o bind
 fi
 
@@ -105,7 +108,7 @@ read -p "Enter to continue"
 cat <<EOF > ${target}/etc/fstab
 PARTUUID=${base_image_uuid} /mnt/btrfs1 btrfs defaults,ro 0 1
 PARTUUID=${top_uuid} /mnt/btrfs2 btrfs defaults 0 1
-overlay / overlay lowerdir=/mnt/btrfs1,upperdir=/mnt/btrfs2/upper,workdir=/mnt/btrfs2/work 0 1
+overlay / overlay ${overlay_flags} 0 1
 PARTUUID=${efi_uuid} /boot/efi vfat defaults 0 2
 EOF
 
@@ -114,15 +117,34 @@ if grep -qs 'root:\$' ${target}/etc/shadow ; then
 else
     echo set up root password
     read -p "Enter to continue"
-    chroot ${target}/ passwd
+    echo "root:live" > ${target}/tmp/passwd
+    chroot ${target}/ bash -c "chpasswd < /tmp/passwd"
+    rm ${target}/tmp/passwd
 fi
 
 if grep -qs "^${USERNAME}:" ${target}/etc/shadow ; then
     echo ${USERNAME} user already set up
 else
     echo set up ${USERNAME} user
-    chroot ${target}/ adduser ${USERNAME}
+    chroot ${target}/ useradd ${USERNAME}
+    echo "${USERNAME}:live" > ${target}/tmp/passwd
+    chroot ${target}/ bash -c "chpasswd < /tmp/passwd"
+    rm ${target}/tmp/passwd
 fi
+
+echo configuring dracut
+read -p "Enter to continue"
+mkdir -p ${target}/etc/dracut.conf.d
+cat <<EOF > ${target}/etc/dracut.conf.d/90-odin.conf
+add_dracutmodules+=" systemd "
+omit_dracutmodules+=" lvm dm crypt dmraid mdraid "
+kernel_cmdline="${kernel_params}"
+use_fstab="yes"
+add_fstab+=" /etc/fstab "
+EOF
+cat <<EOF > ${target}/etc/kernel/cmdline
+${kernel_params}
+EOF
 
 echo install boot packages on ${target}
 cat <<EOF > ${target}/tmp/run1.sh
@@ -131,6 +153,8 @@ export DEBIAN_FRONTEND=noninteractive
 apt-get update -y
 apt-get upgrade -y
 apt-get install -t ${DEBIAN_SOURCE} systemd-boot dracut -y
+apt-get purge initramfs-tools initramfs-tools-core -y
+bootctl install
 EOF
 read -p "Enter to continue"
 chroot ${target}/ sh /tmp/run1.sh
@@ -142,7 +166,6 @@ export DEBIAN_FRONTEND=noninteractive
 apt-get update -y
 apt-get upgrade -y
 apt-get install -t ${DEBIAN_SOURCE} linux-image-amd64 -y
-bootctl install
 EOF
 read -p "Enter to continue"
 chroot ${target}/ sh /tmp/run1.sh
