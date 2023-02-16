@@ -2,6 +2,7 @@
 
 # edit this:
 DISK=/dev/vdb
+USERNAME=live
 
 DEBIAN_VERSION=bookworm
 # TODO enable backports here when it becomes available for bookworm
@@ -17,6 +18,22 @@ read -p "Enter to continue"
 apt-get update -y
 DEBIAN_FRONTEND=noninteractive apt-get install -y debootstrap uuid-runtime
 
+if [ ! -f efi-part.uuid ]; then
+    echo generate uuid for efi partition
+    uuidgen > efi-part.uuid
+fi
+if [ ! -f base-image-part.uuid ]; then
+    echo generate uuid for base image partition
+    uuidgen > base-image-part.uuid
+fi
+if [ ! -f top-part.uuid ]; then
+    echo generate uuid for top partition
+    uuidgen > top-part.uuid
+fi
+efi_uuid=$(cat efi-part.uuid)
+base_image_uuid=$(cat base-image-part.uuid)
+top_uuid=$(cat top-part.uuid)
+
 if [ ! -f partitions_created.txt ]; then
 echo create 2 partitions on ${DISK}
 read -p "Enter to continue"
@@ -25,8 +42,8 @@ label: gpt
 unit: sectors
 sector-size: 512
 
-${DISK}1: start=2048, size=409600, type=uefi, name="EFI system partition"
-${DISK}2: start=411648, size=409600, type=linux, name="Base Image"
+${DISK}1: start=2048, size=409600, type=uefi, name="EFI system partition", uuid=${efi_uuid}
+${DISK}2: start=411648, size=409600, type=linux, name="Base Image", uuid=${base_image_uuid}
 EOF
 
 echo resize the second partition on ${DISK} to fill available space
@@ -41,6 +58,12 @@ if [ ! -f btrfs_created.txt ]; then
     read -p "Enter to continue"
     mkfs.btrfs -f ${root_device}
     touch btrfs_created.txt
+fi
+if [ ! -f vfat_created.txt ]; then
+    echo create esp filesystem on ${DISK}1
+    read -p "Enter to continue"
+    mkfs.vfat ${DISK}1
+    touch vfat_created.txt
 fi
 
 if grep -qs "/mnt/btrfs1" /proc/mounts ; then
@@ -76,6 +99,7 @@ if grep -qs "${target}/var/cache/apt/archives" /proc/mounts ; then
     echo apt cache directory already bind mounted on target
 else
     echo bind mounting apt cache directory to target
+    read -p "Enter to continue"
     mount /var/cache/apt/archives ${target}/var/cache/apt/archives -o bind
 fi
 
@@ -175,7 +199,8 @@ while [ $? -eq 0 ]; do
     btrfs filesystem resize -10M ${target}
 done
 
-DEVICE_SLACK=$(btrfs filesystem usage -m ${target} |grep slack | cut -f 3 | tr -d '[:space:]')
+btrfs filesystem usage -m ${target} |grep slack | cut -f 3 | tr -d '[:space:]' > device_slack.txt
+DEVICE_SLACK=$(cat device_slack.txt)
 echo device slack is ${DEVICE_SLACK}
 
 echo umounting all filesystems
