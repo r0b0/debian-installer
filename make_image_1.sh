@@ -12,6 +12,8 @@ FSFLAGS="compress=zstd:9"
 target=/target
 root_device=${DISK}2
 overlay_top_device=${DISK}3
+overlay_flags="lowerdir=/mnt/btrfs1,upperdir=/mnt/btrfs2/upper,workdir=/mnt/btrfs2/work"
+kernel_params="rootfstype=overlay rootflags=${overlay_flags} rw quiet splash"
 
 echo install required packages
 read -p "Enter to continue"
@@ -135,8 +137,6 @@ systemd
 btrfs-progs
 tasksel
 network-manager
-cryptsetup
-tpm2-tools
 firmware-linux
 bluez-firmware
 dahdi-firmware-nonfree
