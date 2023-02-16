@@ -2,6 +2,7 @@
 
 # edit this:
 DISK=/dev/vdb
+USERNAME=live
 
 DEBIAN_VERSION=bookworm
 # TODO enable backports here when it becomes available for bookworm
@@ -12,18 +13,29 @@ target=/target
 root_device=${DISK}2
 overlay_top_device=${DISK}3
 
-echo shrinking the partition by ${DEVICE_SLACK}
-read -p "Enter to continue"
-echo ", -${DEVICE_SLACK}" | sfdisk ${DISK} -N 2
+DEVICE_SLACK=$(cat device_slack.txt)
+efi_uuid=$(cat efi-part.uuid)
+base_image_uuid=$(cat base-image-part.uuid)
+top_uuid=$(cat top-part.uuid)
 
-echo checking the filesystem after partition shrink
-read -p "Enter to continue"
-btrfs check ${DISK}2
+if [ ! -f partition_shrunk.txt ]; then
+    echo shrinking the partition by ${DEVICE_SLACK}
+    read -p "Enter to continue"
+    echo ", -${DEVICE_SLACK}" | sfdisk ${DISK} -N 2
+    echo checking the filesystem after partition shrink
+    read -p "Enter to continue"
+    btrfs check ${DISK}2
+    touch partition_shrunk.txt
+fi
 
-echo creating the overlay top partition
-read -p "Enter to continue"
-echo ", +" | sfdisk ${DISK} --append
-sfdisk --part-label ${DISK} 3 "Overlay Top"
+if [ ! -f top_partition_created.txt ]; then
+    echo creating the overlay top partition
+    read -p "Enter to continue"
+    echo ", +" | sfdisk ${DISK} --append
+    sfdisk --part-label ${DISK} 3 "Overlay Top"
+    sfdisk --part-uuid ${DISK} 3 "${top_uuid}"
+    touch top_partition_created.txt
+fi
 
 if [ ! -f btrfs_top_created.txt ]; then
     echo create overlay top filesystem on ${overlay_top_device}
@@ -52,10 +64,11 @@ else
     mkdir -p /mnt/btrfs2/work
 fi
 
-if grep -qs "overlay on /target" /proc/mounts ; then
+if grep -qs "overlay /target" /proc/mounts ; then
     echo overlay already mounted on /target
 else
     echo mount overlay on /target
+    read -p "Enter to continue"
     mount -t overlay overlay -olowerdir=/mnt/btrfs1,upperdir=/mnt/btrfs2/upper,workdir=/mnt/btrfs2/work ${target}
 fi
 
@@ -78,6 +91,24 @@ else
     mount --make-rslave --rbind /run ${target}/run
 fi
 
+if grep -qs "${DISK}1 " /proc/mounts ; then
+    echo efi esp partition ${DISK}1 already mounted on ${target}/boot/efi
+else
+    echo mount efi esp partition ${DISK}1 on ${target}/boot/efi
+    mkdir -p ${target}/boot/efi
+    read -p "Enter to continue"
+    mount ${DISK}1 ${target}/boot/efi
+fi
+
+echo setup fstab
+read -p "Enter to continue"
+cat <<EOF > ${target}/etc/fstab
+PARTUUID=${base_image_uuid} /mnt/btrfs1 btrfs defaults,ro 0 1
+PARTUUID=${top_uuid} /mnt/btrfs2 btrfs defaults 0 1
+overlay / overlay lowerdir=/mnt/btrfs1,upperdir=/mnt/btrfs2/upper,workdir=/mnt/btrfs2/work 0 1
+PARTUUID=${efi_uuid} /boot/efi vfat defaults 0 2
+EOF
+
 if grep -qs 'root:\$' ${target}/etc/shadow ; then
     echo root password already set up
 else
@@ -93,19 +124,18 @@ else
     chroot ${target}/ adduser ${USERNAME}
 fi
 
-echo install required packages on ${target}
+echo install boot packages on ${target}
 cat <<EOF > ${target}/tmp/run1.sh
 #!/bin/bash
 export DEBIAN_FRONTEND=noninteractive
 apt-get update -y
 apt-get upgrade -y
-apt-get install -t ${DEBIAN_SOURCE} locales systemd systemd-boot dracut network-manager -y
-bootctl install
+apt-get install -t ${DEBIAN_SOURCE} systemd-boot dracut -y
 EOF
 read -p "Enter to continue"
 chroot ${target}/ sh /tmp/run1.sh
 
-echo install required packages on ${target}
+echo install kernel on ${target}
 cat <<EOF > ${target}/tmp/run1.sh
 #!/bin/bash
 export DEBIAN_FRONTEND=noninteractive
