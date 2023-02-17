@@ -1,0 +1,8 @@
+[Desktop Entry]
+Encoding=UTF-8
+Version=1.0
+Type=Application
+Terminal=true
+Exec=sudo /installer.sh
+Name=Opinionated Debian Installer
+Icon=emblem-debian.png

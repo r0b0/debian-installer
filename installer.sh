@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # edit this:
-DISK=/dev/vdb
+DISK=/dev/vda
 
 USERNAME=user
 HOSTNAME=debian12
@@ -11,7 +11,7 @@ DEBIAN_SOURCE=${DEBIAN_VERSION}
 # see https://www.freedesktop.org/software/systemd/man/systemd-cryptenroll.html#--tpm2-device=PATH
 TPM_PCRS="7+14"
 # do not enable this on a live-cd
-SHARE_APT_ARCHIVE=true
+SHARE_APT_ARCHIVE=false
 FSFLAGS="compress=zstd:1"
 
 echo install required packages
@@ -42,6 +42,7 @@ efi_uuid=$(cat efi-part.uuid)
 luks_part_uuid=$(cat luks-part.uuid)
 luks_uuid=$(cat luks.uuid)
 btrfs_uuid=$(cat btrfs.uuid)
+top_level_mount=/mnt/top_level_mount
 target=/target
 luks_device=root
 root_device=/dev/mapper/${luks_device}
@@ -90,12 +91,15 @@ if [ ! -e ${root_device} ]; then
     cryptsetup luksOpen ${DISK}2 ${luks_device} --key-file $KEYFILE
 fi
 
-if [ ! -f btrfs_created.txt ]; then
-    echo create root filesystem on ${root_device}
+if [ ! -f base_image_copied.txt ]; then
+    echo copy base image to ${root_device}
     read -p "Enter to continue"
-    mkfs.btrfs -U ${btrfs_uuid} ${root_device}
-    touch btrfs_created.txt
+    dd if=/dev/disk/by-partlabel/BaseImage of=${root_device} bs=4M
+    btrfs check ${root_device}
+    btrfstune -u -f ${root_device}  # change the uuid
+    touch base_image_copied.txt
 fi
+
 if [ ! -f vfat_created.txt ]; then
     echo create esp filesystem on ${DISK}1
     read -p "Enter to continue"
@@ -103,21 +107,22 @@ if [ ! -f vfat_created.txt ]; then
     touch vfat_created.txt
 fi
 
-if grep -qs "/mnt/btrfs1" /proc/mounts ; then
-    echo top-level subvolume already mounted on /mnt/btrfs1
+if grep -qs "${top_level_mount}" /proc/mounts ; then
+    echo top-level subvolume already mounted on ${top_level_mount}
 else
-    echo mount top-level subvolume on /mnt/btrfs1
-    mkdir -p /mnt/btrfs1
+    echo mount top-level subvolume on ${top_level_mount}
+    mkdir -p ${top_level_mount}
     read -p "Enter to continue"
-    mount ${root_device} /mnt/btrfs1 -o ${FSFLAGS}
+    mount ${root_device} ${top_level_mount} -o rw,${FSFLAGS}
+    btrfs filesystem resize max ${top_level_mount}
 fi
 
-if [ ! -e /mnt/btrfs1/@ ]; then
-    echo create @ and @home subvolumes on /mnt/btrfs1
+if [ ! -e ${top_level_mount}/@ ]; then
+    echo create @ and @home subvolumes on ${top_level_mount}
     read -p "Enter to continue"
-    btrfs subvolume create /mnt/btrfs1/@
-    btrfs subvolume create /mnt/btrfs1/@home
-    btrfs subvolume set-default /mnt/btrfs1/@
+    btrfs subvolume create ${top_level_mount}/@
+    btrfs subvolume create ${top_level_mount}/@home
+    btrfs subvolume set-default ${top_level_mount}/@
 fi
 
 if grep -qs "${target}" /proc/mounts ; then
@@ -183,6 +188,7 @@ if [ "$SHARE_APT_ARCHIVE" = true ] ; then
         echo apt cache directory already bind mounted on target
     else
         echo bind mounting apt cache directory to target
+        read -p "Enter to continue"
         mount /var/cache/apt/archives ${target}/var/cache/apt/archives -o bind
     fi
 fi
@@ -212,6 +218,7 @@ EOF
 cat <<EOF > ${target}/etc/kernel/cmdline
 ${kernel_params}
 EOF
+rm -f ${target}/etc/crypttab
 
 echo install required packages on ${target}
 cat <<EOF > ${target}/tmp/run1.sh
@@ -291,7 +298,7 @@ chroot ${target}/ tasksel
 echo umounting all filesystems
 read -p "Enter to continue"
 umount -R ${target}
-umount -R /mnt/btrfs1
+umount -R ${top_level_mount}
 
 echo closing luks
 read -p "Enter to continue"
