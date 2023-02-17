@@ -12,13 +12,14 @@ FSFLAGS="compress=zstd:9"
 target=/target
 root_device=${DISK}2
 overlay_top_device=${DISK}3
-overlay_flags="lowerdir=/mnt/btrfs1,upperdir=/mnt/btrfs2/upper,workdir=/mnt/btrfs2/work"
-kernel_params="rootfstype=overlay rootflags=${overlay_flags} rw quiet splash"
+kernel_params="rd.overlay.lower=/mnt/btrfs1 rd.overlay.upper=/mnt/btrfs2/upper rd.overlay.work=/mnt/btrfs2/work systemd.gpt_auto=no rd.systemd.gpt_auto=no rw quiet splash"
 
 DEVICE_SLACK=$(cat device_slack.txt)
 efi_uuid=$(cat efi-part.uuid)
 base_image_uuid=$(cat base-image-part.uuid)
 top_uuid=$(cat top-part.uuid)
+
+SCRIPT_DIR=$( cd -- "$( dirname -- "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )
 
 if [ ! -f partition_shrunk.txt ]; then
     echo shrinking the partition by ${DEVICE_SLACK}
@@ -108,8 +109,6 @@ read -p "Enter to continue"
 cat <<EOF > ${target}/etc/fstab
 PARTUUID=${base_image_uuid} /mnt/btrfs1 btrfs defaults,ro 0 1
 PARTUUID=${top_uuid} /mnt/btrfs2 btrfs defaults 0 1
-overlay / overlay ${overlay_flags} 0 1
-PARTUUID=${efi_uuid} /boot/efi vfat defaults 0 2
 EOF
 
 if grep -qs 'root:\$' ${target}/etc/shadow ; then
@@ -126,7 +125,8 @@ if grep -qs "^${USERNAME}:" ${target}/etc/shadow ; then
     echo ${USERNAME} user already set up
 else
     echo set up ${USERNAME} user
-    chroot ${target}/ useradd ${USERNAME}
+    read -p "Enter to continue"
+    chroot ${target}/ useradd -m ${USERNAME}
     echo "${USERNAME}:live" > ${target}/tmp/passwd
     chroot ${target}/ bash -c "chpasswd < /tmp/passwd"
     rm ${target}/tmp/passwd
@@ -134,9 +134,10 @@ fi
 
 echo configuring dracut
 read -p "Enter to continue"
+cp -r $SCRIPT_DIR/90overlay-generic ${target}/usr/lib/dracut/modules.d/
 mkdir -p ${target}/etc/dracut.conf.d
 cat <<EOF > ${target}/etc/dracut.conf.d/90-odin.conf
-add_dracutmodules+=" systemd "
+add_dracutmodules+=" systemd overlay-generic "
 omit_dracutmodules+=" lvm dm crypt dmraid mdraid "
 kernel_cmdline="${kernel_params}"
 use_fstab="yes"

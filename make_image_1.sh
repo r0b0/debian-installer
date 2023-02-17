@@ -12,8 +12,7 @@ FSFLAGS="compress=zstd:9"
 target=/target
 root_device=${DISK}2
 overlay_top_device=${DISK}3
-overlay_flags="lowerdir=/mnt/btrfs1,upperdir=/mnt/btrfs2/upper,workdir=/mnt/btrfs2/work"
-kernel_params="rootfstype=overlay rootflags=${overlay_flags} rw quiet splash"
+kernel_params="rd.live.overlay.overlayfs=yes systemd.gpt_auto=no rd.systemd.gpt_auto=no rw quiet splash"
 
 echo install required packages
 read -p "Enter to continue"
