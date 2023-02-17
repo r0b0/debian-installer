@@ -44,7 +44,7 @@ unit: sectors
 sector-size: 512
 
 ${DISK}1: start=2048, size=409600, type=uefi, name="EFI system partition", uuid=${efi_uuid}
-${DISK}2: start=411648, size=409600, type=linux, name="Base Image", uuid=${base_image_uuid}
+${DISK}2: start=411648, size=409600, type=linux, name="BaseImage", uuid=${base_image_uuid}
 EOF
 
 echo resize the second partition on ${DISK} to fill available space

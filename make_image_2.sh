@@ -35,7 +35,7 @@ if [ ! -f top_partition_created.txt ]; then
     echo creating the overlay top partition
     read -p "Enter to continue"
     echo ", +" | sfdisk ${DISK} --append
-    sfdisk --part-label ${DISK} 3 "Overlay Top"
+    sfdisk --part-label ${DISK} 3 "OverlayTop"
     sfdisk --part-uuid ${DISK} 3 "${top_uuid}"
     touch top_partition_created.txt
 fi
@@ -126,14 +126,18 @@ if grep -qs "^${USERNAME}:" ${target}/etc/shadow ; then
 else
     echo set up ${USERNAME} user
     read -p "Enter to continue"
-    chroot ${target}/ useradd -m ${USERNAME}
+    chroot ${target}/ useradd -m ${USERNAME} -s /bin/bash -G sudo
     echo "${USERNAME}:live" > ${target}/tmp/passwd
     chroot ${target}/ bash -c "chpasswd < /tmp/passwd"
     rm ${target}/tmp/passwd
+    mkdir -p ${target}/home/live/Desktop
+    cp $SCRIPT_DIR/installer.desktop ${target}/home/live/Desktop/
+    chown -R 1000:1000 ${target}/home/live
 fi
 
 echo configuring dracut
 read -p "Enter to continue"
+mkdir -p ${target}/usr/lib/dracut/modules.d/
 cp -r $SCRIPT_DIR/90overlay-generic ${target}/usr/lib/dracut/modules.d/
 mkdir -p ${target}/etc/dracut.conf.d
 cat <<EOF > ${target}/etc/dracut.conf.d/90-odin.conf
@@ -153,7 +157,7 @@ cat <<EOF > ${target}/tmp/run1.sh
 export DEBIAN_FRONTEND=noninteractive
 apt-get update -y
 apt-get upgrade -y
-apt-get install -t ${DEBIAN_SOURCE} systemd-boot dracut -y
+apt-get install -t ${DEBIAN_SOURCE} systemd-boot dracut uuid-runtime -y
 apt-get purge initramfs-tools initramfs-tools-core -y
 bootctl install
 EOF
@@ -170,6 +174,11 @@ apt-get install -t ${DEBIAN_SOURCE} linux-image-amd64 -y
 EOF
 read -p "Enter to continue"
 chroot ${target}/ sh /tmp/run1.sh
+
+echo copying the opinionated debian installer as /installer.sh
+read -p "Enter to continue"
+cp $SCRIPT_DIR/installer.sh ${target}/
+chmod +x ${target}/
 
 echo umounting all filesystems
 read -p "Enter to continue"
