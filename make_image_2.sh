@@ -175,6 +175,13 @@ EOF
 read -p "Enter to continue"
 chroot ${target}/ sh /tmp/run1.sh
 
+echo cleaning up
+read -p "Enter to continue"
+rm -f ${target}/etc/machine-id
+rm -f ${target}/etc/crypttab
+rm -f ${target}/var/log/*log
+rm -f ${target}/var/log/apt/*log
+
 echo copying the opinionated debian installer as /installer.sh
 read -p "Enter to continue"
 cp $SCRIPT_DIR/installer.sh ${target}/

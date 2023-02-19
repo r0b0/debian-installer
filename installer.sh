@@ -70,6 +70,10 @@ fi
 if [ ! -f $KEYFILE ]; then
     echo generate key file for luks
     dd if=/dev/random of=${KEYFILE} bs=512 count=1
+    echo remove any old luks on ${DISK}2
+    read -p "Enter to continue"
+    cryptsetup erase ${DISK}2
+    wipefs -a ${DISK}2
 fi
 
 cryptsetup isLuks ${DISK}2
@@ -91,15 +95,23 @@ if [ ! -e ${root_device} ]; then
     cryptsetup luksOpen ${DISK}2 ${luks_device} --key-file $KEYFILE
 fi
 
-if [ ! -f base_image_copied.txt ]; then
-    echo copy base image to ${root_device}
-    read -p "Enter to continue"
-    dd if=/dev/disk/by-partlabel/BaseImage of=${root_device} bs=4M
-    btrfs check ${root_device}
-    btrfstune -u -f ${root_device}  # change the uuid
-    touch base_image_copied.txt
+if [ -e /dev/disk/by-partlabel/BaseImage ]; then
+    if [ ! -f base_image_copied.txt ]; then
+        echo copy base image to ${root_device}
+        read -p "Enter to continue"
+        dd if=/dev/disk/by-partlabel/BaseImage of=${root_device} bs=4M status=progress
+        btrfs check ${root_device}
+        btrfstune -u -f ${root_device}  # change the uuid
+        touch base_image_copied.txt
+    fi
+else
+    if [ ! -f btrfs_created.txt ]; then
+        echo create root filesystem on ${root_device}
+        read -p "Enter to continue"
+        mkfs.btrfs -U ${btrfs_uuid} ${root_device} | tee btrfs_created.txt
+    fi
 fi
-
+    
 if [ ! -f vfat_created.txt ]; then
     echo create esp filesystem on ${DISK}1
     read -p "Enter to continue"
@@ -113,7 +125,7 @@ else
     echo mount top-level subvolume on ${top_level_mount}
     mkdir -p ${top_level_mount}
     read -p "Enter to continue"
-    mount ${root_device} ${top_level_mount} -o rw,${FSFLAGS}
+    mount ${root_device} ${top_level_mount} -o rw,${FSFLAGS},subvolid=5
     btrfs filesystem resize max ${top_level_mount}
 fi
 
@@ -306,3 +318,4 @@ cryptsetup luksClose ${luks_device}
 
 echo "INSTALLATION FINISHED"
 echo "You will want to store the luks.key file safely"
+read -p "Enter to continue"

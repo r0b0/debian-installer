@@ -2,7 +2,6 @@
 
 # edit this:
 DISK=/dev/vdb
-USERNAME=live
 
 DEBIAN_VERSION=bookworm
 # TODO enable backports here when it becomes available for bookworm
@@ -11,8 +10,6 @@ FSFLAGS="compress=zstd:9"
 
 target=/target
 root_device=${DISK}2
-overlay_top_device=${DISK}3
-kernel_params="rd.live.overlay.overlayfs=yes systemd.gpt_auto=no rd.systemd.gpt_auto=no rw quiet splash"
 
 echo install required packages
 read -p "Enter to continue"
@@ -57,14 +54,12 @@ fi
 if [ ! -f btrfs_created.txt ]; then
     echo create root filesystem on ${root_device}
     read -p "Enter to continue"
-    mkfs.btrfs -f ${root_device}
-    touch btrfs_created.txt
+    mkfs.btrfs -f ${root_device} | tee btrfs_created.txt
 fi
 if [ ! -f vfat_created.txt ]; then
     echo create esp filesystem on ${DISK}1
     read -p "Enter to continue"
-    mkfs.vfat ${DISK}1
-    touch vfat_created.txt
+    mkfs.vfat ${DISK}1 | tee vfat_created.txt
 fi
 
 if grep -qs "/mnt/btrfs1" /proc/mounts ; then
@@ -182,9 +177,13 @@ chroot ${target}/ tasksel
 echo cleaning up
 read -p "Enter to continue"
 rm -f ${target}/etc/machine-id
+rm -f ${target}/etc/crypttab
+rm -f ${target}/var/log/*log
+rm -f ${target}/var/log/apt/*log
 
-echo shrinking the filesystem
+echo balancing and shrinking the filesystem
 read -p "Enter to continue"
+btrfs balance start -dusage=90 ${target}
 true
 while [ $? -eq 0 ]; do
     btrfs filesystem resize -1G ${target}
