@@ -55,3 +55,31 @@ There are 3 GPT partitions on the installer ISO:
  1. EFI boot partition
  2. Base Image - Btrfs partition with maximum zstd compression. When the live system is running, this is used as a [read-only lower device for overlayfs](https://docs.kernel.org/filesystems/overlayfs.html). The installer will copy this to the target system, mount it read-write, resize to expand to the whole partition and continue with the system installation.
  3. Top Overlay - upper and work device for the overlayfs for the live system. The changes you make while the live system is running are persisted here.
+
+## Comparison
+
+The following table contains comparison of features between our opinionated debian installer and official debian installers.
+
+* Netinstall - https://www.debian.org/devel/debian-installer/
+* Calamares - ?
+
+|Feature |ODIN|Netinstall|Calamares|
+|--|--| -- | -- |
+|Installer l10n |N|Y| |
+|Timezone setup|N|Y| |
+|Locales setup|N|Y| |
+|Console keyboard|N|Y |
+|Hostname setup|N|Y| |
+|Root password|Y|Y |
+|Regular user and password|Y|Y| |
+|Mirror selection|N|Y| |
+|HTTP proxy support|N|Y| |
+|Manual disk partitioning, LVM, filesystem selection|N|Y| |
+|Btrfs subvolumes|Y[2]|Y[3]| |
+|LUKS|**Y**|Y[1]| |
+|Image-based installation|**Y**|N| |
+|Non-free and backports|**Y**|N| |
+
+[1] /boot needs a separate unencrypted partition
+[2] @ and @home
+[3] @rootfs
