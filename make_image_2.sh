@@ -151,15 +151,16 @@ cat <<EOF > ${target}/etc/kernel/cmdline
 ${kernel_params}
 EOF
 
-echo install boot packages on ${target}
+echo install required packages on ${target}
 cat <<EOF > ${target}/tmp/run1.sh
 #!/bin/bash
 export DEBIAN_FRONTEND=noninteractive
 apt-get update -y
 apt-get upgrade -y
-apt-get install -t ${DEBIAN_SOURCE} systemd-boot dracut uuid-runtime -y
+apt-get install -t ${DEBIAN_SOURCE} systemd-boot dracut uuid-runtime lighttpd websocketd python3-flask python3-flask-cors -y
 apt-get purge initramfs-tools initramfs-tools-core -y
 bootctl install
+systemctl enable lighttpd
 EOF
 read -p "Enter to continue"
 chroot ${target}/ sh /tmp/run1.sh
@@ -168,8 +169,6 @@ echo install kernel on ${target}
 cat <<EOF > ${target}/tmp/run1.sh
 #!/bin/bash
 export DEBIAN_FRONTEND=noninteractive
-apt-get update -y
-apt-get upgrade -y
 apt-get install -t ${DEBIAN_SOURCE} linux-image-amd64 -y
 EOF
 read -p "Enter to continue"
@@ -182,10 +181,14 @@ rm -f ${target}/etc/crypttab
 rm -f ${target}/var/log/*log
 rm -f ${target}/var/log/apt/*log
 
-echo copying the opinionated debian installer as /installer.sh
+echo copying the opinionated debian installer to ${target}
 read -p "Enter to continue"
-cp $SCRIPT_DIR/installer.sh ${target}/
-chmod +x ${target}/
+cp ${SCRIPT_DIR}/installer.sh ${target}/
+cp ${SCRIPT_DIR}/backend.py ${target}/
+cp -r ${SCRIPT_DIR}/frontend/dist/* ${target}/var/www/html/
+cp -r ${SCRIPT_DIR}/installer_backend.service ${target}/etc/systemd/system
+chmod +x ${target}/installer.sh
+chroot ${target}/ systemctl enable installer_backend
 
 echo umounting all filesystems
 read -p "Enter to continue"
