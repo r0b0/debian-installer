@@ -1,0 +1,17 @@
+{
+  "name": "odin-vue",
+  "version": "0.0.0",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "build_gh_pages": "vite build --base=/debian-installer/",
+    "preview": "vite preview --port 4173"
+  },
+  "dependencies": {
+    "vue": "^3.2.37"
+  },
+  "devDependencies": {
+    "@vitejs/plugin-vue": "^2.3.3",
+    "vite": "^2.9.12"
+  }
+}
