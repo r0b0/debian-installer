@@ -10,17 +10,19 @@ export default {
       error_message: "",
       subprocesses: {},
       block_devices: [],
-      top_device: "",
       install_to_device_process_key: "",
       install_to_device_status: {},
-      luks_password: undefined,
-      root_password: undefined,
-      user_name: "user",
-      user_full_name: "Debian User",
-      user_password: undefined,
-      hostname: "debian",
-      tasksel_tasks: [],
-      tasks_to_install: [],
+      timezones: [],
+      
+      // values for the installer:
+      DISK: "",
+      USERNAME: "user",
+      USER_FULL_NAME: "Debian User",
+      USER_PASSWORD: undefined,
+      ROOT_PASSWORD: undefined,
+      LUKS_PASSWORD: undefined,
+      HOSTNAME: "debian",
+      TIMEZONE: "UTC",
     }
   },
   mounted() {
@@ -32,7 +34,7 @@ export default {
         .then(() => {
           this.error_message = "";
           this.get_block_devices();
-          this.get_available_tasksel_tasks();
+          this.get_available_timezones();
         })
         .catch(() => {
           this.error_message = "Backend not yet available";
@@ -47,34 +49,33 @@ export default {
             this.block_devices = response.blockdevices;
           });
     },
-    get_available_tasksel_tasks() {
-      this.fetch_from_backend("/available-tasksel-tasks")
+    get_available_timezones() {
+      this.fetch_from_backend("/timezones")
           .then(response => {
             console.debug(response);
-            this.tasksel_tasks = response.available_tasksel_tasks;
+            this.timezones = response.timezones;
           });
     },
-    install_on_device(device_path) {
-      this.fetch_from_backend("/install",  {device_path: device_path})
-          .then(response => {
-            console.debug(response);
-            this.install_to_device_process_key = response.subprocess_key;
-            setTimeout(this.check_process_status, 1000, response.subprocess_key, response => {
-              this.install_to_device_status = response;
-            });
-          });
-    },
-    set_encryption_password() {
-      // TODO
-    },
-    set_root_password() {
-      // TODO
-    },
-    set_user_password() {
-      // TODO
-    },
-    run_tasksel() {
-      // TODO
+    install() {
+      let data = new FormData();
+      for(const item of ["DISK", "LUKS_PASSWORD", "ROOT_PASSWORD", "USERNAME", "USER_FULL_NAME", "USER_PASSWORD", "HOSTNAME", "TIMEZONE"]) {
+        data.append(item, this[item]);
+      }
+      fetch("http://localhost:5000/install", {"method": "POST", "body": data})
+        .then(response => {
+            //console.debug(response);
+            if(!response.ok) {
+                throw Error(response.statusText);
+            }
+            return response.json();
+        })
+        .then(result => {
+            console.debug(result);
+            // TODO
+        })
+        .catch(error => {
+            throw Error(error);
+        });
     },
     check_process_status(subprocess_key, finished) {
       this.fetch_from_backend("/process_status/" + subprocess_key)
@@ -119,8 +120,8 @@ export default {
         <legend>Installation Target Device</legend>
         <div class="green">{{error_message}}</div>
 
-        <label for="top_device">Device for Installation</label>
-        <select :disabled="block_devices.length==0" id="top_device"  v-model="top_device">
+        <label for="DISK">Device for Installation</label>
+        <select :disabled="block_devices.length==0" id="DISK"  v-model="DISK">
           <option v-for="item in block_devices" :value="item.path" :disabled="item.ro">
             {{item.path}} {{item.model}} {{item.size}} {{item.ro ? '(Read Only)' : ''}}
           </option>
@@ -129,45 +130,36 @@ export default {
 
       <fieldset>
         <legend>Disk Encryption Passphrase</legend>
-        <Password v-model="luks_password" />
+        <Password v-model="LUKS_PASSWORD" />
       </fieldset>
 
       <fieldset>
         <legend>Root User</legend>
-        <Password v-model="root_password" />
+        <Password v-model="ROOT_PASSWORD" />
       </fieldset>
 
       <fieldset>
         <legend>Regular User</legend>
+        <label for="USERNAME">User Name</label>
+        <input type="text" id="USERNAME" v-model="USERNAME">
         <label for="full_name">Full Name</label>
-        <input type="text" id="user_full_name" v-model="user_full_name">
-        <label for="user_name">Name</label>
-        <input type="text" id="user_name" v-model="user_name">
-        <Password v-model="user_password" />
+        <input type="text" id="USER_FULL_NAME" v-model="USER_FULL_NAME">
+        <Password v-model="USER_PASSWORD" />
       </fieldset>
       
       <fieldset>
         <legend>Configuration</legend>
-        <label for="hostname">Hostname</label>
-        <input type="text" id="hostname" v-model="hostname">
+        <label for="HOSTNAME">Hostname</label>
+        <input type="text" id="HOSTNAME" v-model="HOSTNAME">
+        <label for="TIMEZONE">Time Zone</label>
+        <select :disabled="timezones.length==0" id="TIMEZONE" v-model="TIMEZONE">
+            <option v-for="item in timezones" :value="item">{{ item }}</option>
+        </select>
       </fieldset>
-
-      <!--
-      <fieldset>
-        <legend>Installation Components</legend>
-
-        <div v-for="item in tasksel_tasks">
-          <input class="inline" type="checkbox" v-model="tasks_to_install" :id="item.name" :value="item.name">
-          <label class="inline" :for="item.name">{{item.desc}}</label>
-        </div>
-
-        <button type="button" @click="run_tasksel()">Confirm</button>
-      </fieldset>
-      -->
       
-        <button type="button" @click="install_on_device(top_device)"
-                :disabled="top_device.length==0">
-            Install debian on {{top_device}} <b>OVERWRITING THE WHOLE DRIVE</b>
+        <button type="button" @click="install()"
+                :disabled="DISK.length==0">
+            Install debian on {{DISK}} <b>OVERWRITING THE WHOLE DRIVE</b>
         </button>
 
         <div class="green">{{install_to_device_status.status}}</div>
