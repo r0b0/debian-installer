@@ -1,26 +1,21 @@
-import json
-import pathlib
-import os
 import secrets
 import socket
-import string
 import subprocess
-import tempfile
 import threading
-import uuid
+import time
 
 import flask
 from flask import Flask, request
 from flask_cors import CORS
+from flask_sock import Sock
+from simple_websocket import ConnectionClosed
 
 app = Flask(__name__)
+sock = Sock(app)
 CORS(app)
-subprocesses = {}
-threads = {}
-FIFO_PATH = "/tmp/installer_pipe"
-if not os.path.exists(FIFO_PATH):
-    subprocess_fifo = os.mkfifo(FIFO_PATH)
-fifo_fd = open(FIFO_PATH, "w")
+running_subprocess = None
+subprocess_output = ""
+output_readers = []
 
 
 @app.route("/login", methods=["GET"])
@@ -51,43 +46,74 @@ def get_timezones():
 
 @app.route("/install", methods=["POST"])
 def install():
+    global running_subprocess
+    if running_subprocess is not None:
+        app.logger.error("Process already running")
+        flask.abort(409, "Already running")
     subprocess_env = {}
     for k, v in request.form.items():
         subprocess_env[k] = v
         app.logger.info(f"  env: {k} = {v}")
-    # TODO separate thread for subprocess
-    # TODO already running?
-    sp = subprocess.Popen("./installer.sh", env=subprocess_env, text=True, stdout=fifo_fd, stderr=fifo_fd)
-    key = secrets.token_urlsafe()
-    subprocesses[key] = sp
-    return {"subprocess_key": key}
+    running_subprocess = subprocess.Popen("./dummy.sh", env=subprocess_env, text=True,
+                          stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+    def output_reader(fd, main):
+        app.logger.info("Starting output reader thread")
+        global subprocess_output
+        for line in fd:
+            print(line, end="")
+            to_remove = []
+            for websocket in output_readers:
+                try:
+                    websocket.send(line)
+                except ConnectionClosed as e:
+                    to_remove.append(websocket)
+            for websocket in to_remove:
+                app.logger.info(f"Removing websocket output reader {websocket}")
+                output_readers.remove(websocket)
+            subprocess_output += line
+        app.logger.info("Output reader thread finished")
+        if main:
+            for websocket in output_readers:
+                websocket.close()
+    threading.Thread(target=output_reader, args=(running_subprocess.stdout, True), name="Stdout reader").start()
+    threading.Thread(target=output_reader, args=(running_subprocess.stderr, False), name="Stderr reader").start()
+    return {}
 
 
-#def do_install_on_device(device_path):
-    #app.logger.info(f"Installing debian on device {device_path}")
-    #context["top_disk_device"] = device_path
-    #subprocess_key = _create_subprocess("20_partitions.sh")
-    #return {"subprocess_key": subprocess_key}
+@app.route("/clear", methods=["GET"])
+def clear():
+    global running_subprocess
+    if running_subprocess is None:
+        return {}
+    if running_subprocess.poll() is None:
+        # still running
+        running_subprocess.terminate()
+        return {}
+    running_subprocess = None
+    return {}
 
 
-@app.route("/process_status/<key>", methods=["GET"])
-def get_process_status(key):
+@app.route("/process_status", methods=["GET"])
+def get_process_status():
     status = {"status": "RUNNING",
-              "key": key,
-              "output": "",
-              "error": "",
+              "output": subprocess_output,
               "return_code": -1}
-    sp = subprocesses.get(key, None)
-    app.logger.info(f"Subprocess {sp}")
-    if sp is None:
-        app.logger.error(f"No subprocess with {key=}")
+    if running_subprocess is None:
+        app.logger.error(f"No subprocess")
         flask.abort(404, "No such process")
-    return_code = sp.poll()
+    return_code = running_subprocess.poll()
     if return_code is None:
         return status
-    status["command"] = sp.args
+    status["command"] = running_subprocess.args
     status["status"] = "FINISHED"
-    status["output"] = sp.stdout.read()
-    status["error"] = sp.stderr.read()
-    status["return_code"] = sp.returncode
+    status["return_code"] = running_subprocess.returncode
     return status
+
+
+@sock.route("/process_output")
+def get_process_output(ws):
+    global output_readers
+    app.logger.info("Websocket ")
+    output_readers.append(ws)
+    while ws in output_readers:
+        time.sleep(60)

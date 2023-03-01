@@ -11,7 +11,9 @@ export default {
       subprocesses: {},
       block_devices: [],
       install_to_device_process_key: "",
-      install_to_device_status: {},
+      install_to_device_status: "",
+      overall_status: "",
+      output_reader_connection: null,
       timezones: [],
       
       // values for the installer:
@@ -71,25 +73,44 @@ export default {
         })
         .then(result => {
             console.debug(result);
-            // TODO
+            this.output_reader_connection = new WebSocket("ws://localhost:5000/process_output");
+            this.output_reader_connection.onmessage = (event) => {
+              console.log("Websocket event received");
+              // console.log(event);
+              this.install_to_device_status += event.data.toString();
+              window.scrollTo(0, document.body.scrollHeight);
+              // console.log(this.install_to_device_status);
+            }
+            this.output_reader_connection.onclose = (event) => {
+              console.log("Websocket connection closed");
+              this.check_process_status()
+            }
         })
         .catch(error => {
             throw Error(error);
         });
     },
-    check_process_status(subprocess_key, finished) {
-      this.fetch_from_backend("/process_status/" + subprocess_key)
+    check_process_status() {
+      this.fetch_from_backend("/process_status")
           .then(response => {
             console.debug(response);
-            this.subprocesses[subprocess_key] = response;
-            if(response.status == "RUNNING") {
-              setTimeout(this.check_process_status, 5000, response.key, finished);
-            } else if(response.status == "FINISHED") {
-              finished(response);
+            this.install_to_device_status = response.output;
+            if(response.return_code == 0) {
+              this.overall_status = "green";
             } else {
-              console.error("Unknown response status" + response.status);
+              this.overall_status = "red";
             }
+          });
+    },
+    clear() {
+      this.fetch_from_backend("/clear")
+          .then(response => {
+            console.log(response);
+            this.install_to_device_status = "";
           })
+          .catch(error => {
+            throw Error(error);
+          });
     },
     fetch_from_backend(path, searchParams={}) {
       let url = new URL(path, 'http://localhost:5000');
@@ -162,7 +183,10 @@ export default {
             Install debian on {{DISK}} <b>OVERWRITING THE WHOLE DRIVE</b>
         </button>
 
-        <div class="green">{{install_to_device_status.status}}</div>
+      <h2 v-if="install_to_device_status.length>0">Process output</h2>
+      <pre :class="overall_status">{{install_to_device_status}}</pre>
+
+      <button type="button" @click="clear()" class="red">Stop</button>
 
     </form>
     
@@ -193,8 +217,12 @@ header {
 a,
 .green {
   text-decoration: none;
-  color: hsla(160, 100%, 37%, 1);
+  color: hsl(170, 100%, 37%);
   transition: 0.4s;
+}
+
+.red {
+  color: #BD0000FF;
 }
 
 input:not(.inline), select {
