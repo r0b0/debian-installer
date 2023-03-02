@@ -1,13 +1,22 @@
 #!/bin/bash
 
+if [ x"${NON_INTERACTIVE}" == "x" ]; then
 # edit this:
 DISK=/dev/vda
-
 USERNAME=user
 USER_FULL_NAME="Debian User"
 USER_PASSWORD=hunter2
 ROOT_PASSWORD=changeme
 LUKS_PASSWORD=luke
+fi
+
+function notify () {
+    echo $@
+    if [ x"${NON_INTERACTIVE}" == "x" ]; then
+      read -p "Enter to continue"
+    fi
+}
+
 HOSTNAME=debian12
 DEBIAN_VERSION=bookworm
 # TODO enable backports here when it becomes available for bookworm
@@ -19,11 +28,6 @@ SHARE_APT_ARCHIVE=false
 FSFLAGS="compress=zstd:1"
 DEBIAN_FRONTEND=noninteractive
 export DEBIAN_FRONTEND
-
-function notify () {
-    echo $@
-    read -p "Enter to continue"
-}
 
 notify install required packages
 apt-get update -y
@@ -174,6 +178,10 @@ fi
 
 notify setup hostname
 echo "$HOSTNAME" > ${target}/etc/hostname
+
+notify setup timezone
+echo "${TIMEZONE}" > ${target}/etc/timezone
+ln -s ${target}/usr/share/zoneinfo/${TIMEZONE} ${target}/etc/localtime
 
 notify setup fstab
 mkdir -p ${target}/root/btrfs1

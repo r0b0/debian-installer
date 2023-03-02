@@ -16,6 +16,7 @@ CORS(app)
 running_subprocess = None
 subprocess_output = ""
 output_readers = []
+INSTALLER_SCRIPT = "./installer.sh"
 
 
 @app.route("/login", methods=["GET"])
@@ -35,12 +36,12 @@ def get_timezones():
     timezones = []
     with open("timezones.txt") as fd:
         while True:
-            l = fd.readline()
-            if l.startswith("#"):
+            line = fd.readline()
+            if line.startswith("#"):
                 continue
-            if not l:
+            if not line:
                 break
-            timezones.append(l.strip())
+            timezones.append(line.strip())
     return {"timezones": timezones}
 
 
@@ -50,12 +51,17 @@ def install():
     if running_subprocess is not None:
         app.logger.error("Process already running")
         flask.abort(409, "Already running")
-    subprocess_env = {}
+
+    subprocess_env = {"NON_INTERACTIVE": "yes"}
     for k, v in request.form.items():
         subprocess_env[k] = v
         app.logger.info(f"  env: {k} = {v}")
-    running_subprocess = subprocess.Popen("./dummy.sh", env=subprocess_env, text=True,
-                          stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+
+    running_subprocess = subprocess.Popen(INSTALLER_SCRIPT,
+                                          env=subprocess_env,
+                                          text=True,
+                                          stdout=subprocess.PIPE,
+                                          stderr=subprocess.PIPE)
     def output_reader(fd, main):
         app.logger.info("Starting output reader thread")
         global subprocess_output
@@ -75,8 +81,15 @@ def install():
         if main:
             for websocket in output_readers:
                 websocket.close()
-    threading.Thread(target=output_reader, args=(running_subprocess.stdout, True), name="Stdout reader").start()
-    threading.Thread(target=output_reader, args=(running_subprocess.stderr, False), name="Stderr reader").start()
+
+    threading.Thread(target=output_reader,
+                     args=(running_subprocess.stdout, True),
+                     name="Stdout reader")\
+        .start()
+    threading.Thread(target=output_reader,
+                     args=(running_subprocess.stderr, False),
+                     name="Stderr reader")\
+        .start()
     return {}
 
 
@@ -113,7 +126,9 @@ def get_process_status():
 @sock.route("/process_output")
 def get_process_output(ws):
     global output_readers
-    app.logger.info("Websocket ")
+    app.logger.info("Websocket connected")
+    ws.send(subprocess_output)
     output_readers.append(ws)
     while ws in output_readers:
         time.sleep(60)
+    app.logger.info("Websocket closing")
