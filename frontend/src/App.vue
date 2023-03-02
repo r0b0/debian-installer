@@ -1,10 +1,9 @@
 <script>
 import Header from "./components/Header.vue";
 import Password from "./components/Password.vue";
-import Subprocess from "./components/Subprocess.vue";
 
 export default {
-  components: {Header, Password, Subprocess},
+  components: {Header, Password},
   data() {
     return {
       error_message: "",
@@ -17,14 +16,26 @@ export default {
       timezones: [],
       
       // values for the installer:
-      DISK: "",
-      USERNAME: "user",
-      USER_FULL_NAME: "Debian User",
-      USER_PASSWORD: undefined,
-      ROOT_PASSWORD: undefined,
-      LUKS_PASSWORD: undefined,
-      HOSTNAME: "debian",
-      TIMEZONE: "UTC",
+      installer: {
+        DISK: "",
+        USERNAME: "user",
+        USER_FULL_NAME: "Debian User",
+        USER_PASSWORD: undefined,
+        ROOT_PASSWORD: undefined,
+        LUKS_PASSWORD: undefined,
+        HOSTNAME: "debian",
+        TIMEZONE: "UTC",
+      }
+    }
+  },
+  computed: {
+    can_start() {
+      let ret = true;
+      for(const [key, value] of Object.entries(this.installer)) {
+        if(typeof value === 'undefined')
+          ret = false;
+      }
+      return ret;
     }
   },
   mounted() {
@@ -49,6 +60,16 @@ export default {
           .then(response => {
             console.debug(response);
             this.block_devices = response.blockdevices;
+            for(const device of this.block_devices) {
+              if(device.mountpoint) {
+                device.ro = true;
+              }
+              for(const child of device.children) {
+                if(child.mountpoint) {
+                  device.ro = true;
+                }
+              }
+            }
           });
     },
     get_available_timezones() {
@@ -60,8 +81,8 @@ export default {
     },
     install() {
       let data = new FormData();
-      for(const item of ["DISK", "LUKS_PASSWORD", "ROOT_PASSWORD", "USERNAME", "USER_FULL_NAME", "USER_PASSWORD", "HOSTNAME", "TIMEZONE"]) {
-        data.append(item, this[item]);
+      for(const [key, value] of Object.entries(this.installer)) {
+        data.append(key, value);
       }
       fetch("http://localhost:5000/install", {"method": "POST", "body": data})
         .then(response => {
@@ -112,10 +133,8 @@ export default {
             throw Error(error);
           });
     },
-    fetch_from_backend(path, searchParams={}) {
+    fetch_from_backend(path) {
       let url = new URL(path, 'http://localhost:5000');
-      for (const [k, v] of Object.entries(searchParams))
-        url.searchParams.append(k, v);
       return fetch(url.href)
           .then(response => {
             if(!response.ok) {
@@ -142,7 +161,7 @@ export default {
         <div class="green">{{error_message}}</div>
 
         <label for="DISK">Device for Installation</label>
-        <select :disabled="block_devices.length==0" id="DISK"  v-model="DISK">
+        <select :disabled="block_devices.length==0" id="DISK"  v-model="installer.DISK">
           <option v-for="item in block_devices" :value="item.path" :disabled="item.ro">
             {{item.path}} {{item.model}} {{item.size}} {{item.ro ? '(Read Only)' : ''}}
           </option>
@@ -151,46 +170,50 @@ export default {
 
       <fieldset>
         <legend>Disk Encryption Passphrase</legend>
-        <Password v-model="LUKS_PASSWORD" />
+        <Password v-model="installer.LUKS_PASSWORD" />
       </fieldset>
 
       <fieldset>
         <legend>Root User</legend>
-        <Password v-model="ROOT_PASSWORD" />
+        <Password v-model="installer.ROOT_PASSWORD" />
       </fieldset>
 
       <fieldset>
         <legend>Regular User</legend>
         <label for="USERNAME">User Name</label>
-        <input type="text" id="USERNAME" v-model="USERNAME">
+        <input type="text" id="USERNAME" v-model="installer.USERNAME">
         <label for="full_name">Full Name</label>
-        <input type="text" id="USER_FULL_NAME" v-model="USER_FULL_NAME">
-        <Password v-model="USER_PASSWORD" />
+        <input type="text" id="USER_FULL_NAME" v-model="installer.USER_FULL_NAME">
+        <Password v-model="installer.USER_PASSWORD" />
       </fieldset>
-      
+
       <fieldset>
         <legend>Configuration</legend>
         <label for="HOSTNAME">Hostname</label>
-        <input type="text" id="HOSTNAME" v-model="HOSTNAME">
+        <input type="text" id="HOSTNAME" v-model="installer.HOSTNAME">
         <label for="TIMEZONE">Time Zone</label>
-        <select :disabled="timezones.length==0" id="TIMEZONE" v-model="TIMEZONE">
+        <select :disabled="timezones.length==0" id="TIMEZONE" v-model="installer.TIMEZONE">
             <option v-for="item in timezones" :value="item">{{ item }}</option>
         </select>
       </fieldset>
-      
+
+
+      <fieldset>
+        <legend>Process</legend>
         <button type="button" @click="install()"
-                :disabled="DISK.length==0">
-            Install debian on {{DISK}} <b>OVERWRITING THE WHOLE DRIVE</b>
+                :disabled="!can_start">
+            Install debian on {{ installer.DISK }} <b>OVERWRITING THE WHOLE DRIVE</b>
         </button>
+        <br>
+        <button type="button" @click="clear()" class="red">Stop</button>
+      </fieldset>
 
-      <h2 v-if="install_to_device_status.length>0">Process output</h2>
-      <pre :class="overall_status">{{install_to_device_status}}</pre>
-
-      <button type="button" @click="clear()" class="red">Stop</button>
+      <fieldset>
+        <legend>Process Output</legend>
+        <pre :class="overall_status">{{ install_to_device_status }}</pre>
+      </fieldset>
 
     </form>
-    
-    <Subprocess v-for="s in subprocesses" :data="s" />
   </main>
 </template>
 

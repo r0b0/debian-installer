@@ -13,12 +13,12 @@ This tool can be used to create a modern installation of Debian. Our opinions of
  - **The installer will take over your whole disk**
  - Bookworm (debian 12) amd64 only
  - The installer is in english only
- - Currently, only KDE Plasma installer ISO is available.
+ - At the moment, only KDE Plasma installer is available.
 
 ## Instructions
  
- 1. Download our live ISO
- 2. Boot the live ISO and login as live with password live
+ 1. Download our live image
+ 2. Boot the live image and login as user `live` with password `live`
  3. **Edit the file /installer.sh - especially the `DISK` variable containing name of the disk drive you want to install to**
  4. Start the installer from the desktop and follow the prompts
  8. You will be interactively prompted for LUKS passphrase, root password and user password
@@ -37,10 +37,9 @@ This tool can be used to create a modern installation of Debian. Our opinions of
 - [Network-manager](https://wiki.debian.org/NetworkManager) is used for networking
 - [Systemd-cryptenroll](https://www.freedesktop.org/software/systemd/man/systemd-cryptenroll.html#--tpm2-device=PATH) is used to unlock the disk, using TPM (if available)
 
-
 ## Hacking
 
-### Creating Your Own ISO
+### Creating Your Own Installer Image
 
  1. Insert a blank storage device
  2. Edit the **DISK** variable at the top of files `make_image_*.sh`
@@ -48,9 +47,9 @@ This tool can be used to create a modern installation of Debian. Our opinions of
 
 In the first stage of image generation, you will get a _tasksel_ prompt where you can select a different set of packages for your image.
 
-### Installer ISO Structure
+### Installer Image Structure
 
-There are 3 GPT partitions on the installer ISO:
+There are 3 GPT partitions on the installer image:
 
  1. EFI boot partition
  2. Base Image - Btrfs partition with maximum zstd compression. When the live system is running, this is used as a [read-only lower device for overlayfs](https://docs.kernel.org/filesystems/overlayfs.html). The installer will copy this to the target system, mount it read-write, resize to expand to the whole partition and continue with the system installation.
@@ -66,12 +65,8 @@ The following table contains comparison of features between our opinionated debi
 |Feature |ODIN|Netinstall|Calamares|
 |--|--| -- | -- |
 |Installer l10n |N|Y| |
-|Timezone setup|N|Y| |
 |Locales setup|N|Y| |
 |Console keyboard|N|Y |
-|Hostname setup|N|Y| |
-|Root password|Y|Y |
-|Regular user and password|Y|Y| |
 |Mirror selection|N|Y| |
 |HTTP proxy support|N|Y| |
 |Manual disk partitioning, LVM, filesystem selection|N|Y| |
@@ -81,5 +76,7 @@ The following table contains comparison of features between our opinionated debi
 |Non-free and backports|**Y**|N| |
 
 [1] /boot needs a separate unencrypted partition
+
 [2] @ and @home
+
 [3] @rootfs
