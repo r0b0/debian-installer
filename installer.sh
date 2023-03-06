@@ -111,7 +111,7 @@ if [ -e /dev/disk/by-partlabel/BaseImage ]; then
         notify copy base image to ${root_device}
         dd if=/dev/disk/by-partlabel/BaseImage of=${root_device} bs=4M status=progress
         btrfs check ${root_device}
-        btrfstune -u -f ${root_device}  # change the uuid
+        btrfstune -U ${btrfs_uuid} -f ${root_device}  # change the uuid
         touch base_image_copied.txt
     fi
 else
@@ -181,7 +181,7 @@ echo "$HOSTNAME" > ${target}/etc/hostname
 
 notify setup timezone
 echo "${TIMEZONE}" > ${target}/etc/timezone
-ln -s ${target}/usr/share/zoneinfo/${TIMEZONE} ${target}/etc/localtime
+(cd ${target} && ln -s usr/share/zoneinfo/${TIMEZONE} etc/localtime)
 
 notify setup fstab
 mkdir -p ${target}/root/btrfs1
@@ -218,6 +218,7 @@ else
 fi
 
 if grep -qs "^${USERNAME}:" ${target}/etc/shadow ; then
+    # XXX: check this - the user was not created
     echo ${USERNAME} user already set up
 else
     notify set up ${USERNAME} user

@@ -30,6 +30,7 @@ export default {
   },
   computed: {
     can_start() {
+      // XXX not working properly
       let ret = true;
       for(const [key, value] of Object.entries(this.installer)) {
         if(typeof value === 'undefined')
@@ -99,7 +100,7 @@ export default {
               console.log("Websocket event received");
               // console.log(event);
               this.install_to_device_status += event.data.toString();
-              window.scrollTo(0, document.body.scrollHeight);
+              this.$refs.process_output_ta.scrollTop = this.$refs.process_output_ta.offsetTop; // XXX not working properly
               // console.log(this.install_to_device_status);
             }
             this.output_reader_connection.onclose = (event) => {
@@ -197,7 +198,6 @@ export default {
         </select>
       </fieldset>
 
-
       <fieldset>
         <legend>Process</legend>
         <button type="button" @click="install()"
@@ -210,7 +210,7 @@ export default {
 
       <fieldset>
         <legend>Process Output</legend>
-        <pre :class="overall_status">{{ install_to_device_status }}</pre>
+        <textarea ref="process_output_ta" :class="overall_status">{{ install_to_device_status }}</textarea>
       </fieldset>
 
     </form>
@@ -248,8 +248,12 @@ a,
   color: #BD0000FF;
 }
 
-input:not(.inline), select {
+input:not(.inline), select, textarea {
   width: 100%;
+}
+
+textarea {
+  height: 20em;
 }
 
 label:not(.inline) {
