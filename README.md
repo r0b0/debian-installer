@@ -7,6 +7,7 @@ This tool can be used to create a modern installation of Debian. Our opinions of
  - Installed on btrfs subvolumes
  - Full disk encryption using luks2, unlocked by TPM (if available)
  - Fast installation using an image
+ - Browser-based installer
   
 ## Limitations
 
@@ -18,13 +19,10 @@ This tool can be used to create a modern installation of Debian. Our opinions of
 ## Instructions
  
  1. Download our live image
- 2. Boot the live image and login as user `live` with password `live`
- 3. **Edit the file /installer.sh - especially the `DISK` variable containing name of the disk drive you want to install to**
- 4. Start the installer from the desktop and follow the prompts
- 8. You will be interactively prompted for LUKS passphrase, root password and user password
- 9. The installer will inform you before each step and ask to confirm by pressing Enter. Press Ctrl+C if you are unsure and re-start the script after you investigate. It should pick up roughly where it left off. 
- 11. Store the generated file `luks.key` in a safe place - you can use it to recover the data if decryption by TPM or passphrase fails for some reason.
- 12. Reboot and enjoy
+ 2. Write the image to a USB flash drive and boot it
+ 3. Start the installer icon from the desktop and fill in the form in the browser and press the big _Install_ button
+ 4. Store the generated file `luks.key` in a safe place - you can use it to recover the data if decryption by TPM or passphrase fails for some reason. **TODO download the file**
+ 5. Reboot and enjoy
 
 ## Details
 
@@ -64,19 +62,20 @@ The following table contains comparison of features between our opinionated debi
 
 |Feature |ODIN|Netinstall|Calamares|
 |--|--| -- | -- |
-|Installer l10n |N|Y| |
-|Locales setup|N|Y| |
-|Console keyboard|N|Y |
+|Installer l10n|N|Y| |
 |Mirror selection|N|Y| |
 |HTTP proxy support|N|Y| |
-|Manual disk partitioning, LVM, filesystem selection|N|Y| |
+|Manual disk partitioning, LVM, filesystem selection|N[4]|Y| |
 |Btrfs subvolumes|Y[2]|Y[3]| |
 |LUKS|**Y**|Y[1]| |
 |Image-based installation|**Y**|N| |
 |Non-free and backports|**Y**|N| |
+|Browser-based installer|Y|N| |
 
 [1] /boot needs a separate unencrypted partition
 
-[2] @ and @home
+[2] @ and @home - [timeshift](https://github.com/teejee2008/timeshift#supported-system-configurations) compatible
 
 [3] @rootfs
+
+[4] Fixed partitioning (see Details above), LVM is automatic, BTRFS is used as filesystem

@@ -157,7 +157,7 @@ cat <<EOF > ${target}/tmp/run1.sh
 export DEBIAN_FRONTEND=noninteractive
 apt-get update -y
 apt-get upgrade -y
-apt-get install -t ${DEBIAN_SOURCE} systemd-boot dracut uuid-runtime lighttpd python3-pip python3-flask python3-flask-cors -y
+apt-get install -t ${DEBIAN_SOURCE} systemd-boot dracut uuid-runtime lighttpd python3-pip python3-flask python3-flask-cors python3-h11 python3-wsproto -y
 apt-get purge initramfs-tools initramfs-tools-core -y
 bootctl install
 systemctl enable lighttpd
@@ -175,18 +175,26 @@ EOF
 read -p "Enter to continue"
 chroot ${target}/ sh /tmp/run1.sh
 
+echo configuring autologin
+mkdir -p ${target}/etc/sddm.conf.d/
+cat <<EOF > ${target}/etc/sddm.conf.d/autologin.conf
+[Autologin]
+User=live
+Session=plasma
+EOF
+
 echo cleaning up
 read -p "Enter to continue"
 rm -f ${target}/etc/machine-id
 rm -f ${target}/etc/crypttab
 rm -f ${target}/var/log/*log
 rm -f ${target}/var/log/apt/*log
-rm -f ${target}/var/cache/apt/archives/*.deb
 
 echo copying the opinionated debian installer to ${target}
 read -p "Enter to continue"
 cp ${SCRIPT_DIR}/installer.sh ${target}/
 cp ${SCRIPT_DIR}/backend.py ${target}/
+cp ${SCRIPT_DIR}/timezones.txt ${target}/
 cp -r ${SCRIPT_DIR}/frontend/dist/* ${target}/var/www/html/
 cp -r ${SCRIPT_DIR}/installer_backend.service ${target}/etc/systemd/system
 chmod +x ${target}/installer.sh
