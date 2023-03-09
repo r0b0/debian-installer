@@ -1,6 +1,7 @@
 <script>
 import Header from "./components/Header.vue";
 import Password from "./components/Password.vue";
+import {nextTick} from "vue";
 
 export default {
   components: {Header, Password},
@@ -18,6 +19,7 @@ export default {
       // values for the installer:
       installer: {
         DISK: "",
+        DEBIAN_VERSION: "bookworm",
         USERNAME: "user",
         USER_FULL_NAME: "Debian User",
         USER_PASSWORD: undefined,
@@ -33,8 +35,14 @@ export default {
       // XXX not working properly
       let ret = true;
       for(const [key, value] of Object.entries(this.installer)) {
-        if(typeof value === 'undefined')
+        if(typeof value === 'undefined') {
           ret = false;
+          break;
+        }
+        if(value.length === 0) {
+          ret = false;
+          break;
+        }
       }
       return ret;
     }
@@ -97,10 +105,12 @@ export default {
             console.debug(result);
             this.output_reader_connection = new WebSocket("ws://localhost:5000/process_output");
             this.output_reader_connection.onmessage = (event) => {
-              console.log("Websocket event received");
+              // console.log("Websocket event received");
               // console.log(event);
               this.install_to_device_status += event.data.toString();
-              this.$refs.process_output_ta.scrollTop = this.$refs.process_output_ta.offsetTop; // XXX not working properly
+              nextTick(() => {
+                this.$refs.process_output_ta.scrollTop = 1000000;
+              });
               // console.log(this.install_to_device_status);
             }
             this.output_reader_connection.onclose = (event) => {
@@ -167,6 +177,10 @@ export default {
             {{item.path}} {{item.model}} {{item.size}} {{item.ro ? '(Read Only)' : ''}}
           </option>
         </select>
+        <label for="DEBIAN_VERSION">Debian Version</label>
+        <select id="DEBIAN_VERSION" v-model="installer.DEBIAN_VERSION">
+          <option value="bookworm" selected>Debian 12 Bookworm (TESTING)</option>
+        </select>
       </fieldset>
 
       <fieldset>
@@ -215,6 +229,10 @@ export default {
 
     </form>
   </main>
+  <footer>
+    <span>Installer &copy; 2022-2023 <a href="https://github.com/r0b0/debian-installer">r@hq.sk</a></span>
+    <span>Banner &copy; 2022 <a href="https://github.com/julietteTaka/Emerald">Juliette Taka</a></span>
+  </footer>
 </template>
 
 <style>
@@ -285,5 +303,9 @@ button {
   .logo {
     margin: 0 2rem 0 0;
   }
+}
+
+footer span {
+  margin-left: 3em;
 }
 </style>

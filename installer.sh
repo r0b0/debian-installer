@@ -8,6 +8,8 @@ USER_FULL_NAME="Debian User"
 USER_PASSWORD=hunter2
 ROOT_PASSWORD=changeme
 LUKS_PASSWORD=luke
+DEBIAN_VERSION=bookworm
+HOSTNAME=debian12
 fi
 
 function notify () {
@@ -17,8 +19,6 @@ function notify () {
     fi
 }
 
-HOSTNAME=debian12
-DEBIAN_VERSION=bookworm
 # TODO enable backports here when it becomes available for bookworm
 DEBIAN_SOURCE=${DEBIAN_VERSION}
 # see https://www.freedesktop.org/software/systemd/man/systemd-cryptenroll.html#--tpm2-device=PATH
