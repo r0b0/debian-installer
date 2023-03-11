@@ -3,8 +3,10 @@ Description=Opinionated Debian Installer Back-End
 After=network.target
 
 [Service]
-ExecStart=/usr/bin/flask --app backend run
-WorkingDirectory=/
+Environment=INSTALLER_SCRIPT=/installer.sh
+ExecStart=/usr/bin/flask --app /backend.py run
+RuntimeDirectory=installer
+WorkingDirectory=/run/installer
 User=root
 Group=root
 

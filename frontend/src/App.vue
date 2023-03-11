@@ -1,10 +1,9 @@
 <script>
-import Header from "./components/Header.vue";
 import Password from "./components/Password.vue";
 import {nextTick} from "vue";
 
 export default {
-  components: {Header, Password},
+  components: {Password},
   data() {
     return {
       error_message: "",
@@ -32,7 +31,6 @@ export default {
   },
   computed: {
     can_start() {
-      // XXX not working properly
       let ret = true;
       for(const [key, value] of Object.entries(this.installer)) {
         if(typeof value === 'undefined') {
@@ -163,7 +161,11 @@ export default {
 }
 </script>
 <template>
-  <Header />
+  <header>
+    <img alt="banner" class="logo" src="@/assets/Emerald_installer.svg" />
+    <h1>Opinionated Debian Installer</h1>
+    <h2>NOTE: THIS IS WORK IN PROGRESS, IT DOES NOT WORK CORRECTLY YET</h2>
+  </header>
 
   <main>
     <form>
