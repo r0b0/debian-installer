@@ -127,6 +127,8 @@ EOF
 echo install required packages on ${target}
 cat <<EOF > ${target}/tmp/packages.txt
 locales
+adduser
+passwd
 systemd
 btrfs-progs
 tasksel

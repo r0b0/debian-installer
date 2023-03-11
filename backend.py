@@ -1,4 +1,4 @@
-import secrets
+import os
 import socket
 import subprocess
 import threading
@@ -15,15 +15,15 @@ sock = Sock(app)
 CORS(app)
 
 
-class context_class(object):
+class Context(object):
     def __init__(self):
         self.running_subprocess = None
         self.subprocess_output = ""
         self.output_readers = []
 
 
-context = context_class()
-INSTALLER_SCRIPT = "./installer.sh"
+context = Context()
+INSTALLER_SCRIPT = os.environ["INSTALLER_SCRIPT"]
 
 
 @app.route("/login", methods=["GET"])
@@ -40,8 +40,13 @@ def get_block_devices():
 
 @app.route("/timezones", methods=["GET"])
 def get_timezones():
+    file = None
+    for f in ("/timezones.txt", "timezones.txt"):
+        if os.path.exists(f):
+            file = f
+            break
     timezones = []
-    with open("timezones.txt") as fd:
+    with open(file) as fd:
         while True:
             line = fd.readline()
             if line.startswith("#"):
@@ -64,10 +69,11 @@ def install():
         app.logger.info(f"  env: {k} = {v}")
 
     context.running_subprocess = subprocess.Popen(INSTALLER_SCRIPT,
-                                          env=subprocess_env,
-                                          text=True,
-                                          stdout=subprocess.PIPE,
-                                          stderr=subprocess.PIPE)
+                                                  env=subprocess_env,
+                                                  text=True,
+                                                  stdout=subprocess.PIPE,
+                                                  stderr=subprocess.PIPE)
+
     def output_reader(fd, main):
         app.logger.info("Starting output reader thread")
         for line in fd:
@@ -76,7 +82,7 @@ def install():
             for websocket in context.output_readers:
                 try:
                     websocket.send(line)
-                except ConnectionClosed as e:
+                except ConnectionClosed:
                     to_remove.append(websocket)
             for websocket in to_remove:
                 app.logger.info(f"Removing websocket output reader {websocket}")

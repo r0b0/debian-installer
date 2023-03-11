@@ -181,6 +181,7 @@ echo "$HOSTNAME" > ${target}/etc/hostname
 
 notify setup timezone
 echo "${TIMEZONE}" > ${target}/etc/timezone
+rm -f ${target}/etc/localtime
 (cd ${target} && ln -s usr/share/zoneinfo/${TIMEZONE} etc/localtime)
 
 notify setup fstab
