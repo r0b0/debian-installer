@@ -129,6 +129,7 @@ cat <<EOF > ${target}/tmp/packages.txt
 locales
 adduser
 passwd
+sudo
 systemd
 btrfs-progs
 tasksel

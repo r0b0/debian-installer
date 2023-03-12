@@ -32,6 +32,9 @@ export default {
   computed: {
     can_start() {
       let ret = true;
+      if(this.error_message.length>0) {
+        ret = false;
+      }
       for(const [key, value] of Object.entries(this.installer)) {
         if(typeof value === 'undefined') {
           ret = false;
@@ -51,8 +54,12 @@ export default {
   methods: {
     check_login() {
       this.fetch_from_backend("/login")
-        .then(() => {
-          this.error_message = "";
+        .then(response => {
+          if(!response.has_efi) {
+            this.error_message = "This system does not appear to use EFI. This installer will not work."
+          } else {
+            this.error_message = "";
+          }
           this.get_block_devices();
           this.get_available_timezones();
         })
@@ -164,14 +171,37 @@ export default {
   <header>
     <img alt="banner" class="logo" src="@/assets/Emerald_installer.svg" />
     <h1>Opinionated Debian Installer</h1>
-    <h2>NOTE: THIS IS WORK IN PROGRESS, IT DOES NOT WORK CORRECTLY YET</h2>
+    <p>
+      This is an <strong>unofficial</strong> installer for the Debian GNU/Linux operating system.
+      It is still a <strong>work in progress</strong> and it is not recommended for general usage.
+      For more information, read the <a href="https://github.com/r0b0/debian-installer">project page</a>.
+    </p>
+    <h2>Instructions</h2>
+    <ul>
+      <li>Internet connection is required for this installer to work.</li>
+      <li>The installer <strong>will overwrite the entire disk</strong>.</li>
+      <li>I repeat, <strong>your entire disk will be overwritten</strong> when you press the Install button.
+        There is no way to undo this action.</li>
+      <li>If you encounter issues, press the <em>Stop</em> button, open a terminal and investigate.
+      Password for the root user in this live system is <code>live</code></li>
+      <li>Data in this live system will be persisted, this is not read-only.</li>
+    </ul>
+    <h2>Features</h2>
+    <ul>
+      <li>Backports and non-free enabled</li>
+      <li>Firmware installed</li>
+      <li>Installed on btrfs subvolumes</li>
+      <li>Full disk encryption, unlocked by TPM (if available)</li>
+      <li>Fast installation using an image</li>
+      <li>Browser-based installer</li>
+    </ul>
   </header>
 
   <main>
     <form>
       <fieldset>
         <legend>Installation Target Device</legend>
-        <div class="green">{{error_message}}</div>
+        <div class="red">{{error_message}}</div>
 
         <label for="DISK">Device for Installation</label>
         <select :disabled="block_devices.length==0" id="DISK"  v-model="installer.DISK">
@@ -232,7 +262,7 @@ export default {
     </form>
   </main>
   <footer>
-    <span>Installer &copy; 2022-2023 <a href="https://github.com/r0b0/debian-installer">r@hq.sk</a></span>
+    <span>Installer &copy; 2022-2023 <a href="https://github.com/r0b0/debian-installer">Robert T</a></span>
     <span>Banner &copy; 2022 <a href="https://github.com/julietteTaka/Emerald">Juliette Taka</a></span>
   </footer>
 </template>

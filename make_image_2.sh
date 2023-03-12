@@ -157,10 +157,13 @@ cat <<EOF > ${target}/tmp/run1.sh
 export DEBIAN_FRONTEND=noninteractive
 apt-get update -y
 apt-get upgrade -y
-apt-get install -t ${DEBIAN_SOURCE} systemd-boot dracut uuid-runtime lighttpd python3-pip python3-flask python3-flask-cors python3-h11 python3-wsproto -y
+apt-get install -t ${DEBIAN_SOURCE} systemd-boot dracut cryptsetup debootstrap uuid-runtime lighttpd python3-pip python3-flask python3-flask-cors python3-h11 python3-wsproto -y
 apt-get purge initramfs-tools initramfs-tools-core -y
 bootctl install
 systemctl enable lighttpd
+systemctl enable NetworkManager.service
+systemctl disable systemd-networkd.service  # seems to fight with NetworkManager
+systemctl disable systemd-networkd-wait-online.service
 pip install flask-sock --break-system-packages
 EOF
 read -p "Enter to continue"

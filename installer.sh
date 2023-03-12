@@ -223,7 +223,8 @@ if grep -qs "^${USERNAME}:" ${target}/etc/shadow ; then
     echo ${USERNAME} user already set up
 else
     notify set up ${USERNAME} user
-    chroot ${target}/ adduser ${USERNAME} --disabled-password --gecos "${USER_FULL_NAME}"
+    chroot ${target}/ bash -c "adduser ${USERNAME} --disabled-password --gecos "${USER_FULL_NAME}""
+    chroot ${target}/ bash -c "adduser ${USERNAME} sudo"
     echo "${USERNAME}:${USER_PASSWORD}" > ${target}/tmp/passwd
     chroot ${target}/ bash -c "chpasswd < /tmp/passwd"
     rm -f ${target}/tmp/passwd
@@ -304,6 +305,7 @@ cat <<EOF > ${target}/tmp/run2.sh
 #!/bin/bash
 export DEBIAN_FRONTEND=noninteractive
 xargs apt-get install -t ${DEBIAN_SOURCE} -y < /tmp/packages.txt
+systemctl disable systemd-networkd.service  # seems to fight with NetworkManager
 EOF
 chroot ${target}/ bash /tmp/run2.sh
 
@@ -318,4 +320,3 @@ notify closing luks
 cryptsetup luksClose ${luks_device}
 
 notify "INSTALLATION FINISHED"
-notify "You will want to store the luks.key file safely"

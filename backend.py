@@ -29,7 +29,9 @@ INSTALLER_SCRIPT = os.environ["INSTALLER_SCRIPT"]
 @app.route("/login", methods=["GET"])
 def login():
     hostname = socket.gethostname()
-    return {"hostname": hostname}
+    has_efi = os.path.exists("/sys/firmware/efi")
+    return {"hostname": hostname,
+            "has_efi": has_efi}
 
 
 @app.route("/block_devices", methods=["GET"])
