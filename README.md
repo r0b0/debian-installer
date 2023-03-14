@@ -80,4 +80,4 @@ The following table contains comparison of features between our opinionated debi
 
 [3] @rootfs
 
-[4] Fixed partitioning (see Details above), LVM is automatic, BTRFS is used as filesystem
+[4] Fixed partitioning (see Details above), LUKS is automatic, BTRFS is used as filesystem
