@@ -1,2 +1,4 @@
 /.idea
 /venv
+/installer-files/var/www/html/opinionated-debian-installer/assets/
+/installer-files/var/www/html/opinionated-debian-installer/index.html

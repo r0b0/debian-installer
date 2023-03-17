@@ -37,6 +37,10 @@ This tool can be used to create a modern installation of Debian. Our opinions of
 
 ## Hacking
 
+Alternatively to running the whole browser based GUI, you can run the `installer.sh` script manually from a root shell.
+The end result will be exactly the same.
+Just don't forget to edit the configuration options (especially the `DISK` variable ) before running it.
+
 ### Creating Your Own Installer Image
 
  1. Insert a blank storage device
@@ -54,6 +58,15 @@ There are 3 GPT partitions on the installer image:
     When the live system is running, this is used as a [read-only lower device for overlayfs](https://docs.kernel.org/filesystems/overlayfs.html). 
     The installer will copy this to the target system, mount it read-write, resize to expand to the whole partition and continue with the system installation.
  3. Top Overlay - upper and work device for the overlayfs for the live system. The changes you make while the live system is running are persisted here.
+
+### Building the Front-End
+
+The front-end is a [vue](https://vuejs.org/) application. 
+You need [npm](https://www.npmjs.com/) to build it.
+Run the following commands to build it:
+
+    cd frontend
+    npm run build
 
 ## Comparison
 

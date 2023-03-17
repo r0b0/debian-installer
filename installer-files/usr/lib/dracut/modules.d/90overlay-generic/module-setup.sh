@@ -1,4 +1,6 @@
 #!/bin/bash
+# This is a module for dracut to enable rootfs on overlayfs comprised by explicitly configured filesystems
+# Kernel command line parameters: rd.overlay.lower, rd.overlay.upper, rd.overlay.work
 
 check() {
     [[ $hostonly ]] && return 1

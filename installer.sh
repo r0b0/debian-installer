@@ -60,6 +60,7 @@ top_level_mount=/mnt/top_level_mount
 target=/target
 luks_device=root
 root_device=/dev/mapper/${luks_device}
+# TODO test with just rd.luks.options=tpm2-device=auto
 kernel_params="rd.luks.options=${luks_uuid}=tpm2-device=auto rw quiet rootfstype=btrfs rootflags=${FSFLAGS} rd.auto=1 splash"
 
 if [ ! -f partitions_created.txt ]; then
@@ -80,6 +81,7 @@ sfdisk -d $DISK > partitions_created.txt
 fi
 
 if [ ! -f $KEYFILE ]; then
+    # TODO do we want to store this file in the installed system?
     notify generate key file for luks
     dd if=/dev/random of=${KEYFILE} bs=512 count=1
     notify remove any old luks on ${DISK}2
@@ -219,7 +221,6 @@ else
 fi
 
 if grep -qs "^${USERNAME}:" ${target}/etc/shadow ; then
-    # XXX: check this - the user was not created
     echo ${USERNAME} user already set up
 else
     notify set up ${USERNAME} user
@@ -309,8 +310,10 @@ systemctl disable systemd-networkd.service  # seems to fight with NetworkManager
 EOF
 chroot ${target}/ bash /tmp/run2.sh
 
-# notify running tasksel
-# chroot ${target}/ tasksel
+if [ x"${NON_INTERACTIVE}" == "x" ]; then
+    notify running tasksel
+    chroot ${target}/ tasksel
+fi
 
 notify umounting all filesystems
 umount -R ${target}

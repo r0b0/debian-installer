@@ -2,6 +2,6 @@
 Encoding=UTF-8
 Version=1.0
 Type=Link
-URL=http://localhost:80/
+URL=http://localhost:80/opinionated-debian-installer/
 Name=Opinionated Debian Installer
 Icon=emblem-debian.png

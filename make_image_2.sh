@@ -21,6 +21,12 @@ top_uuid=$(cat top-part.uuid)
 
 SCRIPT_DIR=$( cd -- "$( dirname -- "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )
 
+function install_file() {
+  echo "Copying $1 to ${target}"
+  rm -rf "${target}/$1"
+  cp -r "${SCRIPT_DIR}/installer-files/$1" "${target}/$1"
+}
+
 if [ ! -f partition_shrunk.txt ]; then
     echo shrinking the partition by ${DEVICE_SLACK}
     read -p "Enter to continue"
@@ -131,14 +137,14 @@ else
     chroot ${target}/ bash -c "chpasswd < /tmp/passwd"
     rm ${target}/tmp/passwd
     mkdir -p ${target}/home/live/Desktop
-    cp $SCRIPT_DIR/installer.desktop ${target}/home/live/Desktop/
+    install_file home/live/Desktop/installer.desktop
     chown -R 1000:1000 ${target}/home/live
 fi
 
 echo configuring dracut
 read -p "Enter to continue"
 mkdir -p ${target}/usr/lib/dracut/modules.d/
-cp -r $SCRIPT_DIR/90overlay-generic ${target}/usr/lib/dracut/modules.d/
+install_file usr/lib/dracut/modules.d/90overlay-generic
 mkdir -p ${target}/etc/dracut.conf.d
 cat <<EOF > ${target}/etc/dracut.conf.d/90-odin.conf
 add_dracutmodules+=" systemd overlay-generic "
@@ -152,6 +158,8 @@ ${kernel_params}
 EOF
 
 echo install required packages on ${target}
+mkdir -p ${target}/etc/systemd/system
+install_file etc/systemd/system/lighttpd.service
 cat <<EOF > ${target}/tmp/run1.sh
 #!/bin/bash
 export DEBIAN_FRONTEND=noninteractive
@@ -179,12 +187,9 @@ read -p "Enter to continue"
 chroot ${target}/ sh /tmp/run1.sh
 
 echo configuring autologin
+# TODO gdm etc.
 mkdir -p ${target}/etc/sddm.conf.d/
-cat <<EOF > ${target}/etc/sddm.conf.d/autologin.conf
-[Autologin]
-User=live
-Session=plasma
-EOF
+install_file etc/sddm.conf.d/autologin.conf
 
 echo cleaning up
 read -p "Enter to continue"
@@ -193,14 +198,20 @@ rm -f ${target}/etc/crypttab
 rm -f ${target}/var/log/*log
 rm -f ${target}/var/log/apt/*log
 
+echo building the frontend
+read -p "Enter to continue"
+(cd frontend && npm run build)
+mkdir -p installer-files/var/www/html/opinionated-debian-installer
+cp -r frontend/dist/* installer-files/var/www/html/opinionated-debian-installer
+
 echo copying the opinionated debian installer to ${target}
 read -p "Enter to continue"
 cp ${SCRIPT_DIR}/installer.sh ${target}/
-cp ${SCRIPT_DIR}/backend.py ${target}/
-cp ${SCRIPT_DIR}/timezones.txt ${target}/
-cp -r ${SCRIPT_DIR}/frontend/dist/* ${target}/var/www/html/
-cp -r ${SCRIPT_DIR}/installer_backend.service ${target}/etc/systemd/system
 chmod +x ${target}/installer.sh
+install_file backend.py
+install_file timezones.txt
+install_file var/www/html/opinionated-debian-installer
+install_file etc/systemd/system/installer_backend.service
 chroot ${target}/ systemctl enable installer_backend
 
 echo umounting all filesystems

@@ -255,6 +255,7 @@ export default {
       </fieldset>
 
       <fieldset>
+        <!-- TODO download the log as txt file -->
         <legend>Process Output</legend>
         <textarea ref="process_output_ta" :class="overall_status">{{ install_to_device_status }}</textarea>
       </fieldset>
