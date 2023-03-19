@@ -200,9 +200,9 @@ rm -f ${target}/var/log/apt/*log
 
 echo building the frontend
 read -p "Enter to continue"
-(cd frontend && npm run build)
-mkdir -p installer-files/var/www/html/opinionated-debian-installer
-cp -r frontend/dist/* installer-files/var/www/html/opinionated-debian-installer
+(cd ${SCRIPT_DIR}/frontend && npm run build)
+mkdir -p ${SCRIPT_DIR}/installer-files/var/www/html/opinionated-debian-installer
+cp -r ${SCRIPT_DIR}/frontend/dist/* ${SCRIPT_DIR}/installer-files/var/www/html/opinionated-debian-installer
 
 echo copying the opinionated debian installer to ${target}
 read -p "Enter to continue"
