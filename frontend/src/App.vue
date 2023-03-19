@@ -12,6 +12,7 @@ export default {
       install_to_device_process_key: "",
       install_to_device_status: "",
       overall_status: "",
+      finished: false,
       output_reader_connection: null,
       timezones: [],
       
@@ -108,6 +109,7 @@ export default {
         })
         .then(result => {
             console.debug(result);
+            this.finished = false;
             this.output_reader_connection = new WebSocket("ws://localhost:5000/process_output");
             this.output_reader_connection.onmessage = (event) => {
               // console.log("Websocket event received");
@@ -132,10 +134,13 @@ export default {
           .then(response => {
             console.debug(response);
             this.install_to_device_status = response.output;
-            if(response.return_code == 0) {
-              this.overall_status = "green";
-            } else {
-              this.overall_status = "red";
+            if(response.status == "FINISHED") {
+              this.finished = true;
+              if (response.return_code == 0) {
+                this.overall_status = "green";
+              } else {
+                this.overall_status = "red";
+              }
             }
           });
     },
@@ -168,8 +173,9 @@ export default {
 }
 </script>
 <template>
+  <img alt="banner" class="logo" src="@/assets/Emerald_installer.svg" />
+
   <header>
-    <img alt="banner" class="logo" src="@/assets/Emerald_installer.svg" />
     <h1>Opinionated Debian Installer</h1>
     <p>
       This is an <strong>unofficial</strong> installer for the Debian GNU/Linux operating system.
@@ -255,16 +261,19 @@ export default {
       </fieldset>
 
       <fieldset>
-        <!-- TODO download the log as txt file -->
         <legend>Process Output</legend>
         <textarea ref="process_output_ta" :class="overall_status">{{ install_to_device_status }}</textarea>
-      </fieldset>
 
+        <!-- TODO disable this while not finished instead of hiding -->
+        <a v-if="finished" href="http://localhost:5000/download_log" download>Download Log</a>
+      </fieldset>
     </form>
   </main>
+
   <footer>
-    <span>Installer &copy; 2022-2023 <a href="https://github.com/r0b0/debian-installer">Robert T</a></span>
-    <span>Banner &copy; 2022 <a href="https://github.com/julietteTaka/Emerald">Juliette Taka</a></span>
+    <span>Opinionated Debian Installer version 20230319a</span>
+    <span>Installer &copy;2022-2023 <a href="https://github.com/r0b0/debian-installer">Robert T</a></span>
+    <span>Banner &copy;2022 <a href="https://github.com/julietteTaka/Emerald">Juliette Taka</a></span>
   </footer>
 </template>
 
@@ -285,18 +294,20 @@ header {
 
 .logo {
   display: block;
-  margin: 0 auto 2rem;
+  width: 100%;
+  padding-bottom: 12pt;
+  grid-area: logo;
 }
 
 a,
 .green {
   text-decoration: none;
-  color: hsl(170, 100%, 37%);
+  color: #08696b;
   transition: 0.4s;
 }
 
 .red {
-  color: #BD0000FF;
+  color: #cd130f;
 }
 
 input:not(.inline), select, textarea {
@@ -330,15 +341,30 @@ button {
   #app {
     display: grid;
     grid-template-columns: 1fr 1fr;
+    grid-template-areas:
+        "logo logo"
+        "header main"
+        "footer footer";
     padding: 0 2rem;
   }
 
   .logo {
     margin: 0 2rem 0 0;
   }
+
+  h1 {
+    margin-top: 0;
+  }
+
+  footer {
+    margin-top: 2em;
+    grid-area: footer;
+    justify-self: center;
+  }
 }
 
+
 footer span {
-  margin-left: 3em;
+  margin-right: 2em;
 }
 </style>

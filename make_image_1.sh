@@ -33,6 +33,7 @@ base_image_uuid=$(cat base-image-part.uuid)
 top_uuid=$(cat top-part.uuid)
 
 if [ ! -f partitions_created.txt ]; then
+# TODO mark the BaseImage partition as read-only (bit 60 - 0x1000000000000000)
 echo create 2 partitions on ${DISK}
 read -p "Enter to continue"
 sfdisk $DISK <<EOF

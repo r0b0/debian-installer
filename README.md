@@ -14,6 +14,7 @@ This tool can be used to create a modern installation of Debian. Our opinions of
  - **The installer will take over your whole disk**
  - Bookworm (debian 12) only
  - Amd64 with EFI only
+ - No support for swap partition at the moment
  - The installer is in english only
  - At the moment, only KDE Plasma installer is available.
 
@@ -34,6 +35,21 @@ This tool can be used to create a modern installation of Debian. Our opinions of
 - [Systemd-boot](https://www.freedesktop.org/wiki/Software/systemd/systemd-boot/) is used instead of grub
 - [Network-manager](https://wiki.debian.org/NetworkManager) is used for networking
 - [Systemd-cryptenroll](https://www.freedesktop.org/software/systemd/man/systemd-cryptenroll.html#--tpm2-device=PATH) is used to unlock the disk, using TPM (if available)
+
+## Testing
+
+### Libvirt
+
+To test with [libvirt](https://libvirt.org/), make sure to create the VM with UEFI:
+
+1. Select the _Customize configuration before install_ option at the end of the new VPM dialog
+2. In the VM configuration window, _Overview_ tab, _Hypervisor Details_ section, select _Firmware_: _UEFI_
+
+![virt-manager uefi screenshot](readme-files/virt-manager-uefi.png)
+
+To add a TPM module, you need to install the [swtpm-tools](https://packages.debian.org/bullseye-backports/swtpm-tools) package (available in bullseye-backports).
+
+Attach the downloaded installer image file as _Device type: Disk device_, not ~~CDROM device~~.
 
 ## Hacking
 

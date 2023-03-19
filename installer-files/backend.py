@@ -5,7 +5,7 @@ import threading
 import time
 
 import flask
-from flask import Flask, request
+from flask import Flask, make_response, request
 from flask_cors import CORS
 from flask_sock import Sock
 from simple_websocket import ConnectionClosed
@@ -43,7 +43,8 @@ def get_block_devices():
 @app.route("/timezones", methods=["GET"])
 def get_timezones():
     file = None
-    for f in ("/timezones.txt", "timezones.txt"):
+    for d in ("/", ".", "installer-files"):
+        f = os.path.join(d, "timezones.txt")
         if os.path.exists(f):
             file = f
             break
@@ -134,6 +135,14 @@ def get_process_status():
     status["status"] = "FINISHED"
     status["return_code"] = context.running_subprocess.returncode
     return status
+
+
+@app.route("/download_log", methods=["GET"])
+def download_log():
+    resp = make_response(str(context.subprocess_output))
+    resp.headers["Content-Type"] = 'text/plain;charset=UTF-8'
+    resp.headers['Content-Disposition'] = 'attachment;filename=installer.log'
+    return resp
 
 
 @sock.route("/process_output")
