@@ -20,7 +20,7 @@ This tool can be used to create a modern installation of Debian. Our opinions of
 
 ## Instructions
  
- 1. Download our [live image](readme-files/opinionated-debian-installer-bookworm-kde-plasma-20230319a.torrent?raw=1)
+ 1. Download our [live image](https://objectstorage.eu-frankfurt-1.oraclecloud.com/n/fr2rf1wke5iq/b/public/o/opinionated-debian-installer-bookworm-kde-plasma-20230319a.img)
  2. Write the image to a USB flash drive and boot it
  3. Start the installer icon from the desktop and fill in the form in the browser and press the big _Install_ button
  4. Reboot and enjoy
