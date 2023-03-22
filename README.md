@@ -46,7 +46,7 @@ This tool can be used to create a modern installation of Debian. Our opinions of
 
 To test with [libvirt](https://libvirt.org/), make sure to create the VM with UEFI:
 
-1. Select the _Customize configuration before install_ option at the end of the new VPM dialog
+1. Select the _Customize configuration before install_ option at the end of the new VM dialog
 2. In the VM configuration window, _Overview_ tab, _Hypervisor Details_ section, select _Firmware_: _UEFI_
 
 ![virt-manager uefi screenshot](readme-files/virt-manager-uefi.png)
@@ -55,11 +55,25 @@ To add a TPM module, you need to install the [swtpm-tools](https://packages.debi
 
 Attach the downloaded installer image file as _Device type: Disk device_, not ~~CDROM device~~.
 
+### Hyper-V
+
+To test with the MS hyper-v virtualization, make sure to create your VM with [Generation 2](https://learn.microsoft.com/en-us/windows-server/virtualization/hyper-v/plan/Should-I-create-a-generation-1-or-2-virtual-machine-in-Hyper-V). 
+This will enable UEFI.
+TPM can be enabled and Secure Boot disabled in the Security tab of the Hyper-V settings.
+
+You will also need to convert the installer image to VHDx format and make the file not sparse.
+You can use [qemu-img](https://www.qemu.org/docs/master/tools/qemu-img.html) ([windows download](https://qemu.weilnetz.de/w64/)) and fsutil like this:
+
+    qemu-img convert -f raw -O vhdx opinionated-debian-installer-bookworm-kde-plasma-20230319a.img odin.vhdx
+    fsutil sparse setflag odin.vhdx 0
+
+Attach the generated VHDx file as a disk, not as a ~~CD~~.
+
 ## Hacking
 
 Alternatively to running the whole browser based GUI, you can run the `installer.sh` script manually from a root shell.
 The end result will be exactly the same.
-Just don't forget to edit the configuration options (especially the `DISK` variable ) before running it.
+Just don't forget to edit the configuration options (especially the `DISK` variable) before running it.
 
 ### Creating Your Own Installer Image
 
