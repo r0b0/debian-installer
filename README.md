@@ -20,10 +20,14 @@ This tool can be used to create a modern installation of Debian. Our opinions of
 
 ## Instructions
  
- 1. Download our [live image](https://objectstorage.eu-frankfurt-1.oraclecloud.com/n/fr2rf1wke5iq/b/public/o/opinionated-debian-installer-bookworm-kde-plasma-20230319a.img)
+ 1. Download our [live image](https://objectstorage.eu-frankfurt-1.oraclecloud.com/n/fr2rf1wke5iq/b/public/o/opinionated-debian-installer-bookworm-kde-plasma-20230324a.img)
  2. Write the image to a USB flash drive and boot it
  3. Start the installer icon from the desktop and fill in the form in the browser and press the big _Install_ button
  4. Reboot and enjoy
+
+## Screenshots
+
+![gui screenshot](readme-files/gui.png)
 
 ## Details
 
@@ -35,10 +39,6 @@ This tool can be used to create a modern installation of Debian. Our opinions of
 - [Systemd-boot](https://www.freedesktop.org/wiki/Software/systemd/systemd-boot/) is used instead of grub
 - [Network-manager](https://wiki.debian.org/NetworkManager) is used for networking
 - [Systemd-cryptenroll](https://www.freedesktop.org/software/systemd/man/systemd-cryptenroll.html#--tpm2-device=PATH) is used to unlock the disk, using TPM (if available)
-
-## Screenshots
-
-![gui screenshot](readme-files/gui.png)
 
 ## Testing
 

@@ -1,5 +1,6 @@
 <script>
 import Password from "./components/Password.vue";
+import timezonesTxt from './assets/timezones.txt?raw';
 import {nextTick} from "vue";
 
 export default {
@@ -50,6 +51,7 @@ export default {
     }
   },
   mounted() {
+    this.get_available_timezones();
     this.check_login();
   },
   methods: {
@@ -62,7 +64,7 @@ export default {
             this.error_message = "";
           }
           this.get_block_devices();
-          this.get_available_timezones();
+
         })
         .catch(() => {
           this.error_message = "Backend not yet available";
@@ -88,11 +90,12 @@ export default {
           });
     },
     get_available_timezones() {
-      this.fetch_from_backend("/timezones")
-          .then(response => {
-            console.debug(response);
-            this.timezones = response.timezones;
-          });
+      for(const line of timezonesTxt.split("\n")) {
+        if(line.startsWith("#")) {
+          continue;
+        }
+        this.timezones.push(line);
+      }
     },
     install() {
       let data = new FormData();
@@ -271,7 +274,7 @@ export default {
   </main>
 
   <footer>
-    <span>Opinionated Debian Installer version 20230319a</span>
+    <span>Opinionated Debian Installer version 20230324a</span>
     <span>Installer &copy;2022-2023 <a href="https://github.com/r0b0/debian-installer">Robert T</a></span>
     <span>Banner &copy;2022 <a href="https://github.com/julietteTaka/Emerald">Juliette Taka</a></span>
   </footer>

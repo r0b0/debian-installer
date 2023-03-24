@@ -11,8 +11,10 @@ FSFLAGS="compress=zstd:9"
 
 target=/target
 root_device=${DISK}2
+overlay_low_mount=/mnt/overlay_low
 overlay_top_device=${DISK}3
-kernel_params="rd.overlay.lower=/mnt/btrfs1 rd.overlay.upper=/mnt/btrfs2/upper rd.overlay.work=/mnt/btrfs2/work systemd.gpt_auto=no rd.systemd.gpt_auto=no rw quiet splash"
+overlay_top_mount=/mnt/overlay_top
+kernel_params="rd.overlay.lower=${overlay_low_mount} rd.overlay.upper=${overlay_top_mount}/upper rd.overlay.work=${overlay_top_mount}/work systemd.gpt_auto=no rd.systemd.gpt_auto=no rw quiet splash"
 
 DEVICE_SLACK=$(cat device_slack.txt)
 efi_uuid=$(cat efi-part.uuid)
@@ -46,31 +48,31 @@ if [ ! -f top_partition_created.txt ]; then
     touch top_partition_created.txt
 fi
 
-if [ ! -f btrfs_top_created.txt ]; then
+if [ ! -f fs_top_created.txt ]; then
     echo create overlay top filesystem on ${overlay_top_device}
     read -p "Enter to continue"
     mkfs.btrfs -f ${overlay_top_device}
-    touch btrfs_top_created.txt
+    touch fs_top_created.txt
 fi
 
-if grep -qs "/mnt/btrfs1" /proc/mounts ; then
-    echo base image already mounted on /mnt/btrfs1
+if grep -qs "${overlay_low_mount}" /proc/mounts ; then
+    echo base image already mounted on ${overlay_low_mount}
 else
-    echo mount base image read only on /mnt/btrfs1
-    mkdir -p /mnt/btrfs1
+    echo mount base image read only on ${overlay_low_mount}
+    mkdir -p ${overlay_low_mount}
     read -p "Enter to continue"
-    mount ${root_device} /mnt/btrfs1 -o ${FSFLAGS},ro
+    mount ${root_device} ${overlay_low_mount} -o ${FSFLAGS},ro
 fi
 
-if grep -qs "/mnt/btrfs2" /proc/mounts ; then
-    echo overlay top already mounted on /mnt/btrfs2
+if grep -qs "${overlay_top_mount}" /proc/mounts ; then
+    echo overlay top already mounted on ${overlay_top_mount}
 else
-    echo mount overlay top on /mnt/btrfs2
-    mkdir -p /mnt/btrfs2
+    echo mount overlay top on ${overlay_top_mount}
+    mkdir -p ${overlay_top_mount}
     read -p "Enter to continue"
-    mount ${overlay_top_device} /mnt/btrfs2 -o ${FSFLAGS}
-    mkdir -p /mnt/btrfs2/upper
-    mkdir -p /mnt/btrfs2/work
+    mount ${overlay_top_device} ${overlay_top_mount} -o ${FSFLAGS}
+    mkdir -p ${overlay_top_mount}/upper
+    mkdir -p ${overlay_top_mount}/work
 fi
 
 if grep -qs "overlay /target" /proc/mounts ; then
@@ -78,7 +80,7 @@ if grep -qs "overlay /target" /proc/mounts ; then
 else
     echo mount overlay on /target
     read -p "Enter to continue"
-    mount -t overlay overlay -olowerdir=/mnt/btrfs1,upperdir=/mnt/btrfs2/upper,workdir=/mnt/btrfs2/work ${target}
+    mount -t overlay overlay -olowerdir=${overlay_low_mount},upperdir=${overlay_top_mount}/upper,workdir=${overlay_top_mount}/work ${target}
 fi
 
 mkdir -p ${target}/var/cache/apt/archives
@@ -93,12 +95,13 @@ fi
 if grep -qs "${target}/proc" /proc/mounts ; then
     echo bind mounts already set up on ${target}
 else
-    echo bind mount dev, proc, sys, run on ${target}
+    echo bind mount dev, proc, sys, run, var/tmp on ${target}
     read -p "Enter to continue"
     mount -t proc none ${target}/proc
     mount --make-rslave --rbind /sys ${target}/sys
     mount --make-rslave --rbind /dev ${target}/dev
     mount --make-rslave --rbind /run ${target}/run
+    mount --make-rslave --rbind /var/tmp ${target}/var/tmp
 fi
 
 if grep -qs "${DISK}1 " /proc/mounts ; then
@@ -113,8 +116,8 @@ fi
 echo setup fstab
 read -p "Enter to continue"
 cat <<EOF > ${target}/etc/fstab
-PARTUUID=${base_image_uuid} /mnt/btrfs1 btrfs defaults,ro 0 1
-PARTUUID=${top_uuid} /mnt/btrfs2 btrfs defaults 0 1
+PARTUUID=${base_image_uuid} ${overlay_low_mount} btrfs defaults,ro 0 1
+PARTUUID=${top_uuid} ${overlay_top_mount} btrfs defaults 0 1
 EOF
 
 if grep -qs 'root:\$' ${target}/etc/shadow ; then
@@ -209,7 +212,6 @@ read -p "Enter to continue"
 cp ${SCRIPT_DIR}/installer.sh ${target}/
 chmod +x ${target}/installer.sh
 install_file backend.py
-install_file timezones.txt
 install_file var/www/html/opinionated-debian-installer
 install_file etc/systemd/system/installer_backend.service
 chroot ${target}/ systemctl enable installer_backend
@@ -217,7 +219,7 @@ chroot ${target}/ systemctl enable installer_backend
 echo umounting all filesystems
 read -p "Enter to continue"
 umount -R ${target}
-umount -R /mnt/btrfs1
-umount -R /mnt/btrfs2
+umount -R ${overlay_low_mount}
+umount -R ${overlay_top_mount}
 
 echo "INSTALLATION FINISHED"

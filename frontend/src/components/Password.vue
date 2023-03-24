@@ -1,8 +1,8 @@
 <template>
-  <label for="root_pwd_1">Password</label>
+  <label for="pwd_1">Password</label>
   <input type="password" id="pwd_1" v-model="pwd_1" @input="data_update" :class="input_class">
 
-  <label for="root_pwd_2">Password (repeat)</label>
+  <label for="pwd_2">Password (repeat)</label>
   <input type="password" id="pwd_2" v-model="pwd_2" @input="data_update" :class="input_class">
 
   <div class="error" v-if="error_message.length>0">{{error_message}}</div>
@@ -39,10 +39,10 @@ export default {
 
 <style scoped>
 div.error {
-  color: red;
+  color: #cd130f;
 }
 input.error {
-  border-color: red;;
+  border-color: #cd130f;
 }
 
 </style>

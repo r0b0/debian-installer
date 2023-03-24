@@ -109,12 +109,13 @@ fi
 if grep -qs "${target}/proc" /proc/mounts ; then
     echo bind mounts already set up on ${target}
 else
-    echo bind mount dev, proc, sys, run on ${target}
+    echo bind mount dev, proc, sys, run, var/tmp on ${target}
     read -p "Enter to continue"
     mount -t proc none ${target}/proc
     mount --make-rslave --rbind /sys ${target}/sys
     mount --make-rslave --rbind /dev ${target}/dev
     mount --make-rslave --rbind /run ${target}/run
+    mount --make-rslave --rbind /var/tmp ${target}/var/tmp
 fi
 
 echo setup sources.list
@@ -164,6 +165,17 @@ firmware-zd1211
 hdmi2usb-fx2-firmware
 midisport-firmware
 sigrok-firmware-fx2lafw
+binutils
+console-setup
+cryptsetup
+dmraid
+exim4-daemon-light
+kpartx
+lvm2
+mdadm
+pigz
+pkg-config
+tpm2-tools
 EOF
 cat <<EOF > ${target}/tmp/run2.sh
 #!/bin/bash

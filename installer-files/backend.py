@@ -40,26 +40,6 @@ def get_block_devices():
     return p.stdout
 
 
-@app.route("/timezones", methods=["GET"])
-def get_timezones():
-    file = None
-    for d in ("/", ".", "installer-files"):
-        f = os.path.join(d, "timezones.txt")
-        if os.path.exists(f):
-            file = f
-            break
-    timezones = []
-    with open(file) as fd:
-        while True:
-            line = fd.readline()
-            if line.startswith("#"):
-                continue
-            if not line:
-                break
-            timezones.append(line.strip())
-    return {"timezones": timezones}
-
-
 @app.route("/install", methods=["POST"])
 def install():
     if context.running_subprocess is not None:
