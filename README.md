@@ -18,11 +18,19 @@ This tool can be used to create a modern installation of Debian. Our opinions of
  - The installer is in english only
  - At the moment, only KDE Plasma installer is available.
 
+## Downloads
+
+| Desktop environment | Download                                                                                                                                                                                                        | SHA256 Checksum                                                  |
+|---------------------|-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|------------------------------------------------------------------|
+| KDE Plasma          | [opinionated-debian-installer-bookworm-kde-plasma-20230324a.img](https://objectstorage.eu-frankfurt-1.oraclecloud.com/n/fr2rf1wke5iq/b/public/o/opinionated-debian-installer-bookworm-kde-plasma-20230324a.img) | 613957015231552da77e00e9b318825d6febbb41b8814d21de8049ff13f22508 |
+| Gnome               | [opinionated-debian-installer-bookworm-gnome-20230325a.img](https://objectstorage.eu-frankfurt-1.oraclecloud.com/n/fr2rf1wke5iq/b/public/o/opinionated-debian-installer-bookworm-gnome-20230325a.img)           | df318311c3a38d08ca344bfaf1e393301c73ab9d713c63634ab9f6c96474f898 |                                                                 |                                                                  |
+
+
 ## Instructions
  
- 1. Download our [live image](https://objectstorage.eu-frankfurt-1.oraclecloud.com/n/fr2rf1wke5iq/b/public/o/opinionated-debian-installer-bookworm-kde-plasma-20230324a.img)
+ 1. Download a live image
  2. Write the image to a USB flash drive and boot it
- 3. Start the installer icon from the desktop and fill in the form in the browser and press the big _Install_ button
+ 3. Start the installer icon from the desktop/dash, fill in the form in the browser and press the big _Install_ button
  4. Reboot and enjoy
 
 ## Screenshots

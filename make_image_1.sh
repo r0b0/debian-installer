@@ -190,6 +190,18 @@ echo running tasksel
 read -p "Enter to continue"
 chroot ${target}/ tasksel
 
+if grep -qs "${target}/var/cache/apt/archives" /proc/mounts ; then
+    echo unmounting apt cache directory from target
+    read -p "Enter to continue"
+    umount ${target}/var/cache/apt/archives
+else
+    echo  apt cache directory not mounted to target
+fi
+
+echo downloading remaining .deb files for the installer
+read -p "Enter to continue"
+chroot ${target}/ apt-get install -y --download-only locales systemd systemd-boot dracut btrfs-progs tasksel network-manager cryptsetup tpm2-tools linux-image-amd64
+
 echo cleaning up
 read -p "Enter to continue"
 rm -f ${target}/etc/machine-id
