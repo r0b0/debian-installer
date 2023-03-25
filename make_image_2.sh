@@ -139,10 +139,26 @@ else
     echo "${USERNAME}:live" > ${target}/tmp/passwd
     chroot ${target}/ bash -c "chpasswd < /tmp/passwd"
     rm ${target}/tmp/passwd
-    mkdir -p ${target}/home/live/Desktop
-    install_file home/live/Desktop/installer.desktop
-    chown -R 1000:1000 ${target}/home/live
 fi
+
+# place the icon in the apps menu
+mkdir -p ${target}/usr/share/applications
+install_file usr/share/applications/installer.desktop
+# kde - place the icon on the desktop
+mkdir -p ${target}/home/live/Desktop
+install_file home/live/Desktop/installer.desktop
+# gnome - place the icon to the 'dash'
+if [ -f ${target}/usr/bin/dconf ]; then
+  mkdir -p ${target}/etc/dconf/profile
+  install_file etc/dconf/profile/user
+  mkdir -p ${target}/etc/dconf/db/local.d
+  install_file etc/dconf/db/local.d/01-favorite-apps
+  echo running dconf update
+  chroot ${target}/ dconf update
+else
+  echo dconf not installed, skipping
+fi
+chown -R 1000:1000 ${target}/home/live
 
 echo configuring dracut
 read -p "Enter to continue"
@@ -190,9 +206,10 @@ read -p "Enter to continue"
 chroot ${target}/ sh /tmp/run1.sh
 
 echo configuring autologin
-# TODO gdm etc.
 mkdir -p ${target}/etc/sddm.conf.d/
 install_file etc/sddm.conf.d/autologin.conf
+mkdir -p ${target}/etc/gdm3
+install_file etc/gdm3/daemon.conf
 
 echo cleaning up
 read -p "Enter to continue"
