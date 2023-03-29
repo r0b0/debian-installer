@@ -210,6 +210,8 @@ mkdir -p ${target}/etc/sddm.conf.d/
 install_file etc/sddm.conf.d/autologin.conf
 mkdir -p ${target}/etc/gdm3
 install_file etc/gdm3/daemon.conf
+mkdir -p ${target}/etc/lightdm/lightdm.conf.d
+install_file etc/lightdm/lightdm.conf.d/10-autologin.conf
 
 echo cleaning up
 read -p "Enter to continue"
