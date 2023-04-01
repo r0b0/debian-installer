@@ -14,7 +14,6 @@ This tool can be used to create a modern installation of Debian. Our opinions of
  - **The installer will take over your whole disk**
  - Bookworm (debian 12) only
  - Amd64 with EFI only
- - No support for swap partition at the moment
  - The installer is in english only
 
 ## Downloads
@@ -39,8 +38,11 @@ This tool can be used to create a modern installation of Debian. Our opinions of
 
 ## Details
 
-- 2 GPT disk partitions are created on the designated disk drive: UEFI ESP partition (1GB) and a [LUKS](https://cryptsetup-team.pages.debian.net/cryptsetup/README.Debian.html) device (rest of the drive)
-- GPT root partition is [auto-discoverable](https://www.freedesktop.org/software/systemd/man/systemd-gpt-auto-generator.html)
+- GPT disk partitions are created on the designated disk drive: 
+  - UEFI ESP partition
+  - Optional swap partition - LUKS encrypted
+  - Root partition - [LUKS](https://cryptsetup-team.pages.debian.net/cryptsetup/README.Debian.html) encrypted (rest of the drive)
+- GPT root and swap partition is [auto-discoverable](https://www.freedesktop.org/software/systemd/man/systemd-gpt-auto-generator.html)
 - Btrfs subvolumes will be called `@` for `/` (marked as default) and `@home` for `/home`, the top-level subvolume will be mounted to `/root/btrfs1`
 - The system is installed using an image from the live iso. This will speed up the installation significantly.
 - [Dracut](https://github.com/dracutdevs/dracut/wiki/) is used instead of initramfs-tools

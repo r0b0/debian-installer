@@ -28,6 +28,8 @@ export default {
         LUKS_PASSWORD: undefined,
         HOSTNAME: "debian",
         TIMEZONE: "UTC",
+        ENABLE_SWAP: true,
+        SWAP_SIZE: 1,
       }
     }
   },
@@ -152,6 +154,7 @@ export default {
           .then(response => {
             console.log(response);
             this.install_to_device_status = "";
+            this.finished = false;
           })
           .catch(error => {
             throw Error(error);
@@ -191,8 +194,8 @@ export default {
       <li>The installer <strong>will overwrite the entire disk</strong>.</li>
       <li>I repeat, <strong>your entire disk will be overwritten</strong> when you press the Install button.
         There is no way to undo this action.</li>
-      <li>If you encounter issues, press the <em>Stop</em> button, open a terminal and investigate.
-      Password for the root user in this live system is <code>live</code></li>
+      <li>If you encounter issues, press the <em>Stop</em> button, open a terminal and investigate.</li>
+      <li>Password for the root user in this live system is <code>live</code></li>
       <li>Data in this live system will be persisted, this is not read-only.</li>
     </ul>
     <h2>Features</h2>
@@ -247,10 +250,17 @@ export default {
         <legend>Configuration</legend>
         <label for="HOSTNAME">Hostname</label>
         <input type="text" id="HOSTNAME" v-model="installer.HOSTNAME">
+
         <label for="TIMEZONE">Time Zone</label>
         <select :disabled="timezones.length==0" id="TIMEZONE" v-model="installer.TIMEZONE">
             <option v-for="item in timezones" :value="item">{{ item }}</option>
         </select>
+
+        <input type="checkbox" id="ENABLE_SWAP" v-model="installer.ENABLE_SWAP" class="inline mt-2">
+        <label for="ENABLE_SWAP" class="inline mt-2">Enable Swap</label>
+
+        <label for="SWAP_SIZE">Swap Size (GB)</label>
+        <input type="number" id="SWAP_SIZE" v-model="installer.SWAP_SIZE" :disabled="!installer.ENABLE_SWAP">
       </fieldset>
 
       <fieldset>
@@ -274,7 +284,7 @@ export default {
   </main>
 
   <footer>
-    <span>Opinionated Debian Installer version 20230329a</span>
+    <span>Opinionated Debian Installer version 20230401a</span>
     <span>Installer &copy;2022-2023 <a href="https://github.com/r0b0/debian-installer">Robert T</a></span>
     <span>Banner &copy;2022 <a href="https://github.com/julietteTaka/Emerald">Juliette Taka</a></span>
   </footer>
@@ -325,6 +335,10 @@ label:not(.inline) {
   display: block;
 }
 
+.mt-2 {
+  margin-top: 12pt;
+}
+
 button {
   margin-top: 0.5em;
 }
@@ -365,7 +379,6 @@ button {
     justify-self: center;
   }
 }
-
 
 footer span {
   margin-right: 2em;

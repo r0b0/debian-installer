@@ -51,7 +51,7 @@ fi
 if [ ! -f fs_top_created.txt ]; then
     echo create overlay top filesystem on ${overlay_top_device}
     read -p "Enter to continue"
-    mkfs.btrfs -f ${overlay_top_device}
+    mkfs.btrfs -f -d single -m single --mixed ${overlay_top_device}
     touch fs_top_created.txt
 fi
 

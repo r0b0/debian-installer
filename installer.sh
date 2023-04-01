@@ -10,6 +10,8 @@ ROOT_PASSWORD=changeme
 LUKS_PASSWORD=luke
 DEBIAN_VERSION=bookworm
 HOSTNAME=debian12
+ENABLE_SWAP=true
+SWAP_SIZE=2
 fi
 
 function notify () {
@@ -42,6 +44,10 @@ if [ ! -f luks-part.uuid ]; then
     notify generate uuid for luks partition
     uuidgen > luks-part.uuid
 fi
+if [ ! -f swap-part.uuid ]; then
+    notify generate uuid for swap partition
+    uuidgen > swap-part.uuid
+fi
 if [ ! -f luks.uuid ]; then
     notify generate uuid for luks device
     uuidgen > luks.uuid
@@ -52,6 +58,8 @@ if [ ! -f btrfs.uuid ]; then
 fi
 
 root_part_type="4f68bce3-e8cd-4db1-96e7-fbcaf984b709"  # X86_64
+system_part_type="C12A7328-F81F-11D2-BA4B-00A0C93EC93B"
+swap_part_type="0657FD6D-A4AB-43C4-84E5-0933C84B4F4F "
 efi_uuid=$(cat efi-part.uuid)
 luks_part_uuid=$(cat luks-part.uuid)
 luks_uuid=$(cat luks.uuid)
@@ -60,22 +68,45 @@ top_level_mount=/mnt/top_level_mount
 target=/target
 luks_device=root
 root_device=/dev/mapper/${luks_device}
-# TODO test with just rd.luks.options=tpm2-device=auto
-kernel_params="rd.luks.options=${luks_uuid}=tpm2-device=auto rw quiet rootfstype=btrfs rootflags=${FSFLAGS} rd.auto=1 splash"
+kernel_params="rd.luks.options=tpm2-device=auto rw quiet rootfstype=btrfs rootflags=${FSFLAGS} rd.auto=1 splash"
+
+if [ ${ENABLE_SWAP} == "true" ]; then
+swap_part_uuid=$(cat swap-part.uuid)
+swap_size_blocks=$((${SWAP_SIZE}*2048*1024))
+root_start_blocks=$((2099200+${swap_size_blocks}))
+swap_partition_nr=2
+swap_partition=${DISK}${swap_partition_nr}
+swap_device=swap1
+root_partition_nr=3
+sfdisk_format=$(cat <<EOF
+${DISK}1: start=2048, size=2097152, type=${system_part_type}, name="EFI system partition", uuid=${efi_uuid}
+${DISK}2: start=2099200, size=${swap_size_blocks}, type=${swap_part_type}, name="Swap partition", uuid=${swap_part_uuid}
+${DISK}3: start=${root_start_blocks}, size=4096000, type=${root_part_type}, name="Root partition", uuid=${luks_part_uuid}
+EOF
+)
+else
+root_partition_nr=2
+swap_partition=none
+sfdisk_format=$(cat <<EOF
+${DISK}1: start=2048, size=2097152, type=${system_part_type}, name="EFI system partition", uuid=${efi_uuid}
+${DISK}2: start=2099200, size=4096000, type=${root_part_type}, name="LUKS partition", uuid=${luks_part_uuid}
+EOF
+)
+fi
+root_partition=${DISK}${root_partition_nr}
 
 if [ ! -f partitions_created.txt ]; then
-notify create 2 partitions on ${DISK}
+notify create ${root_partition_nr} partitions on ${DISK}
 sfdisk $DISK <<EOF
 label: gpt
 unit: sectors
 sector-size: 512
 
-${DISK}1: start=2048, size=2097152, type=C12A7328-F81F-11D2-BA4B-00A0C93EC93B, name="EFI system partition", uuid=${efi_uuid}
-${DISK}2: start=2099200, size=4096000, type=${root_part_type}, name="LUKS partition", uuid=${luks_part_uuid}
+${sfdisk_format}
 EOF
 
-notify resize the second partition on ${DISK} to fill available space
-echo ", +" | sfdisk -N 2 $DISK
+notify resize the root partition on ${DISK} to fill available space
+echo ", +" | sfdisk -N ${root_partition_nr} $DISK
 
 sfdisk -d $DISK > partitions_created.txt
 fi
@@ -84,28 +115,33 @@ if [ ! -f $KEYFILE ]; then
     # TODO do we want to store this file in the installed system?
     notify generate key file for luks
     dd if=/dev/random of=${KEYFILE} bs=512 count=1
-    notify remove any old luks on ${DISK}2
-    cryptsetup erase ${DISK}2
-    wipefs -a ${DISK}2
+    notify remove any old luks on ${root_partition}
+    cryptsetup erase ${root_partition}
+    wipefs -a ${root_partition}
+    if [ -e ${swap_partition} ]; then
+      notify remove any old luks on ${swap_partition}
+      cryptsetup erase ${swap_partition}
+      wipefs -a ${swap_partition}
+    fi
 fi
 
-cryptsetup isLuks ${DISK}2
+cryptsetup isLuks ${root_partition}
 retVal=$?
 if [ $retVal -ne 0 ]; then
-    notify setup luks on ${DISK}2
-    cryptsetup luksFormat ${DISK}2 --type luks2 --batch-mode --key-file $KEYFILE
-    notify setup luks password
+    notify setup luks on ${root_partition}
+    cryptsetup luksFormat ${root_partition} --type luks2 --batch-mode --key-file $KEYFILE
+    notify setup luks password on root
     echo "${LUKS_PASSWORD}" > /tmp/passwd
-    cryptsetup --key-file=luks.key luksAddKey ${DISK}2 /tmp/passwd
+    cryptsetup --key-file=luks.key luksAddKey ${root_partition} /tmp/passwd
     rm -f /tmp/passwd
-    cryptsetup luksUUID ${DISK}2 > luks.uuid
+    cryptsetup luksUUID ${root_partition} > luks.uuid
 else
-    echo luks already set up
+    echo luks already set up on root
 fi
 
 if [ ! -e ${root_device} ]; then
-    notify open luks
-    cryptsetup luksOpen ${DISK}2 ${luks_device} --key-file $KEYFILE
+    notify open luks on root
+    cryptsetup luksOpen ${root_partition} ${luks_device} --key-file $KEYFILE
 fi
 
 if [ -e /dev/disk/by-partlabel/BaseImage ]; then
@@ -128,6 +164,31 @@ if [ ! -f vfat_created.txt ]; then
     mkfs.vfat ${DISK}1
     touch vfat_created.txt
 fi
+
+if [ ${ENABLE_SWAP} == "true" ]; then
+cryptsetup isLuks ${swap_partition}
+retVal=$?
+if [ $retVal -ne 0 ]; then
+    notify setup luks on ${swap_partition}
+    cryptsetup luksFormat ${swap_partition} --type luks2 --batch-mode --key-file $KEYFILE
+    notify setup luks password on swap
+    echo "${LUKS_PASSWORD}" > /tmp/passwd
+    cryptsetup --key-file=luks.key luksAddKey ${swap_partition} /tmp/passwd
+    rm -f /tmp/passwd
+    cryptsetup luksUUID ${swap_partition} > luks-swap.uuid
+else
+    echo luks already set up on swap
+fi
+
+if [ ! -e /dev/mapper/${swap_device} ]; then
+    notify open luks swap
+    cryptsetup luksOpen ${swap_partition} ${swap_device} --key-file $KEYFILE
+fi
+
+notify making swap
+mkswap /dev/mapper/${swap_device}
+
+fi  # swap enabled
 
 if grep -qs "${top_level_mount}" /proc/mounts ; then
     echo top-level subvolume already mounted on ${top_level_mount}
@@ -240,6 +301,13 @@ EOF
 cat <<EOF > ${target}/etc/kernel/cmdline
 ${kernel_params}
 EOF
+
+if [ ${ENABLE_SWAP} == "true" ]; then
+cat <<EOF > ${target}/etc/dracut.conf.d/90-hibernate.conf
+add_dracutmodules+=" resume "
+EOF
+fi
+
 rm -f ${target}/etc/crypttab
 
 notify install required packages on ${target}
@@ -260,7 +328,10 @@ systemd-cryptenroll --tpm2-device=list > /tmp/tpm-list.txt
 if grep -qs "/dev/tpm" /tmp/tpm-list.txt ; then
     echo tpm available, enrolling
     cp $KEYFILE /target
-    systemd-cryptenroll --unlock-key-file=/${KEYFILE} --tpm2-device=auto ${DISK}2 --tpm2-pcrs=${TPM_PCRS}
+    systemd-cryptenroll --unlock-key-file=/${KEYFILE} --tpm2-device=auto ${root_partition} --tpm2-pcrs=${TPM_PCRS}
+    if [ -e ${swap_partition} ]; then
+      systemd-cryptenroll --unlock-key-file=/${KEYFILE} --tpm2-device=auto ${swap_partition} --tpm2-pcrs=${TPM_PCRS}
+    fi
 else
     echo tpm not avaialble
 fi
@@ -321,5 +392,6 @@ umount -R ${top_level_mount}
 
 notify closing luks
 cryptsetup luksClose ${luks_device}
+cryptsetup luksClose /dev/mapper/${swap_device}
 
 notify "INSTALLATION FINISHED"
