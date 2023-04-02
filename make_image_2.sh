@@ -190,7 +190,7 @@ bootctl install
 systemctl enable lighttpd
 systemctl enable NetworkManager.service
 systemctl disable systemd-networkd.service  # seems to fight with NetworkManager
-systemctl disable systemd-networkd-wait-online.service
+systemctl disable systemd-networkd-wait-online.service  # TODO why is it still active?
 pip install flask-sock --break-system-packages
 EOF
 read -p "Enter to continue"

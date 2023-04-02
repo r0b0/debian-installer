@@ -31,9 +31,11 @@ FSFLAGS="compress=zstd:1"
 DEBIAN_FRONTEND=noninteractive
 export DEBIAN_FRONTEND
 
-notify install required packages
-apt-get update -y
-apt-get install -y cryptsetup debootstrap uuid-runtime
+if [ x"${NON_INTERACTIVE}" == "x" ]; then
+    notify install required packages
+    apt-get update -y
+    apt-get install -y cryptsetup debootstrap uuid-runtime
+fi
 
 KEYFILE=luks.key
 if [ ! -f efi-part.uuid ]; then
@@ -71,6 +73,8 @@ root_device=/dev/mapper/${luks_device}
 kernel_params="rd.luks.options=tpm2-device=auto rw quiet rootfstype=btrfs rootflags=${FSFLAGS} rd.auto=1 splash"
 
 if [ ${ENABLE_SWAP} == "true" ]; then
+# TODO this doesn't work - see https://github.com/systemd/systemd/issues/20355
+# kernel_params="${kernel_params} resume=/dev/mapper/swap"
 swap_part_uuid=$(cat swap-part.uuid)
 swap_size_blocks=$((${SWAP_SIZE}*2048*1024))
 root_start_blocks=$((2099200+${swap_size_blocks}))
@@ -115,11 +119,11 @@ if [ ! -f $KEYFILE ]; then
     # TODO do we want to store this file in the installed system?
     notify generate key file for luks
     dd if=/dev/random of=${KEYFILE} bs=512 count=1
-    notify remove any old luks on ${root_partition}
+    notify remove any old luks on ${root_partition} (root)
     cryptsetup erase ${root_partition}
     wipefs -a ${root_partition}
     if [ -e ${swap_partition} ]; then
-      notify remove any old luks on ${swap_partition}
+      notify remove any old luks on ${swap_partition} (swap)
       cryptsetup erase ${swap_partition}
       wipefs -a ${swap_partition}
     fi
@@ -128,7 +132,7 @@ fi
 cryptsetup isLuks ${root_partition}
 retVal=$?
 if [ $retVal -ne 0 ]; then
-    notify setup luks on ${root_partition}
+    notify setup luks on ${root_partition} (root)
     cryptsetup luksFormat ${root_partition} --type luks2 --batch-mode --key-file $KEYFILE
     notify setup luks password on root
     echo "${LUKS_PASSWORD}" > /tmp/passwd
@@ -148,7 +152,9 @@ if [ -e /dev/disk/by-partlabel/BaseImage ]; then
     if [ ! -f base_image_copied.txt ]; then
         notify copy base image to ${root_device}
         dd if=/dev/disk/by-partlabel/BaseImage of=${root_device} bs=4M status=progress
+        notify check the filesystem on root
         btrfs check ${root_device}
+        notify change the filesystem uuid on root
         btrfstune -U ${btrfs_uuid} -f ${root_device}  # change the uuid
         touch base_image_copied.txt
     fi
@@ -193,7 +199,7 @@ fi  # swap enabled
 if grep -qs "${top_level_mount}" /proc/mounts ; then
     echo top-level subvolume already mounted on ${top_level_mount}
 else
-    notify mount top-level subvolume on ${top_level_mount}
+    notify mount top-level subvolume on ${top_level_mount} and resize to fit the whole partition
     mkdir -p ${top_level_mount}
     mount ${root_device} ${top_level_mount} -o rw,${FSFLAGS},subvolid=5
     btrfs filesystem resize max ${top_level_mount}
@@ -328,8 +334,10 @@ systemd-cryptenroll --tpm2-device=list > /tmp/tpm-list.txt
 if grep -qs "/dev/tpm" /tmp/tpm-list.txt ; then
     echo tpm available, enrolling
     cp $KEYFILE /target
+    echo "... on root"
     systemd-cryptenroll --unlock-key-file=/${KEYFILE} --tpm2-device=auto ${root_partition} --tpm2-pcrs=${TPM_PCRS}
     if [ -e ${swap_partition} ]; then
+      echo "... on swap"
       systemd-cryptenroll --unlock-key-file=/${KEYFILE} --tpm2-device=auto ${swap_partition} --tpm2-pcrs=${TPM_PCRS}
     fi
 else
