@@ -50,10 +50,6 @@ if [ ! -f swap-part.uuid ]; then
     notify generate uuid for swap partition
     uuidgen > swap-part.uuid
 fi
-if [ ! -f luks.uuid ]; then
-    notify generate uuid for luks device
-    uuidgen > luks.uuid
-fi
 if [ ! -f btrfs.uuid ]; then
     notify generate uuid for btrfs filesystem
     uuidgen > btrfs.uuid
@@ -64,7 +60,6 @@ system_part_type="C12A7328-F81F-11D2-BA4B-00A0C93EC93B"
 swap_part_type="0657FD6D-A4AB-43C4-84E5-0933C84B4F4F "
 efi_uuid=$(cat efi-part.uuid)
 luks_part_uuid=$(cat luks-part.uuid)
-luks_uuid=$(cat luks.uuid)
 btrfs_uuid=$(cat btrfs.uuid)
 top_level_mount=/mnt/top_level_mount
 target=/target
@@ -73,8 +68,6 @@ root_device=/dev/mapper/${luks_device}
 kernel_params="rd.luks.options=tpm2-device=auto rw quiet rootfstype=btrfs rootflags=${FSFLAGS} rd.auto=1 splash"
 
 if [ ${ENABLE_SWAP} == "true" ]; then
-# TODO this doesn't work - see https://github.com/systemd/systemd/issues/20355
-# kernel_params="${kernel_params} resume=/dev/mapper/swap"
 swap_part_uuid=$(cat swap-part.uuid)
 swap_size_blocks=$((${SWAP_SIZE}*2048*1024))
 root_start_blocks=$((2099200+${swap_size_blocks}))
@@ -82,6 +75,8 @@ swap_partition_nr=2
 swap_partition=${DISK}${swap_partition_nr}
 swap_device=swap1
 root_partition_nr=3
+# TODO this doesn't work - see https://github.com/systemd/systemd/issues/20355
+# kernel_params="${kernel_params} resume=/dev/mapper/${swap_device}"
 sfdisk_format=$(cat <<EOF
 ${DISK}1: start=2048, size=2097152, type=${system_part_type}, name="EFI system partition", uuid=${efi_uuid}
 ${DISK}2: start=2099200, size=${swap_size_blocks}, type=${swap_part_type}, name="Swap partition", uuid=${swap_part_uuid}
@@ -119,29 +114,33 @@ if [ ! -f $KEYFILE ]; then
     # TODO do we want to store this file in the installed system?
     notify generate key file for luks
     dd if=/dev/random of=${KEYFILE} bs=512 count=1
-    notify remove any old luks on ${root_partition} (root)
+    notify "remove any old luks on ${root_partition} (root)"
     cryptsetup erase ${root_partition}
     wipefs -a ${root_partition}
     if [ -e ${swap_partition} ]; then
-      notify remove any old luks on ${swap_partition} (swap)
+      notify "remove any old luks on ${swap_partition} (swap)"
       cryptsetup erase ${swap_partition}
       wipefs -a ${swap_partition}
     fi
 fi
 
-cryptsetup isLuks ${root_partition}
-retVal=$?
-if [ $retVal -ne 0 ]; then
-    notify setup luks on ${root_partition} (root)
-    cryptsetup luksFormat ${root_partition} --type luks2 --batch-mode --key-file $KEYFILE
-    notify setup luks password on root
-    echo "${LUKS_PASSWORD}" > /tmp/passwd
-    cryptsetup --key-file=luks.key luksAddKey ${root_partition} /tmp/passwd
-    rm -f /tmp/passwd
-    cryptsetup luksUUID ${root_partition} > luks.uuid
-else
-    echo luks already set up on root
-fi
+function setup_luks {
+  cryptsetup isLuks "$1"
+  retVal=$?
+  if [ $retVal -ne 0 ]; then
+      notify setup luks on "$1"
+      cryptsetup luksFormat "$1" --type luks2 --batch-mode --key-file $KEYFILE
+      notify setup luks password on "$1"
+      echo "${LUKS_PASSWORD}" > /tmp/passwd
+      cryptsetup --key-file=luks.key luksAddKey "$1" /tmp/passwd
+      rm -f /tmp/passwd
+  else
+      echo luks already set up on "$1"
+  fi
+  cryptsetup luksUUID "$1" > luks.uuid
+}
+
+setup_luks ${root_partition}
 
 if [ ! -e ${root_device} ]; then
     notify open luks on root
@@ -172,19 +171,8 @@ if [ ! -f vfat_created.txt ]; then
 fi
 
 if [ ${ENABLE_SWAP} == "true" ]; then
-cryptsetup isLuks ${swap_partition}
-retVal=$?
-if [ $retVal -ne 0 ]; then
-    notify setup luks on ${swap_partition}
-    cryptsetup luksFormat ${swap_partition} --type luks2 --batch-mode --key-file $KEYFILE
-    notify setup luks password on swap
-    echo "${LUKS_PASSWORD}" > /tmp/passwd
-    cryptsetup --key-file=luks.key luksAddKey ${swap_partition} /tmp/passwd
-    rm -f /tmp/passwd
-    cryptsetup luksUUID ${swap_partition} > luks-swap.uuid
-else
-    echo luks already set up on swap
-fi
+setup_luks ${swap_partition}
+swap_uuid=$(cat luks.uuid)
 
 if [ ! -e /dev/mapper/${swap_device} ]; then
     notify open luks swap
@@ -260,6 +248,11 @@ UUID=${btrfs_uuid} /home btrfs defaults,subvol=@home,${FSFLAGS} 0 1
 UUID=${btrfs_uuid} /root/btrfs1 btrfs defaults,subvolid=5,${FSFLAGS} 0 1
 PARTUUID=${efi_uuid} /boot/efi vfat defaults 0 2
 EOF
+if [ ${ENABLE_SWAP} == "true" ]; then
+cat <<EOF >> ${target}/etc/fstab
+/dev/mapper/${swap_device} swap swap defaults 0 0
+EOF
+fi
 
 notify setup sources.list
 cat <<EOF > ${target}/etc/apt/sources.list
@@ -315,6 +308,12 @@ EOF
 fi
 
 rm -f ${target}/etc/crypttab
+if [ ${ENABLE_SWAP} == "true" ]; then
+notify setup crypttab
+cat <<EOF > ${target}/etc/crypttab
+${swap_device} UUID=${swap_uuid} - tpm2-device=auto
+EOF
+fi
 
 notify install required packages on ${target}
 cat <<EOF > ${target}/tmp/run1.sh
