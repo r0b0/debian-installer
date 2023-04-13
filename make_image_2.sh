@@ -51,7 +51,7 @@ fi
 if [ ! -f fs_top_created.txt ]; then
     echo create overlay top filesystem on ${overlay_top_device}
     read -p "Enter to continue"
-    mkfs.btrfs -f ${overlay_top_device}
+    mkfs.btrfs -f -d single -m single --mixed ${overlay_top_device}
     touch fs_top_created.txt
 fi
 
@@ -190,7 +190,7 @@ bootctl install
 systemctl enable lighttpd
 systemctl enable NetworkManager.service
 systemctl disable systemd-networkd.service  # seems to fight with NetworkManager
-systemctl disable systemd-networkd-wait-online.service
+systemctl disable systemd-networkd-wait-online.service  # TODO why is it still active?
 pip install flask-sock --break-system-packages
 EOF
 read -p "Enter to continue"

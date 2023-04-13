@@ -13,6 +13,7 @@ export default {
       install_to_device_process_key: "",
       install_to_device_status: "",
       overall_status: "",
+      running: false,
       finished: false,
       output_reader_connection: null,
       timezones: [],
@@ -28,6 +29,8 @@ export default {
         LUKS_PASSWORD: undefined,
         HOSTNAME: "debian",
         TIMEZONE: "UTC",
+        ENABLE_SWAP: true,
+        SWAP_SIZE: 1,
       }
     }
   },
@@ -98,6 +101,7 @@ export default {
       }
     },
     install() {
+      this.running = true;
       let data = new FormData();
       for(const [key, value] of Object.entries(this.installer)) {
         data.append(key, value);
@@ -129,6 +133,7 @@ export default {
             }
         })
         .catch(error => {
+            this.running = false;
             throw Error(error);
         });
     },
@@ -138,6 +143,7 @@ export default {
             console.debug(response);
             this.install_to_device_status = response.output;
             if(response.status == "FINISHED") {
+              this.running = false;
               this.finished = true;
               if (response.return_code == 0) {
                 this.overall_status = "green";
@@ -152,6 +158,9 @@ export default {
           .then(response => {
             console.log(response);
             this.install_to_device_status = "";
+            this.overall_status = "";
+            this.finished = false;
+            this.running = false;
           })
           .catch(error => {
             throw Error(error);
@@ -191,8 +200,8 @@ export default {
       <li>The installer <strong>will overwrite the entire disk</strong>.</li>
       <li>I repeat, <strong>your entire disk will be overwritten</strong> when you press the Install button.
         There is no way to undo this action.</li>
-      <li>If you encounter issues, press the <em>Stop</em> button, open a terminal and investigate.
-      Password for the root user in this live system is <code>live</code></li>
+      <li>If you encounter issues, press the <em>Stop</em> button, open a terminal and investigate.</li>
+      <li>Password for the root user in this live system is <code>live</code></li>
       <li>Data in this live system will be persisted, this is not read-only.</li>
     </ul>
     <h2>Features</h2>
@@ -213,50 +222,57 @@ export default {
         <div class="red">{{error_message}}</div>
 
         <label for="DISK">Device for Installation</label>
-        <select :disabled="block_devices.length==0" id="DISK"  v-model="installer.DISK">
+        <select :disabled="block_devices.length==0 || running" id="DISK"  v-model="installer.DISK">
           <option v-for="item in block_devices" :value="item.path" :disabled="item.ro">
             {{item.path}} {{item.model}} {{item.size}} {{item.ro ? '(Read Only)' : ''}}
           </option>
         </select>
         <label for="DEBIAN_VERSION">Debian Version</label>
-        <select id="DEBIAN_VERSION" v-model="installer.DEBIAN_VERSION">
+        <select id="DEBIAN_VERSION" v-model="installer.DEBIAN_VERSION" :disabled="running">
           <option value="bookworm" selected>Debian 12 Bookworm (TESTING)</option>
         </select>
       </fieldset>
 
       <fieldset>
         <legend>Disk Encryption Passphrase</legend>
-        <Password v-model="installer.LUKS_PASSWORD" />
+        <Password v-model="installer.LUKS_PASSWORD" :disabled="running" />
       </fieldset>
 
       <fieldset>
         <legend>Root User</legend>
-        <Password v-model="installer.ROOT_PASSWORD" />
+        <Password v-model="installer.ROOT_PASSWORD" :disabled="running" />
       </fieldset>
 
       <fieldset>
         <legend>Regular User</legend>
         <label for="USERNAME">User Name</label>
-        <input type="text" id="USERNAME" v-model="installer.USERNAME">
+        <input type="text" id="USERNAME" v-model="installer.USERNAME" :disabled="running">
         <label for="full_name">Full Name</label>
-        <input type="text" id="USER_FULL_NAME" v-model="installer.USER_FULL_NAME">
-        <Password v-model="installer.USER_PASSWORD" />
+        <input type="text" id="USER_FULL_NAME" v-model="installer.USER_FULL_NAME" :disabled="running">
+        <Password v-model="installer.USER_PASSWORD" :disabled="running" />
       </fieldset>
 
       <fieldset>
         <legend>Configuration</legend>
         <label for="HOSTNAME">Hostname</label>
-        <input type="text" id="HOSTNAME" v-model="installer.HOSTNAME">
+        <input type="text" id="HOSTNAME" v-model="installer.HOSTNAME" :disabled="running">
+
         <label for="TIMEZONE">Time Zone</label>
-        <select :disabled="timezones.length==0" id="TIMEZONE" v-model="installer.TIMEZONE">
+        <select :disabled="timezones.length==0 || running" id="TIMEZONE" v-model="installer.TIMEZONE">
             <option v-for="item in timezones" :value="item">{{ item }}</option>
         </select>
+
+        <input type="checkbox" id="ENABLE_SWAP" v-model="installer.ENABLE_SWAP" class="inline mt-2" :disabled="running">
+        <label for="ENABLE_SWAP" class="inline mt-2">Enable Swap</label>
+
+        <label for="SWAP_SIZE">Swap Size (GB)</label>
+        <input type="number" id="SWAP_SIZE" v-model="installer.SWAP_SIZE" :disabled="!installer.ENABLE_SWAP || running">
       </fieldset>
 
       <fieldset>
         <legend>Process</legend>
         <button type="button" @click="install()"
-                :disabled="!can_start">
+                :disabled="!can_start || running">
             Install debian on {{ installer.DISK }} <b>OVERWRITING THE WHOLE DRIVE</b>
         </button>
         <br>
@@ -274,7 +290,7 @@ export default {
   </main>
 
   <footer>
-    <span>Opinionated Debian Installer version 20230329a</span>
+    <span>Opinionated Debian Installer version 20230413a</span>
     <span>Installer &copy;2022-2023 <a href="https://github.com/r0b0/debian-installer">Robert T</a></span>
     <span>Banner &copy;2022 <a href="https://github.com/julietteTaka/Emerald">Juliette Taka</a></span>
   </footer>
@@ -325,6 +341,10 @@ label:not(.inline) {
   display: block;
 }
 
+.mt-2 {
+  margin-top: 12pt;
+}
+
 button {
   margin-top: 0.5em;
 }
@@ -365,7 +385,6 @@ button {
     justify-self: center;
   }
 }
-
 
 footer span {
   margin-right: 2em;

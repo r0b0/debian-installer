@@ -14,16 +14,14 @@ This tool can be used to create a modern installation of Debian. Our opinions of
  - **The installer will take over your whole disk**
  - Bookworm (debian 12) only
  - Amd64 with EFI only
- - No support for swap partition at the moment
  - The installer is in english only
 
 ## Downloads
 
 | Desktop environment | Download                                                                                                                                                                                                        | SHA-256 Checksum                                                        |
 |---------------------|-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|-------------------------------------------------------------------------|
-| KDE Plasma          | [opinionated-debian-installer-bookworm-kde-plasma-20230324a.img](https://objectstorage.eu-frankfurt-1.oraclecloud.com/n/fr2rf1wke5iq/b/public/o/opinionated-debian-installer-bookworm-kde-plasma-20230324a.img) | 61395701 5231552d a77e00e9 b318825d 6febbb41 b8814d21 de8049ff 13f22508 |
+| KDE Plasma          | [opinionated-debian-installer-bookworm-kde-plasma-20230413a.img](https://objectstorage.eu-frankfurt-1.oraclecloud.com/n/fr2rf1wke5iq/b/public/o/opinionated-debian-installer-bookworm-kde-plasma-20230413a.img) | 4b4655d7 4deb83fa 86149046 4b7b5516 ce1bc392 15271082 50a971d1 e1f4323b |
 | Gnome               | [opinionated-debian-installer-bookworm-gnome-20230325a.img](https://objectstorage.eu-frankfurt-1.oraclecloud.com/n/fr2rf1wke5iq/b/public/o/opinionated-debian-installer-bookworm-gnome-20230325a.img)           | df318311 c3a38d08 ca344bfa f1e39330 1c73ab9d 713c6363 4ab9f6c9 6474f898 |
-| XFCE                | [opinionated-debian-installer-bookworm-xfce-20230329a.img](https://objectstorage.eu-frankfurt-1.oraclecloud.com/n/fr2rf1wke5iq/b/public/o/opinionated-debian-installer-bookworm-xfce-20230329a.img)             | 2d7d2622 b6721998 f2e07636 4ae90d3a 64ca0ada dca63666 7dce5d53 43ff4991 |
 
 ## Instructions
 
@@ -39,7 +37,10 @@ This tool can be used to create a modern installation of Debian. Our opinions of
 
 ## Details
 
-- 2 GPT disk partitions are created on the designated disk drive: UEFI ESP partition (1GB) and a [LUKS](https://cryptsetup-team.pages.debian.net/cryptsetup/README.Debian.html) device (rest of the drive)
+- GPT disk partitions are created on the designated disk drive: 
+  - UEFI ESP partition
+  - Optional swap partition - LUKS encrypted
+  - Root partition - [LUKS](https://cryptsetup-team.pages.debian.net/cryptsetup/README.Debian.html) encrypted (rest of the drive)
 - GPT root partition is [auto-discoverable](https://www.freedesktop.org/software/systemd/man/systemd-gpt-auto-generator.html)
 - Btrfs subvolumes will be called `@` for `/` (marked as default) and `@home` for `/home`, the top-level subvolume will be mounted to `/root/btrfs1`
 - The system is installed using an image from the live iso. This will speed up the installation significantly.
