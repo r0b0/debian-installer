@@ -65,7 +65,7 @@ top_level_mount=/mnt/top_level_mount
 target=/target
 luks_device=root
 root_device=/dev/mapper/${luks_device}
-kernel_params="rd.luks.options=tpm2-device=auto rw quiet rootfstype=btrfs rootflags=${FSFLAGS} rd.auto=1 splash"
+kernel_params="luks.options=tpm2-device=auto rw quiet rootfstype=btrfs rootflags=${FSFLAGS} rd.auto=1 splash"
 
 if [ ${ENABLE_SWAP} == "true" ]; then
 swap_part_uuid=$(cat swap-part.uuid)
@@ -75,8 +75,7 @@ swap_partition_nr=2
 swap_partition=${DISK}${swap_partition_nr}
 swap_device=swap1
 root_partition_nr=3
-# TODO this doesn't work - see https://github.com/systemd/systemd/issues/20355
-# kernel_params="${kernel_params} resume=/dev/mapper/${swap_device}"
+
 sfdisk_format=$(cat <<EOF
 ${DISK}1: start=2048, size=2097152, type=${system_part_type}, name="EFI system partition", uuid=${efi_uuid}
 ${DISK}2: start=2099200, size=${swap_size_blocks}, type=${swap_part_type}, name="Swap partition", uuid=${swap_part_uuid}
@@ -131,7 +130,7 @@ function setup_luks {
       notify setup luks on "$1"
       cryptsetup luksFormat "$1" --type luks2 --batch-mode --key-file $KEYFILE
       notify setup luks password on "$1"
-      echo "${LUKS_PASSWORD}" > /tmp/passwd
+      echo -n "${LUKS_PASSWORD}" > /tmp/passwd
       cryptsetup --key-file=luks.key luksAddKey "$1" /tmp/passwd
       rm -f /tmp/passwd
   else
@@ -174,6 +173,8 @@ if [ ${ENABLE_SWAP} == "true" ]; then
 setup_luks ${swap_partition}
 swap_uuid=$(cat luks.uuid)
 
+kernel_params="${kernel_params} luks.name=${swap_uuid}=${swap_device} resume=/dev/mapper/${swap_device}"
+
 if [ ! -e /dev/mapper/${swap_device} ]; then
     notify open luks swap
     cryptsetup luksOpen ${swap_partition} ${swap_device} --key-file $KEYFILE
@@ -181,6 +182,7 @@ fi
 
 notify making swap
 mkswap /dev/mapper/${swap_device}
+swapon /dev/mapper/${swap_device}
 
 fi  # swap enabled
 
@@ -307,14 +309,6 @@ add_dracutmodules+=" resume "
 EOF
 fi
 
-rm -f ${target}/etc/crypttab
-if [ ${ENABLE_SWAP} == "true" ]; then
-notify setup crypttab
-cat <<EOF > ${target}/etc/crypttab
-${swap_device} UUID=${swap_uuid} - tpm2-device=auto
-EOF
-fi
-
 notify install required packages on ${target}
 cat <<EOF > ${target}/tmp/run1.sh
 #!/bin/bash
@@ -396,6 +390,7 @@ fi
 notify umounting all filesystems
 umount -R ${target}
 umount -R ${top_level_mount}
+swapoff /dev/mapper/${swap_device}
 
 notify closing luks
 cryptsetup luksClose ${luks_device}
