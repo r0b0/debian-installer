@@ -31,7 +31,13 @@ This tool can be used to create a modern installation of Debian. Our opinions of
 4. Start the installer icon from the desktop/dash, fill in the form in the browser and press the big _Install_ button
 5. Reboot and enjoy
 
-## Screenshots
+## Screencast & Screenshot
+
+Video of installation of Debian with KDE Plasma:
+
+[![Watch the video](https://img.youtube.com/vi/sbnKvGMcagI/maxresdefault.jpg)](https://youtu.be/sbnKvGMcagI)
+
+Screenshot of the full installer GUI:
 
 ![gui screenshot](readme-files/gui.png)
 
