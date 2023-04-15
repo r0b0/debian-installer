@@ -21,7 +21,7 @@ This tool can be used to create a modern installation of Debian. Our opinions of
 | Desktop environment | Download                                                                                                                                                                                                        | SHA-256 Checksum                                                        |
 |---------------------|-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|-------------------------------------------------------------------------|
 | KDE Plasma          | [opinionated-debian-installer-bookworm-kde-plasma-20230413a.img](https://objectstorage.eu-frankfurt-1.oraclecloud.com/n/fr2rf1wke5iq/b/public/o/opinionated-debian-installer-bookworm-kde-plasma-20230413a.img) | 4b4655d7 4deb83fa 86149046 4b7b5516 ce1bc392 15271082 50a971d1 e1f4323b |
-| Gnome               | [opinionated-debian-installer-bookworm-gnome-20230325a.img](https://objectstorage.eu-frankfurt-1.oraclecloud.com/n/fr2rf1wke5iq/b/public/o/opinionated-debian-installer-bookworm-gnome-20230325a.img)           | df318311 c3a38d08 ca344bfa f1e39330 1c73ab9d 713c6363 4ab9f6c9 6474f898 |
+| Gnome               | [opinionated-debian-installer-bookworm-gnome-20230415a.img](https://objectstorage.eu-frankfurt-1.oraclecloud.com/n/fr2rf1wke5iq/b/public/o/opinionated-debian-installer-bookworm-gnome-20230415a.img)           | 22ac05bb eb825a84 d948fa2c 49cfef2b 356c0569 b13c30db dbebdbf7 ce4162c5 |
 
 ## Instructions
 
