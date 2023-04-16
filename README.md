@@ -22,6 +22,7 @@ This tool can be used to create a modern installation of Debian. Our opinions of
 |---------------------|-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|-------------------------------------------------------------------------|
 | KDE Plasma          | [opinionated-debian-installer-bookworm-kde-plasma-20230413a.img](https://objectstorage.eu-frankfurt-1.oraclecloud.com/n/fr2rf1wke5iq/b/public/o/opinionated-debian-installer-bookworm-kde-plasma-20230413a.img) | 4b4655d7 4deb83fa 86149046 4b7b5516 ce1bc392 15271082 50a971d1 e1f4323b |
 | Gnome               | [opinionated-debian-installer-bookworm-gnome-20230415a.img](https://objectstorage.eu-frankfurt-1.oraclecloud.com/n/fr2rf1wke5iq/b/public/o/opinionated-debian-installer-bookworm-gnome-20230415a.img)           | 22ac05bb eb825a84 d948fa2c 49cfef2b 356c0569 b13c30db dbebdbf7 ce4162c5 |
+| Xfce                | [opinionated-debian-installer-bookworm-xfce-20230416a.img](https://objectstorage.eu-frankfurt-1.oraclecloud.com/n/fr2rf1wke5iq/b/public/o/opinionated-debian-installer-bookworm-xfce-20230416a.img)             | 7c7b5ffd 647af9ed 0f48d991 c93e1612 f6609e87 9e0d7a46 c5d08e73 e3e4fa90 |
 
 ## Instructions
 

@@ -11,8 +11,10 @@ FSFLAGS="compress=zstd:9"
 target=/target
 root_device=${DISK}2
 
-echo install required packages
-read -p "Enter to continue"
+SCRIPT_DIR=$( cd -- "$( dirname -- "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )
+. ${SCRIPT_DIR}/_make_image_lib.sh
+
+notify install required packages
 apt-get update -y
 DEBIAN_FRONTEND=noninteractive apt-get install -y debootstrap uuid-runtime
 
@@ -34,8 +36,7 @@ top_uuid=$(cat top-part.uuid)
 
 if [ ! -f partitions_created.txt ]; then
 # TODO mark the BaseImage partition as read-only (bit 60 - 0x1000000000000000)
-echo create 2 partitions on ${DISK}
-read -p "Enter to continue"
+notify create 2 partitions on ${DISK}
 sfdisk $DISK <<EOF
 label: gpt
 unit: sectors
@@ -45,36 +46,31 @@ ${DISK}1: start=2048, size=409600, type=uefi, name="EFI system partition", uuid=
 ${DISK}2: start=411648, size=409600, type=linux, name="BaseImage", uuid=${base_image_uuid}
 EOF
 
-echo resize the second partition on ${DISK} to fill available space
-read -p "Enter to continue"
+notify resize the second partition on ${DISK} to fill available space
 echo ", +" | sfdisk -N 2 $DISK
 
 sfdisk -d $DISK > partitions_created.txt
 fi
 
 if [ ! -f btrfs_created.txt ]; then
-    echo create root filesystem on ${root_device}
-    read -p "Enter to continue"
+    notify create root filesystem on ${root_device}
     mkfs.btrfs -f ${root_device} | tee btrfs_created.txt
 fi
 if [ ! -f vfat_created.txt ]; then
-    echo create esp filesystem on ${DISK}1
-    read -p "Enter to continue"
+    notify create esp filesystem on ${DISK}1
     mkfs.vfat ${DISK}1 | tee vfat_created.txt
 fi
 
 if grep -qs "/mnt/btrfs1" /proc/mounts ; then
     echo top-level subvolume already mounted on /mnt/btrfs1
 else
-    echo mount top-level subvolume on /mnt/btrfs1
+    notify mount top-level subvolume on /mnt/btrfs1
     mkdir -p /mnt/btrfs1
-    read -p "Enter to continue"
     mount ${root_device} /mnt/btrfs1 -o ${FSFLAGS}
 fi
 
 if [ ! -e /mnt/btrfs1/@ ]; then
-    echo create @ and @home subvolumes on /mnt/btrfs1
-    read -p "Enter to continue"
+    notify create @ and @home subvolumes on /mnt/btrfs1
     btrfs subvolume create /mnt/btrfs1/@
     btrfs subvolume create /mnt/btrfs1/@home
     btrfs subvolume set-default /mnt/btrfs1/@
@@ -83,9 +79,8 @@ fi
 if grep -qs "${target}" /proc/mounts ; then
     echo root subvolume already mounted on ${target}
 else
-    echo mount root and home subvolume on ${target}
+    notify mount root and home subvolume on ${target}
     mkdir -p ${target}
-    read -p "Enter to continue"
     mount ${root_device} ${target} -o ${FSFLAGS},subvol=@
     mkdir -p ${target}/home
     mount ${root_device} ${target}/home -o ${FSFLAGS},subvol=@home
@@ -95,22 +90,19 @@ mkdir -p ${target}/var/cache/apt/archives
 if grep -qs "${target}/var/cache/apt/archives" /proc/mounts ; then
     echo apt cache directory already bind mounted on target
 else
-    echo bind mounting apt cache directory to target
-    read -p "Enter to continue"
+    notify bind mounting apt cache directory to target
     mount /var/cache/apt/archives ${target}/var/cache/apt/archives -o bind
 fi
 
 if [ ! -f ${target}/etc/debian_version ]; then
-    echo install debian on ${target}
-    read -p "Enter to continue"
+    notify install debian on ${target}
     debootstrap ${DEBIAN_VERSION} ${target} http://deb.debian.org/debian
 fi
 
 if grep -qs "${target}/proc" /proc/mounts ; then
     echo bind mounts already set up on ${target}
 else
-    echo bind mount dev, proc, sys, run, var/tmp on ${target}
-    read -p "Enter to continue"
+    notify bind mount dev, proc, sys, run, var/tmp on ${target}
     mount -t proc none ${target}/proc
     mount --make-rslave --rbind /sys ${target}/sys
     mount --make-rslave --rbind /dev ${target}/dev
@@ -118,15 +110,14 @@ else
     mount --make-rslave --rbind /var/tmp ${target}/var/tmp
 fi
 
-echo setup sources.list
-read -p "Enter to continue"
+notify setup sources.list
 cat <<EOF > ${target}/etc/apt/sources.list
 deb http://deb.debian.org/debian ${DEBIAN_VERSION} main contrib non-free non-free-firmware
 deb http://security.debian.org/ ${DEBIAN_VERSION}-security main contrib non-free non-free-firmware
 deb http://deb.debian.org/debian ${DEBIAN_VERSION}-backports main contrib non-free non-free-firmware
 EOF
 
-echo install required packages on ${target}
+notify install required packages on ${target}
 cat <<EOF > ${target}/tmp/packages.txt
 locales
 adduser
@@ -183,51 +174,28 @@ export DEBIAN_FRONTEND=noninteractive
 apt-get update
 xargs apt-get install -t ${DEBIAN_SOURCE} -y < /tmp/packages.txt
 EOF
-read -p "Enter to continue"
 chroot ${target}/ bash /tmp/run2.sh
 
-echo running tasksel
-read -p "Enter to continue"
+notify running tasksel
 chroot ${target}/ tasksel
 
 if grep -qs "${target}/var/cache/apt/archives" /proc/mounts ; then
-    echo unmounting apt cache directory from target
-    read -p "Enter to continue"
+    notify unmounting apt cache directory from target
     umount ${target}/var/cache/apt/archives
 else
     echo  apt cache directory not mounted to target
 fi
 
-echo downloading remaining .deb files for the installer
-read -p "Enter to continue"
+notify downloading remaining .deb files for the installer
 chroot ${target}/ apt-get install -y --download-only locales systemd systemd-boot dracut btrfs-progs tasksel network-manager cryptsetup tpm2-tools linux-image-amd64
 
-echo cleaning up
-read -p "Enter to continue"
+notify cleaning up
 rm -f ${target}/etc/machine-id
 rm -f ${target}/etc/crypttab
 rm -f ${target}/var/log/*log
 rm -f ${target}/var/log/apt/*log
 
-echo balancing and shrinking the filesystem
-read -p "Enter to continue"
-btrfs balance start -dusage=90 ${target}
-true
-while [ $? -eq 0 ]; do
-    btrfs filesystem resize -1G ${target}
-done
-true
-while [ $? -eq 0 ]; do
-    btrfs filesystem resize -100M ${target}
-done
-true
-while [ $? -eq 0 ]; do
-    btrfs filesystem resize -10M ${target}
-done
-
-btrfs filesystem usage -m ${target} |grep slack | cut -f 3 | tr -d '[:space:]' > device_slack.txt
-DEVICE_SLACK=$(cat device_slack.txt)
-echo device slack is ${DEVICE_SLACK}
+shrink_btrfs_filesystem ${target}
 
 echo umounting all filesystems
 read -p "Enter to continue"
