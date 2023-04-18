@@ -219,6 +219,8 @@ umount -R ${target}
 umount -R ${overlay_low_mount}
 
 shrink_btrfs_filesystem ${overlay_top_mount}
+# XXX not it has too little free space
+# we should add systemd-repart and systemd-growfs
 notify umounting the overlay top
 umount -R ${overlay_top_mount}
 
