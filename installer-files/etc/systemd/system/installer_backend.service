@@ -1,5 +1,5 @@
 [Unit]
-Description=Opinionated Debian Installer Back-End
+Description=Opinionated Debian Installer - Back-End
 After=network.target
 
 [Service]

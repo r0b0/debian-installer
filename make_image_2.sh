@@ -123,6 +123,11 @@ else
     rm ${target}/tmp/passwd
 fi
 
+notify setup systemd-repart
+mkdir -p ${target}/etc/repart.d
+install_file etc/repart.d/01-BaseImage.conf
+install_file etc/repart.d/02-OverlayTop.conf
+
 # place the icon in the apps menu
 mkdir -p ${target}/usr/share/applications
 install_file usr/share/applications/installer.desktop
@@ -173,6 +178,7 @@ systemctl enable NetworkManager.service
 systemctl disable systemd-networkd.service  # seems to fight with NetworkManager
 systemctl disable systemd-networkd.socket
 systemctl disable systemd-networkd-wait-online.service
+systemctl mask systemd-networkd-wait-online.service
 systemctl disable apt-daily-upgrade.timer
 systemctl disable apt-daily.timer
 pip install flask-sock --break-system-packages
@@ -212,7 +218,11 @@ chmod +x ${target}/installer.sh
 install_file backend.py
 install_file var/www/html/opinionated-debian-installer
 install_file etc/systemd/system/installer_backend.service
+install_file etc/systemd/system/link_volatile_root.service
+install_file etc/systemd/system/grow_overlay_top_filesystem.service
 chroot ${target}/ systemctl enable installer_backend
+chroot ${target}/ systemctl enable link_volatile_root
+chroot ${target}/ systemctl enable grow_overlay_top_filesystem.service
 
 notify umounting the overlay filesystem and the lower
 umount -R ${target}

@@ -58,6 +58,10 @@ Screenshot of the full installer GUI:
 
 ## Testing
 
+If you are testing in a virtual machine, attaching the downloaded image file as a virtual disk, you need to extend it first.
+The image file that you downloaded is shrunk, there is no free space left in the filesystems.
+Use `truncate -s +500M opinionated*.img` to add 500MB to the virtual disk before you attach it to a virtual machine.
+
 ### Libvirt
 
 To test with [libvirt](https://libvirt.org/), make sure to create the VM with UEFI:
