@@ -18,11 +18,11 @@ This tool can be used to create a modern installation of Debian. Our opinions of
 
 ## Downloads
 
-| Desktop environment | Download                                                                                                                                                                                                        | SHA-256 Checksum                                                        |
-|---------------------|-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|-------------------------------------------------------------------------|
-| KDE Plasma          | [opinionated-debian-installer-bookworm-kde-plasma-20230413a.img](https://objectstorage.eu-frankfurt-1.oraclecloud.com/n/fr2rf1wke5iq/b/public/o/opinionated-debian-installer-bookworm-kde-plasma-20230413a.img) | 4b4655d7 4deb83fa 86149046 4b7b5516 ce1bc392 15271082 50a971d1 e1f4323b |
-| Gnome               | [opinionated-debian-installer-bookworm-gnome-20230415a.img](https://objectstorage.eu-frankfurt-1.oraclecloud.com/n/fr2rf1wke5iq/b/public/o/opinionated-debian-installer-bookworm-gnome-20230415a.img)           | 22ac05bb eb825a84 d948fa2c 49cfef2b 356c0569 b13c30db dbebdbf7 ce4162c5 |
-| Xfce                | [opinionated-debian-installer-bookworm-xfce-20230416a.img](https://objectstorage.eu-frankfurt-1.oraclecloud.com/n/fr2rf1wke5iq/b/public/o/opinionated-debian-installer-bookworm-xfce-20230416a.img)             | 7c7b5ffd 647af9ed 0f48d991 c93e1612 f6609e87 9e0d7a46 c5d08e73 e3e4fa90 |
+| Desktop environment | Download                                                                                                                                                                                                                | SHA-256 Checksum                                                        |
+|---------------------|-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|-------------------------------------------------------------------------|
+| KDE Plasma          | [opinionated-debian-installer-bookworm-kde-plasma-20230423a.img (4.2GB)](https://objectstorage.eu-frankfurt-1.oraclecloud.com/n/fr2rf1wke5iq/b/public/o/opinionated-debian-installer-bookworm-kde-plasma-20230423a.img) | dafcd13f 82296b83 1e9bbfdd 8ed55d7c f0f19ac6 ffd20b46 178b5dd2 60abe8a7 |
+| Gnome               | [opinionated-debian-installer-bookworm-gnome-20230415a.img (5.0GB)](https://objectstorage.eu-frankfurt-1.oraclecloud.com/n/fr2rf1wke5iq/b/public/o/opinionated-debian-installer-bookworm-gnome-20230415a.img)           | 22ac05bb eb825a84 d948fa2c 49cfef2b 356c0569 b13c30db dbebdbf7 ce4162c5 |
+| Xfce                | [opinionated-debian-installer-bookworm-xfce-20230416a.img (3.0GB)](https://objectstorage.eu-frankfurt-1.oraclecloud.com/n/fr2rf1wke5iq/b/public/o/opinionated-debian-installer-bookworm-xfce-20230416a.img)             | 7c7b5ffd 647af9ed 0f48d991 c93e1612 f6609e87 9e0d7a46 c5d08e73 e3e4fa90 |
 
 ## Instructions
 
@@ -61,6 +61,7 @@ Screenshot of the full installer GUI:
 If you are testing in a virtual machine, attaching the downloaded image file as a virtual disk, you need to extend it first.
 The image file that you downloaded is shrunk, there is no free space left in the filesystems.
 Use `truncate -s +500M opinionated*.img` to add 500MB to the virtual disk before you attach it to a virtual machine.
+The installer will expand the partitions and filesystem to fill the device.
 
 ### Libvirt
 
