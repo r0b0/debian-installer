@@ -379,6 +379,8 @@ cat <<EOF > ${target}/tmp/run2.sh
 export DEBIAN_FRONTEND=noninteractive
 xargs apt-get install -t ${DEBIAN_SOURCE} -y < /tmp/packages.txt
 systemctl disable systemd-networkd.service  # seems to fight with NetworkManager
+systemctl disable systemd-networkd.socket
+systemctl disable systemd-networkd-wait-online.service
 EOF
 chroot ${target}/ bash /tmp/run2.sh
 

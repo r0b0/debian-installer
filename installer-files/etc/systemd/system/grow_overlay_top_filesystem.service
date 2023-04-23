@@ -1,0 +1,13 @@
+# Grow filesystem of overlay top partition
+
+[Unit]
+Description=Opinionated Debian Installer - Grow overlay top filesystem
+Wants=systemd-repart.service
+After=systemd-repart.service
+
+[Service]
+Type=oneshot
+ExecStart=/usr/bin/btrfs filesystem resize max /mnt/overlay_top
+
+[Install]
+WantedBy=multi-user.target
