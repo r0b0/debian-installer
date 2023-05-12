@@ -310,10 +310,12 @@ EOF
 fi
 
 notify install required packages on ${target}
+if [ x"${NON_INTERACTIVE}" == "x" ]; then
+  chroot ${target}/ apt-get update -y
+fi
 cat <<EOF > ${target}/tmp/run1.sh
 #!/bin/bash
 export DEBIAN_FRONTEND=noninteractive
-apt-get update -y
 apt-get install -t ${DEBIAN_SOURCE} locales systemd systemd-boot dracut btrfs-progs tasksel network-manager cryptsetup tpm2-tools -y
 bootctl install
 EOF

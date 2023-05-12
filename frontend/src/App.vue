@@ -191,12 +191,10 @@ export default {
     <h1>Opinionated Debian Installer</h1>
     <p>
       This is an <strong>unofficial</strong> installer for the Debian GNU/Linux operating system.
-      It is still a <strong>work in progress</strong> and it is not recommended for general usage.
       For more information, read the <a href="https://github.com/r0b0/debian-installer">project page</a>.
     </p>
     <h2>Instructions</h2>
     <ul>
-      <li>Internet connection is required for this installer to work.</li>
       <li>The installer <strong>will overwrite the entire disk</strong>.</li>
       <li>I repeat, <strong>your entire disk will be overwritten</strong> when you press the Install button.
         There is no way to undo this action.</li>
@@ -229,7 +227,7 @@ export default {
         </select>
         <label for="DEBIAN_VERSION">Debian Version</label>
         <select id="DEBIAN_VERSION" v-model="installer.DEBIAN_VERSION" :disabled="running">
-          <option value="bookworm" selected>Debian 12 Bookworm (TESTING)</option>
+          <option value="bookworm" selected>Debian 12 Bookworm</option>
         </select>
       </fieldset>
 
@@ -290,7 +288,7 @@ export default {
   </main>
 
   <footer>
-    <span>Opinionated Debian Installer version 20230423a</span>
+    <span>Opinionated Debian Installer version 20230512a</span>
     <span>Installer &copy;2022-2023 <a href="https://github.com/r0b0/debian-installer">Robert T</a></span>
     <span>Banner &copy;2022 <a href="https://github.com/julietteTaka/Emerald">Juliette Taka</a></span>
   </footer>

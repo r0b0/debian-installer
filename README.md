@@ -1,18 +1,19 @@
 # Opinionated Debian Installer
 
-This tool can be used to create a modern installation of Debian. Our opinions of what a modern installation of Debian should look like in 2023 are as follows:
+This tool can be used to create a modern installation of Debian. 
+Our opinions of what a modern installation of Debian should look like in 2023 are as follows:
 
  - Backports and non-free enabled
  - Firmware installed
  - Installed on btrfs subvolumes
- - Full disk encryption using luks2, unlocked by TPM (if available)
+ - Full disk encryption, unlocked by TPM (if available)
  - Fast installation using an image
  - Browser-based installer
   
 ## Limitations
 
  - **The installer will take over your whole disk**
- - Bookworm (debian 12) only
+ - Debian 12 (Bookworm) only
  - Amd64 with EFI only
  - The installer is in english only
 
@@ -20,15 +21,15 @@ This tool can be used to create a modern installation of Debian. Our opinions of
 
 | Desktop environment | Download                                                                                                                                                                                                                | SHA-256 Checksum                                                        |
 |---------------------|-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|-------------------------------------------------------------------------|
-| KDE Plasma          | [opinionated-debian-installer-bookworm-kde-plasma-20230423a.img (4.2GB)](https://objectstorage.eu-frankfurt-1.oraclecloud.com/n/fr2rf1wke5iq/b/public/o/opinionated-debian-installer-bookworm-kde-plasma-20230423a.img) | dafcd13f 82296b83 1e9bbfdd 8ed55d7c f0f19ac6 ffd20b46 178b5dd2 60abe8a7 |
+| KDE Plasma          | [opinionated-debian-installer-bookworm-kde-plasma-20230512a.img (4.2GB)](https://objectstorage.eu-frankfurt-1.oraclecloud.com/n/fr2rf1wke5iq/b/public/o/opinionated-debian-installer-bookworm-kde-plasma-20230512a.img) | 33ec2d25 f4a76eaf 2009ae21 a6ea7f2d b5635838 21f8436d 2867fbf5 984d2194 |
 | Gnome               | [opinionated-debian-installer-bookworm-gnome-20230424a.img (4.3GB)](https://objectstorage.eu-frankfurt-1.oraclecloud.com/n/fr2rf1wke5iq/b/public/o/opinionated-debian-installer-bookworm-gnome-20230424a.img)           | 19987e83 6dbfc29c 15b33e89 25e2d98b b86bcdbe 8e7d19c4 0103fa23 59b4205c |
 | Xfce                | [opinionated-debian-installer-bookworm-xfce-20230416a.img (3.0GB)](https://objectstorage.eu-frankfurt-1.oraclecloud.com/n/fr2rf1wke5iq/b/public/o/opinionated-debian-installer-bookworm-xfce-20230416a.img)             | 7c7b5ffd 647af9ed 0f48d991 c93e1612 f6609e87 9e0d7a46 c5d08e73 e3e4fa90 |
 
 ## Instructions
 
 1. Download a live image
-2. Write the image to a USB flash drive and boot it
-3. Connect to the internet 
+2. Write the image to a USB flash drive, e.g. `dd if=opinionated-debian-installer*.img of=/dev/sdX bs=8MB status=progress conv=sync` where sdX is your USB flash drive 
+3. Boot from the USB flash drive
 4. Start the installer icon from the desktop/dash, fill in the form in the browser and press the big _Install_ button
 5. Reboot and enjoy
 
@@ -55,6 +56,7 @@ Screenshot of the full installer GUI:
 - [Systemd-boot](https://www.freedesktop.org/wiki/Software/systemd/systemd-boot/) is used instead of grub
 - [Network-manager](https://wiki.debian.org/NetworkManager) is used for networking
 - [Systemd-cryptenroll](https://www.freedesktop.org/software/systemd/man/systemd-cryptenroll.html#--tpm2-device=PATH) is used to unlock the disk, using TPM (if available)
+- Sudo is installed and configured for the created user 
 
 ## Testing
 
