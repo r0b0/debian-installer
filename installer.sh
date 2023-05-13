@@ -149,7 +149,7 @@ fi
 if [ -e /dev/disk/by-partlabel/BaseImage ]; then
     if [ ! -f base_image_copied.txt ]; then
         notify copy base image to ${root_device}
-        dd if=/dev/disk/by-partlabel/BaseImage of=${root_device} bs=4M status=progress
+        dd if=/dev/disk/by-partlabel/BaseImage of=${root_device} bs=4M conv=sync status=progress
         notify check the filesystem on root
         btrfs check ${root_device}
         notify change the filesystem uuid on root

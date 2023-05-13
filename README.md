@@ -22,13 +22,13 @@ Our opinions of what a modern installation of Debian should look like in 2023 ar
 | Desktop environment | Download                                                                                                                                                                                                                | SHA-256 Checksum                                                        |
 |---------------------|-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|-------------------------------------------------------------------------|
 | KDE Plasma          | [opinionated-debian-installer-bookworm-kde-plasma-20230512a.img (4.2GB)](https://objectstorage.eu-frankfurt-1.oraclecloud.com/n/fr2rf1wke5iq/b/public/o/opinionated-debian-installer-bookworm-kde-plasma-20230512a.img) | 33ec2d25 f4a76eaf 2009ae21 a6ea7f2d b5635838 21f8436d 2867fbf5 984d2194 |
-| Gnome               | [opinionated-debian-installer-bookworm-gnome-20230424a.img (4.3GB)](https://objectstorage.eu-frankfurt-1.oraclecloud.com/n/fr2rf1wke5iq/b/public/o/opinionated-debian-installer-bookworm-gnome-20230424a.img)           | 19987e83 6dbfc29c 15b33e89 25e2d98b b86bcdbe 8e7d19c4 0103fa23 59b4205c |
+| Gnome               | [opinionated-debian-installer-bookworm-gnome-20230513a.img (3.3GB)](https://objectstorage.eu-frankfurt-1.oraclecloud.com/n/fr2rf1wke5iq/b/public/o/opinionated-debian-installer-bookworm-gnome-20230513a.img)           | 06e4c75f a63975ef 304a0d0e 08f2fe99 fd377951 2d4053f7 a4545c5a 00cf1425 |
 | Xfce                | [opinionated-debian-installer-bookworm-xfce-20230416a.img (3.0GB)](https://objectstorage.eu-frankfurt-1.oraclecloud.com/n/fr2rf1wke5iq/b/public/o/opinionated-debian-installer-bookworm-xfce-20230416a.img)             | 7c7b5ffd 647af9ed 0f48d991 c93e1612 f6609e87 9e0d7a46 c5d08e73 e3e4fa90 |
 
 ## Instructions
 
-1. Download a live image
-2. Write the image to a USB flash drive, e.g. `dd if=opinionated-debian-installer*.img of=/dev/sdX bs=8MB status=progress conv=sync` where sdX is your USB flash drive 
+1. Download one of the live image files from the table above
+2. Write the image file to a USB flash drive, e.g. `dd if=opinionated-debian-installer*.img of=/dev/sdX bs=8MB status=progress conv=sync` where sdX is your USB flash drive 
 3. Boot from the USB flash drive
 4. Start the installer icon from the desktop/dash, fill in the form in the browser and press the big _Install_ button
 5. Reboot and enjoy
@@ -50,13 +50,13 @@ Screenshot of the full installer GUI:
   - Optional swap partition - LUKS encrypted
   - Root partition - [LUKS](https://cryptsetup-team.pages.debian.net/cryptsetup/README.Debian.html) encrypted (rest of the drive)
 - GPT root partition is [auto-discoverable](https://www.freedesktop.org/software/systemd/man/systemd-gpt-auto-generator.html)
-- Btrfs subvolumes will be called `@` for `/` (marked as default) and `@home` for `/home`, the top-level subvolume will be mounted to `/root/btrfs1`
-- The system is installed using an image from the live iso. This will speed up the installation significantly.
+- Btrfs subvolumes will be called `@` for `/` (marked as default) and `@home` for `/home` (compatible with [timeshift](https://github.com/teejee2008/timeshift#supported-system-configurations)); the top-level subvolume will be mounted to `/root/btrfs1`
+- The system is installed using an image from the live iso. This will speed up the installation significantly and allow off-line installation.
 - [Dracut](https://github.com/dracutdevs/dracut/wiki/) is used instead of initramfs-tools
 - [Systemd-boot](https://www.freedesktop.org/wiki/Software/systemd/systemd-boot/) is used instead of grub
 - [Network-manager](https://wiki.debian.org/NetworkManager) is used for networking
 - [Systemd-cryptenroll](https://www.freedesktop.org/software/systemd/man/systemd-cryptenroll.html#--tpm2-device=PATH) is used to unlock the disk, using TPM (if available)
-- Sudo is installed and configured for the created user 
+- [Sudo](https://wiki.debian.org/sudo) is installed and configured for the created user 
 
 ## Testing
 
