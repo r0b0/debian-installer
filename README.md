@@ -129,25 +129,22 @@ Run the following commands to build it:
 
 The following table contains comparison of features between our opinionated debian installer and official debian installers.
 
-* Netinstall - https://www.debian.org/devel/debian-installer/
-* Calamares - ?
+| Feature                                             | ODIN  | [Netinstall](https://www.debian.org/devel/debian-installer/) | [Calamares](https://get.debian.org/images/bookworm_di_rc3-live/amd64/iso-hybrid/) |
+|-----------------------------------------------------|-------|--------------------------------------------------------------|-----------------------------------------------------------------------------------|
+| Installer internationalization                      | N     | Y                                                            | Y                                                                                 |
+| Mirror selection, HTTP proxy support                | N     | Y                                                            | N                                                                                 |
+| Manual disk partitioning, LVM, filesystem selection | N[4]  | Y                                                            | Y                                                                                 |
+| Btrfs subvolumes                                    | Y[2]  | Y[3]                                                         | Y[2]                                                                              |
+| Full drive encryption                               | **Y** | Y[1]                                                         | Y                                                                                 |
+| Passwordless unlock (TPM)                           | **Y** | N                                                            | N                                                                                 |
+| Image-based installation                            | **Y** | N                                                            | N                                                                                 |
+| Non-free and backports                              | **Y** | N                                                            | N                                                                                 |
+| Browser-based installer                             | Y     | N                                                            | N                                                                                 |
 
-| Feature                                             | ODIN  | Netinstall | Calamares |
-|-----------------------------------------------------|-------|------------|-----------|
-| Installer internationalization                      | N     | Y          |           |
-| Mirror selection                                    | N     | Y          |           |
-| HTTP proxy support                                  | N     | Y          |           |
-| Manual disk partitioning, LVM, filesystem selection | N[4]  | Y          |           |
-| Btrfs subvolumes                                    | Y[2]  | Y[3]       |           |
-| LUKS                                                | **Y** | Y[1]       |           |
-| Image-based installation                            | **Y** | N          |           |
-| Non-free and backports                              | **Y** | N          |           |
-| Browser-based installer                             | Y     | N          |           |
+[1] `/boot` needs a separate unencrypted partition
 
-[1] /boot needs a separate unencrypted partition
+[2] `@` and `@home` ([timeshift](https://github.com/teejee2008/timeshift#supported-system-configurations) compatible)
 
-[2] @ and @home - [timeshift](https://github.com/teejee2008/timeshift#supported-system-configurations) compatible
-
-[3] @rootfs
+[3] `@rootfs`
 
 [4] Fixed partitioning (see Details above), LUKS is automatic, BTRFS is used as filesystem
