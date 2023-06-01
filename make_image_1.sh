@@ -167,6 +167,7 @@ mdadm
 pigz
 pkg-config
 tpm2-tools
+tpm-udev
 EOF
 cat <<EOF > ${target}/tmp/run2.sh
 #!/bin/bash
