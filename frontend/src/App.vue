@@ -81,13 +81,19 @@ export default {
             console.debug(response);
             this.block_devices = response.blockdevices;
             for(const device of this.block_devices) {
+              device.in_use = false;
               if(device.mountpoint) {
-                device.ro = true;
+                device.in_use = true;
               }
               for(const child of device.children) {
                 if(child.mountpoint) {
-                  device.ro = true;
+                  device.in_use = true;
                 }
+              }
+              if(device.ro || device.in_use) {
+                device.available = false;
+              } else {
+                device.available = true;
               }
             }
           });
@@ -221,8 +227,8 @@ export default {
 
         <label for="DISK">Device for Installation</label>
         <select :disabled="block_devices.length==0 || running" id="DISK"  v-model="installer.DISK">
-          <option v-for="item in block_devices" :value="item.path" :disabled="item.ro">
-            {{item.path}} {{item.model}} {{item.size}} {{item.ro ? '(Read Only)' : ''}}
+          <option v-for="item in block_devices" :value="item.path" :disabled="!item.available">
+            {{item.path}} {{item.model}} {{item.size}} {{item.ro ? '(Read Only)' : ''}} {{item.in_use ? '(In Use)' : ''}}
           </option>
         </select>
         <label for="DEBIAN_VERSION">Debian Version</label>
@@ -288,7 +294,7 @@ export default {
   </main>
 
   <footer>
-    <span>Opinionated Debian Installer version 20230601a</span>
+    <span>Opinionated Debian Installer version 20230613a</span>
     <span>Installer &copy;2022-2023 <a href="https://github.com/r0b0/debian-installer">Robert T</a></span>
     <span>Banner &copy;2022 <a href="https://github.com/julietteTaka/Emerald">Juliette Taka</a></span>
   </footer>

@@ -398,6 +398,8 @@ swapoff /dev/mapper/${swap_device}
 
 notify closing luks
 cryptsetup luksClose ${luks_device}
-cryptsetup luksClose /dev/mapper/${swap_device}
+if [ ${ENABLE_SWAP} == "true" ]; then
+  cryptsetup luksClose /dev/mapper/${swap_device}
+fi
 
 notify "INSTALLATION FINISHED"
