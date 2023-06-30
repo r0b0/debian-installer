@@ -58,7 +58,7 @@ fi
 root_part_type="4f68bce3-e8cd-4db1-96e7-fbcaf984b709"  # X86_64
 system_part_type="C12A7328-F81F-11D2-BA4B-00A0C93EC93B"
 swap_part_type="0657FD6D-A4AB-43C4-84E5-0933C84B4F4F "
-efi_uuid=$(cat efi-part.uuid)
+efi_part_uuid=$(cat efi-part.uuid)
 luks_part_uuid=$(cat luks-part.uuid)
 btrfs_uuid=$(cat btrfs.uuid)
 top_level_mount=/mnt/top_level_mount
@@ -71,27 +71,27 @@ if [ ${ENABLE_SWAP} == "true" ]; then
 swap_part_uuid=$(cat swap-part.uuid)
 swap_size_blocks=$((${SWAP_SIZE}*2048*1024))
 root_start_blocks=$((2099200+${swap_size_blocks}))
-swap_partition_nr=2
-swap_partition=${DISK}${swap_partition_nr}
+efi_partition=/dev/disk/by-partuuid/${efi_part_uuid}
+swap_partition=/dev/disk/by-partuuid/${swap_part_uuid}
 swap_device=swap1
 root_partition_nr=3
 
 sfdisk_format=$(cat <<EOF
-${DISK}1: start=2048, size=2097152, type=${system_part_type}, name="EFI system partition", uuid=${efi_uuid}
-${DISK}2: start=2099200, size=${swap_size_blocks}, type=${swap_part_type}, name="Swap partition", uuid=${swap_part_uuid}
-${DISK}3: start=${root_start_blocks}, size=4096000, type=${root_part_type}, name="Root partition", uuid=${luks_part_uuid}
+start=2048, size=2097152, type=${system_part_type}, name="EFI system partition", uuid=${efi_part_uuid}
+start=2099200, size=${swap_size_blocks}, type=${swap_part_type}, name="Swap partition", uuid=${swap_part_uuid}
+start=${root_start_blocks}, size=4096000, type=${root_part_type}, name="Root partition", uuid=${luks_part_uuid}
 EOF
 )
 else
 root_partition_nr=2
 swap_partition=none
 sfdisk_format=$(cat <<EOF
-${DISK}1: start=2048, size=2097152, type=${system_part_type}, name="EFI system partition", uuid=${efi_uuid}
-${DISK}2: start=2099200, size=4096000, type=${root_part_type}, name="LUKS partition", uuid=${luks_part_uuid}
+start=2048, size=2097152, type=${system_part_type}, name="EFI system partition", uuid=${efi_part_uuid}
+start=2099200, size=4096000, type=${root_part_type}, name="LUKS partition", uuid=${luks_part_uuid}
 EOF
 )
 fi
-root_partition=${DISK}${root_partition_nr}
+root_partition=/dev/disk/by-partuuid/${luks_part_uuid}
 
 if [ ! -f partitions_created.txt ]; then
 notify create ${root_partition_nr} partitions on ${DISK}
@@ -114,11 +114,11 @@ if [ ! -f $KEYFILE ]; then
     notify generate key file for luks
     dd if=/dev/random of=${KEYFILE} bs=512 count=1
     notify "remove any old luks on ${root_partition} (root)"
-    cryptsetup erase ${root_partition}
+    cryptsetup erase --batch-mode ${root_partition}
     wipefs -a ${root_partition}
     if [ -e ${swap_partition} ]; then
       notify "remove any old luks on ${swap_partition} (swap)"
-      cryptsetup erase ${swap_partition}
+      cryptsetup erase --batch-mode ${swap_partition}
       wipefs -a ${swap_partition}
     fi
 fi
@@ -164,8 +164,8 @@ else
 fi
     
 if [ ! -f vfat_created.txt ]; then
-    notify create esp filesystem on ${DISK}1
-    mkfs.vfat ${DISK}1
+    notify create esp filesystem on ${efi_partition}
+    mkfs.vfat ${efi_partition}
     touch vfat_created.txt
 fi
 
@@ -227,12 +227,12 @@ else
     mount --make-rslave --rbind /run ${target}/run
 fi
 
-if grep -qs "${DISK}1 " /proc/mounts ; then
-    echo efi esp partition ${DISK}1 already mounted on ${target}/boot/efi
+if grep -qs "${efi_partition} " /proc/mounts ; then
+    echo efi esp partition ${efi_partition} already mounted on ${target}/boot/efi
 else
-    notify mount efi esp partition ${DISK}1 on ${target}/boot/efi
+    notify mount efi esp partition ${efi_partition} on ${target}/boot/efi
     mkdir -p ${target}/boot/efi
-    mount ${DISK}1 ${target}/boot/efi
+    mount ${efi_partition} ${target}/boot/efi
 fi
 
 notify setup hostname
@@ -248,7 +248,7 @@ mkdir -p ${target}/root/btrfs1
 cat <<EOF > ${target}/etc/fstab
 UUID=${btrfs_uuid} /home btrfs defaults,subvol=@home,${FSFLAGS} 0 1
 UUID=${btrfs_uuid} /root/btrfs1 btrfs defaults,subvolid=5,${FSFLAGS} 0 1
-PARTUUID=${efi_uuid} /boot/efi vfat defaults 0 2
+PARTUUID=${efi_part_uuid} /boot/efi vfat defaults 0 2
 EOF
 if [ ${ENABLE_SWAP} == "true" ]; then
 cat <<EOF >> ${target}/etc/fstab
