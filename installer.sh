@@ -23,7 +23,7 @@ function notify () {
 
 # TODO enable backports here when it becomes available for bookworm
 DEBIAN_SOURCE=${DEBIAN_VERSION}
-# see https://www.freedesktop.org/software/systemd/man/systemd-cryptenroll.html#--tpm2-device=PATH
+# see https://www.freedesktop.org/software/systemd/man/systemd-cryptenroll.html#--tpm2-pcrs=PCR
 TPM_PCRS="7+14"
 # do not enable this on a live-cd
 SHARE_APT_ARCHIVE=false
