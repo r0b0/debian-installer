@@ -66,16 +66,16 @@ target=/target
 luks_device=root
 root_device=/dev/mapper/${luks_device}
 kernel_params="luks.options=tpm2-device=auto rw quiet rootfstype=btrfs rootflags=${FSFLAGS} rd.auto=1 splash"
+efi_partition=/dev/disk/by-partuuid/${efi_part_uuid}
+root_partition=/dev/disk/by-partuuid/${luks_part_uuid}
 
 if [ ${ENABLE_SWAP} == "true" ]; then
 swap_part_uuid=$(cat swap-part.uuid)
 swap_size_blocks=$((${SWAP_SIZE}*2048*1024))
 root_start_blocks=$((2099200+${swap_size_blocks}))
-efi_partition=/dev/disk/by-partuuid/${efi_part_uuid}
 swap_partition=/dev/disk/by-partuuid/${swap_part_uuid}
 swap_device=swap1
 root_partition_nr=3
-
 sfdisk_format=$(cat <<EOF
 start=2048, size=2097152, type=${system_part_type}, name="EFI system partition", uuid=${efi_part_uuid}
 start=2099200, size=${swap_size_blocks}, type=${swap_part_type}, name="Swap partition", uuid=${swap_part_uuid}
@@ -91,7 +91,6 @@ start=2099200, size=4096000, type=${root_part_type}, name="LUKS partition", uuid
 EOF
 )
 fi
-root_partition=/dev/disk/by-partuuid/${luks_part_uuid}
 
 if [ ! -f partitions_created.txt ]; then
 notify create ${root_partition_nr} partitions on ${DISK}
@@ -394,7 +393,9 @@ fi
 notify umounting all filesystems
 umount -R ${target}
 umount -R ${top_level_mount}
-swapoff /dev/mapper/${swap_device}
+if [ ${ENABLE_SWAP} == "true" ]; then
+  swapoff /dev/mapper/${swap_device}
+fi
 
 notify closing luks
 cryptsetup luksClose ${luks_device}
