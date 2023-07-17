@@ -85,10 +85,15 @@ export default {
               if(device.mountpoint) {
                 device.in_use = true;
               }
-              for(const child of device.children) {
-                if(child.mountpoint) {
-                  device.in_use = true;
+              if("children" in device) {
+                for (const child of device.children) {
+                  if (child.mountpoint) {
+                    device.in_use = true;
+                  }
                 }
+              }
+              if(device.size === "0B") {
+                device.ro = true;
               }
               if(device.ro || device.in_use) {
                 device.available = false;
@@ -294,7 +299,7 @@ export default {
   </main>
 
   <footer>
-    <span>Opinionated Debian Installer version 20230712a</span>
+    <span>Opinionated Debian Installer version 20230717a</span>
     <span>Installer &copy;2022-2023 <a href="https://github.com/r0b0/debian-installer">Robert T</a></span>
     <span>Banner &copy;2022 <a href="https://github.com/julietteTaka/Emerald">Juliette Taka</a></span>
   </footer>
