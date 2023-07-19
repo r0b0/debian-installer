@@ -21,8 +21,6 @@ function notify () {
     fi
 }
 
-# TODO enable backports here when it becomes available for bookworm
-DEBIAN_SOURCE=${DEBIAN_VERSION}
 # see https://www.freedesktop.org/software/systemd/man/systemd-cryptenroll.html#--tpm2-pcrs=PCR
 TPM_PCRS="7+14"
 # do not enable this on a live-cd
@@ -315,7 +313,7 @@ fi
 cat <<EOF > ${target}/tmp/run1.sh
 #!/bin/bash
 export DEBIAN_FRONTEND=noninteractive
-apt-get install -t ${DEBIAN_SOURCE} locales systemd systemd-boot dracut btrfs-progs tasksel network-manager cryptsetup tpm2-tools tpm-udev -y
+apt-get install locales systemd systemd-boot dracut btrfs-progs tasksel network-manager cryptsetup tpm2-tools tpm-udev -y
 bootctl install
 EOF
 chroot ${target}/ sh /tmp/run1.sh
@@ -378,7 +376,7 @@ EOF
 cat <<EOF > ${target}/tmp/run2.sh
 #!/bin/bash
 export DEBIAN_FRONTEND=noninteractive
-xargs apt-get install -t ${DEBIAN_SOURCE} -y < /tmp/packages.txt
+xargs apt-get install -y < /tmp/packages.txt
 systemctl disable systemd-networkd.service  # seems to fight with NetworkManager
 systemctl disable systemd-networkd.socket
 systemctl disable systemd-networkd-wait-online.service
@@ -389,6 +387,9 @@ if [ x"${NON_INTERACTIVE}" == "x" ]; then
     notify running tasksel
     chroot ${target}/ tasksel
 fi
+
+notify reverting backports apt-pin
+rm -f ${target}/etc/apt/preferences.d/99backports-temp
 
 notify umounting all filesystems
 umount -R ${target}

@@ -4,8 +4,6 @@
 DISK=/dev/vdb
 
 DEBIAN_VERSION=bookworm
-# TODO enable backports here when it becomes available for bookworm
-DEBIAN_SOURCE=${DEBIAN_VERSION}
 FSFLAGS="compress=zstd:9"
 
 target=/target
@@ -117,6 +115,10 @@ deb http://security.debian.org/ ${DEBIAN_VERSION}-security main contrib non-free
 deb http://deb.debian.org/debian ${DEBIAN_VERSION}-backports main contrib non-free non-free-firmware
 EOF
 
+notify enable ${DEBIAN_VERSION}-backports
+mkdir -p ${target}/etc/apt/preferences.d
+cp "${SCRIPT_DIR}/installer-files/etc/apt/preferences.d/99backports-temp" "${target}/etc/apt/preferences.d/"
+
 notify install required packages on ${target}
 cat <<EOF > ${target}/tmp/packages.txt
 locales
@@ -173,7 +175,7 @@ cat <<EOF > ${target}/tmp/run2.sh
 #!/bin/bash
 export DEBIAN_FRONTEND=noninteractive
 apt-get update
-xargs apt-get install -t ${DEBIAN_SOURCE} -y < /tmp/packages.txt
+xargs apt-get install -y < /tmp/packages.txt
 EOF
 chroot ${target}/ bash /tmp/run2.sh
 

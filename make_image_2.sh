@@ -5,8 +5,6 @@ DISK=/dev/vdb
 USERNAME=live
 
 DEBIAN_VERSION=bookworm
-# TODO enable backports here when it becomes available for bookworm
-DEBIAN_SOURCE=${DEBIAN_VERSION}
 FSFLAGS="compress=zstd:9"
 
 target=/target
@@ -170,7 +168,7 @@ cat <<EOF > ${target}/tmp/run1.sh
 export DEBIAN_FRONTEND=noninteractive
 apt-get update -y
 apt-get upgrade -y
-apt-get install -t ${DEBIAN_SOURCE} systemd-boot dracut cryptsetup debootstrap uuid-runtime lighttpd python3-pip python3-flask python3-flask-cors python3-h11 python3-wsproto -y
+apt-get install systemd-boot dracut cryptsetup debootstrap uuid-runtime lighttpd python3-pip python3-flask python3-flask-cors python3-h11 python3-wsproto -y
 apt-get purge initramfs-tools initramfs-tools-core -y
 bootctl install
 systemctl enable lighttpd
@@ -189,7 +187,7 @@ notify install kernel on ${target}
 cat <<EOF > ${target}/tmp/run1.sh
 #!/bin/bash
 export DEBIAN_FRONTEND=noninteractive
-apt-get install -t ${DEBIAN_SOURCE} linux-image-amd64 -y
+apt-get install linux-image-amd64 -y
 EOF
 chroot ${target}/ sh /tmp/run1.sh
 

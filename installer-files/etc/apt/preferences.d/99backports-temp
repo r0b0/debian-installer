@@ -1,0 +1,6 @@
+# /etc/apt/preferences.d/99backports-temp
+# use packages from backports if available
+
+Package: *
+Pin: release n=bookworm-backports
+Pin-Priority: 500
