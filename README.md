@@ -21,7 +21,7 @@ Our opinions of what a modern installation of Debian should look like in 2023 ar
 
 | Desktop environment | Download                                                                                                                                                                                                                | SHA-256 Checksum                                                        |
 |---------------------|-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|-------------------------------------------------------------------------|
-| KDE Plasma          | [opinionated-debian-installer-bookworm-kde-plasma-20230719a.img (4.1GB)](https://objectstorage.eu-frankfurt-1.oraclecloud.com/n/fr2rf1wke5iq/b/public/o/opinionated-debian-installer-bookworm-kde-plasma-20230719a.img) | 326cb349 8d76d531 e91260b4 76d30181 e6491b39 af9778d3 43692100 e7753140 |
+| KDE Plasma          | [opinionated-debian-installer-bookworm-kde-plasma-20230820a.img (4.2GB)](https://objectstorage.eu-frankfurt-1.oraclecloud.com/n/fr2rf1wke5iq/b/public/o/opinionated-debian-installer-bookworm-kde-plasma-20230820a.img) | dc34c690 410e84a3 d356dad2 fa409d68 f6c79dc1 dcc5d3ae bd2dab9d eb6d4338 |
 | Gnome               | [opinionated-debian-installer-bookworm-gnome-20230723a.img (3.3GB)](https://objectstorage.eu-frankfurt-1.oraclecloud.com/n/fr2rf1wke5iq/b/public/o/opinionated-debian-installer-bookworm-gnome-20230723a.img)           | 1934be81 bef801fa 62dbba2c 1fe11d05 fca3e24a 3340a040 bfb07079 71af4def |
 
 ## Instructions
