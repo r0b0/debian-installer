@@ -6,7 +6,7 @@ Our opinions of what a modern installation of Debian should look like in 2023 ar
  - Backports and non-free enabled
  - Firmware installed
  - Installed on btrfs subvolumes
- - Full disk encryption, unlocked by TPM (if available)
+ - Full disk encryption, unlocked by TPM
  - Fast installation using an image
  - Browser-based installer
   
@@ -22,7 +22,7 @@ Our opinions of what a modern installation of Debian should look like in 2023 ar
 | Desktop environment | Download                                                                                                                                                                                                                | SHA-256 Checksum                                                        |
 |---------------------|-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|-------------------------------------------------------------------------|
 | KDE Plasma          | [opinionated-debian-installer-bookworm-kde-plasma-20230820a.img (4.2GB)](https://objectstorage.eu-frankfurt-1.oraclecloud.com/n/fr2rf1wke5iq/b/public/o/opinionated-debian-installer-bookworm-kde-plasma-20230820a.img) | dc34c690 410e84a3 d356dad2 fa409d68 f6c79dc1 dcc5d3ae bd2dab9d eb6d4338 |
-| Gnome               | [opinionated-debian-installer-bookworm-gnome-20230723a.img (3.3GB)](https://objectstorage.eu-frankfurt-1.oraclecloud.com/n/fr2rf1wke5iq/b/public/o/opinionated-debian-installer-bookworm-gnome-20230723a.img)           | 1934be81 bef801fa 62dbba2c 1fe11d05 fca3e24a 3340a040 bfb07079 71af4def |
+| Gnome               | [opinionated-debian-installer-bookworm-gnome-20230826a.img (3.3GB)](https://objectstorage.eu-frankfurt-1.oraclecloud.com/n/fr2rf1wke5iq/b/public/o/opinionated-debian-installer-bookworm-gnome-20230826a.img)           | 9889375e deea4095 e629521c 897697f7 4788048f fdcf5758 2e790d7c ec158f52 |
 
 ## Instructions
 
@@ -73,7 +73,7 @@ To test with [libvirt](https://libvirt.org/), make sure to create the VM with UE
 
 ![virt-manager uefi screenshot](readme-files/virt-manager-uefi.png)
 
-To add a TPM module, you need to install the [swtpm-tools](https://packages.debian.org/bullseye-backports/swtpm-tools) package (available in bullseye-backports).
+To add a TPM module, you need to install the [swtpm-tools](https://packages.debian.org/bookworm/swtpm-tools) package.
 
 Attach the downloaded installer image file as _Device type: Disk device_, not ~~CDROM device~~.
 
@@ -128,21 +128,21 @@ Run the following commands to build it:
 
 The following table contains comparison of features between our opinionated debian installer and official debian installers.
 
-| Feature                                             | ODIN  | [Netinstall](https://www.debian.org/devel/debian-installer/) | [Calamares](https://get.debian.org/images/bookworm_di_rc3-live/amd64/iso-hybrid/) |
-|-----------------------------------------------------|-------|--------------------------------------------------------------|-----------------------------------------------------------------------------------|
-| Installer internationalization                      | N     | Y                                                            | Y                                                                                 |
-| Mirror selection, HTTP proxy support                | N     | Y                                                            | N                                                                                 |
-| Manual disk partitioning, LVM, filesystem selection | N[4]  | Y                                                            | Y                                                                                 |
-| Btrfs subvolumes                                    | Y[2]  | Y[3]                                                         | Y[2]                                                                              |
-| Full drive encryption                               | **Y** | Y[1]                                                         | Y                                                                                 |
-| Passwordless unlock (TPM)                           | **Y** | N                                                            | N                                                                                 |
-| Image-based installation                            | **Y** | N                                                            | N                                                                                 |
-| Non-free and backports                              | **Y** | N                                                            | N                                                                                 |
-| Browser-based installer                             | Y     | N                                                            | N                                                                                 |
+| Feature                                             | ODIN  | [Netinstall](https://www.debian.org/CD/netinst/) | [Calamares](https://get.debian.org/debian-cd/current-live/amd64/iso-hybrid/) |
+|-----------------------------------------------------|-------|--------------------------------------------------|------------------------------------------------------------------------------|
+| Installer internationalization                      | N     | Y                                                | Y                                                                            |
+| Mirror selection, HTTP proxy support                | N     | Y                                                | N                                                                            |
+| Manual disk partitioning, LVM, filesystem selection | N[4]  | Y                                                | Y                                                                            |
+| Btrfs subvolumes                                    | Y[2]  | Y[3]                                             | Y[2]                                                                         |
+| Full drive encryption                               | **Y** | Y[1]                                             | Y                                                                            |
+| Passwordless unlock (TPM)                           | **Y** | N                                                | N                                                                            |
+| Image-based installation                            | **Y** | N                                                | N                                                                            |
+| Non-free and backports                              | **Y** | N                                                | N                                                                            |
+| Browser-based installer                             | **Y** | N                                                | N                                                                            |
 
 [1] `/boot` needs a separate unencrypted partition
 
-[2] `@` and `@home` ([timeshift](https://github.com/teejee2008/timeshift#supported-system-configurations) compatible)
+[2] `@` and `@home` ([timeshift](https://github.com/linuxmint/timeshift#supported-system-configurations) compatible)
 
 [3] `@rootfs`
 
