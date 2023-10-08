@@ -106,6 +106,20 @@ echo ", +" | sfdisk -N ${root_partition_nr} $DISK
 sfdisk -d $DISK > partitions_created.txt
 fi
 
+function wait_for_file {
+  filename = "$1"
+  while [ ! -e $filename ]
+  do
+    echo waiting for $filename to be created
+    sleep 3
+  done
+}
+
+wait_for_file ${root_partition}
+if [ ${ENABLE_SWAP} == "true" ]; then
+  wait_for_file ${swap_partition}
+fi
+
 if [ ! -f $KEYFILE ]; then
     # TODO do we want to store this file in the installed system?
     notify generate key file for luks
