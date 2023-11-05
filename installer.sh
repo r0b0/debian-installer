@@ -32,7 +32,7 @@ export DEBIAN_FRONTEND
 if [ x"${NON_INTERACTIVE}" == "x" ]; then
     notify install required packages
     apt-get update -y
-    apt-get install -y cryptsetup debootstrap uuid-runtime
+    apt-get install -y cryptsetup debootstrap uuid-runtime btrfs-progs dosfstools
 fi
 
 KEYFILE=luks.key
@@ -327,7 +327,7 @@ fi
 cat <<EOF > ${target}/tmp/run1.sh
 #!/bin/bash
 export DEBIAN_FRONTEND=noninteractive
-apt-get install locales systemd systemd-boot dracut btrfs-progs tasksel network-manager cryptsetup tpm2-tools tpm-udev -y
+apt-get install locales systemd systemd-boot dracut btrfs-progs tasksel network-manager cryptsetup sudo tpm2-tools tpm-udev -y
 bootctl install
 EOF
 chroot ${target}/ sh /tmp/run1.sh
