@@ -10,7 +10,7 @@ ROOT_PASSWORD=changeme
 LUKS_PASSWORD=luke
 DEBIAN_VERSION=bookworm
 HOSTNAME=debian12
-ENABLE_SWAP=true
+ENABLE_SWAP=partition
 SWAP_SIZE=2
 fi
 
@@ -72,7 +72,7 @@ kernel_params="luks.options=tpm2-device=auto rw quiet rootfstype=btrfs rootflags
 efi_partition=/dev/disk/by-partuuid/${efi_part_uuid}
 root_partition=/dev/disk/by-partuuid/${luks_part_uuid}
 
-if [ ${ENABLE_SWAP} == "true" ]; then
+if [ ${ENABLE_SWAP} == "partition" ]; then
 swap_part_uuid=$(cat swap-part.uuid)
 swap_size_blocks=$((${SWAP_SIZE}*2048*1024))
 root_start_blocks=$((2099200+${swap_size_blocks}))
@@ -121,7 +121,7 @@ function wait_for_file {
 }
 
 wait_for_file ${root_partition}
-if [ ${ENABLE_SWAP} == "true" ]; then
+if [ ${ENABLE_SWAP} == "partition" ]; then
   wait_for_file ${swap_partition}
 fi
 
@@ -185,7 +185,7 @@ if [ ! -f vfat_created.txt ]; then
     touch vfat_created.txt
 fi
 
-if [ ${ENABLE_SWAP} == "true" ]; then
+if [ ${ENABLE_SWAP} == "partition" ]; then
 setup_luks ${swap_partition}
 swap_uuid=$(cat luks.uuid)
 
@@ -200,7 +200,7 @@ notify making swap
 mkswap /dev/mapper/${swap_device}
 swapon /dev/mapper/${swap_device}
 
-fi  # swap enabled
+fi  # swap as partition
 
 if grep -qs "${top_level_mount}" /proc/mounts ; then
     echo top-level subvolume already mounted on ${top_level_mount}
@@ -215,6 +215,11 @@ if [ ! -e ${top_level_mount}/@ ]; then
     notify create @ and @home subvolumes on ${top_level_mount}
     btrfs subvolume create ${top_level_mount}/@
     btrfs subvolume create ${top_level_mount}/@home
+    if [ ${ENABLE_SWAP} == "file" ]; then
+        notify create @swap subvolume for swap file on ${top_level_mount}
+        btrfs subvolume create ${top_level_mount}/@swap
+        chmod 700 ${top_level_mount}/@swap
+    fi
     btrfs subvolume set-default ${top_level_mount}/@
 fi
 
@@ -226,6 +231,17 @@ else
     mount ${root_device} ${target} -o ${FSFLAGS},subvol=@
     mkdir -p ${target}/home
     mount ${root_device} ${target}/home -o ${FSFLAGS},subvol=@home
+    if [ ${ENABLE_SWAP} == "file" ]; then
+        notify mount swap subvolume on ${target}
+        mkdir -p ${target}/swap
+        mount ${root_device} ${target}/swap -o noatime,subvol=@swap
+    fi
+fi
+
+if [ ${ENABLE_SWAP} == "file" ]; then
+    notify make swap file at ${target}/swap/swapfile
+    btrfs filesystem mkswapfile --size ${SWAP_SIZE}G ${target}/swap/swapfile
+    swapon ${target}/swap/swapfile
 fi
 
 if [ ! -f ${target}/etc/debian_version ]; then
@@ -266,9 +282,15 @@ UUID=${btrfs_uuid} /home btrfs defaults,subvol=@home,${FSFLAGS} 0 1
 UUID=${btrfs_uuid} /root/btrfs1 btrfs defaults,subvolid=5,${FSFLAGS} 0 1
 PARTUUID=${efi_part_uuid} /boot/efi vfat defaults 0 2
 EOF
-if [ ${ENABLE_SWAP} == "true" ]; then
+
+if [ ${ENABLE_SWAP} == "partition" ]; then
 cat <<EOF >> ${target}/etc/fstab
 /dev/mapper/${swap_device} swap swap defaults 0 0
+EOF
+elif [ ${ENABLE_SWAP} == "file" ]; then
+cat <<EOF >> ${target}/etc/fstab
+UUID=${btrfs_uuid} /swap btrfs defaults,subvol=@swap,noatime 0 0
+/swap/swapfile none swap defaults 0 0
 EOF
 fi
 
@@ -319,7 +341,7 @@ cat <<EOF > ${target}/etc/kernel/cmdline
 ${kernel_params}
 EOF
 
-if [ ${ENABLE_SWAP} == "true" ]; then
+if [ ${ENABLE_SWAP} == "partition" ]; then
 cat <<EOF > ${target}/etc/dracut.conf.d/90-hibernate.conf
 add_dracutmodules+=" resume "
 EOF
@@ -411,15 +433,17 @@ notify reverting backports apt-pin
 rm -f ${target}/etc/apt/preferences.d/99backports-temp
 
 notify umounting all filesystems
+if [ ${ENABLE_SWAP} == "partition" ]; then
+  swapoff /dev/mapper/${swap_device}
+elif [ ${ENABLE_SWAP} == "file" ]; then
+  swapoff ${target}/swap/swapfile
+fi
 umount -R ${target}
 umount -R ${top_level_mount}
-if [ ${ENABLE_SWAP} == "true" ]; then
-  swapoff /dev/mapper/${swap_device}
-fi
 
 notify closing luks
 cryptsetup luksClose ${luks_device}
-if [ ${ENABLE_SWAP} == "true" ]; then
+if [ ${ENABLE_SWAP} == "partition" ]; then
   cryptsetup luksClose /dev/mapper/${swap_device}
 fi
 
