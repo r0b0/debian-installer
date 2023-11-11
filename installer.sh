@@ -29,6 +29,11 @@ FSFLAGS="compress=zstd:1"
 DEBIAN_FRONTEND=noninteractive
 export DEBIAN_FRONTEND
 
+if [ "$(id -u)" -ne 0 ]; then
+    echo 'This script must be run by root' >&2
+    exit 1
+fi
+
 if [ x"${NON_INTERACTIVE}" == "x" ]; then
     notify install required packages
     apt-get update -y
