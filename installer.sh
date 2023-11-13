@@ -156,6 +156,7 @@ function setup_luks {
 }
 
 setup_luks ${root_partition}
+root_uuid=$(cat luks.uuid)
 
 if [ ! -e ${root_device} ]; then
     notify open luks on root
@@ -242,6 +243,8 @@ if [ ${ENABLE_SWAP} == "file" ]; then
     notify make swap file at ${target}/swap/swapfile
     btrfs filesystem mkswapfile --size ${SWAP_SIZE}G ${target}/swap/swapfile
     swapon ${target}/swap/swapfile
+    swapfile_offset=$(btrfs inspect-internal map-swapfile -r ${target}//swap/swapfile)
+    kernel_params="${kernel_params} luks.name=${root_uuid}=${luks_device} resume=${root_device} resume_offset=${swapfile_offset}"
 fi
 
 if [ ! -f ${target}/etc/debian_version ]; then
