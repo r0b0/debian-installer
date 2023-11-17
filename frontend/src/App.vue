@@ -29,7 +29,7 @@ export default {
         LUKS_PASSWORD: undefined,
         HOSTNAME: "debian",
         TIMEZONE: "UTC",
-        ENABLE_SWAP: true,
+        ENABLE_SWAP: "partition",
         SWAP_SIZE: 1,
       }
     }
@@ -271,11 +271,15 @@ export default {
             <option v-for="item in timezones" :value="item">{{ item }}</option>
         </select>
 
-        <input type="checkbox" id="ENABLE_SWAP" v-model="installer.ENABLE_SWAP" class="inline mt-2" :disabled="running">
-        <label for="ENABLE_SWAP" class="inline mt-2">Enable Swap</label>
+        <label for="ENABLE_SWAP">Swap Space</label>
+        <select id="ENABLE_SWAP" v-model="installer.ENABLE_SWAP" :disabled="running">
+          <option value="none" selected>None</option>
+          <option value="partition" selected>Partition</option>
+          <option value="file" selected>File</option>
+        </select>
 
         <label for="SWAP_SIZE">Swap Size (GB)</label>
-        <input type="number" id="SWAP_SIZE" v-model="installer.SWAP_SIZE" :disabled="!installer.ENABLE_SWAP || running">
+        <input type="number" id="SWAP_SIZE" v-model="installer.SWAP_SIZE" :disabled="installer.ENABLE_SWAP == 'none' || running">
       </fieldset>
 
       <fieldset>
