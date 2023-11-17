@@ -68,9 +68,10 @@ else
 fi
 
 if [ ! -e /mnt/btrfs1/@ ]; then
-    notify create @ and @home subvolumes on /mnt/btrfs1
+    notify create @, @swap and @home subvolumes on /mnt/btrfs1
     btrfs subvolume create /mnt/btrfs1/@
     btrfs subvolume create /mnt/btrfs1/@home
+    btrfs subvolume create /mnt/btrfs1/@swap
     btrfs subvolume set-default /mnt/btrfs1/@
 fi
 

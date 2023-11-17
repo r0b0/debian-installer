@@ -112,7 +112,7 @@ sfdisk -d $DISK > partitions_created.txt
 fi
 
 function wait_for_file {
-  filename = "$1"
+  filename="$1"
   while [ ! -e $filename ]
   do
     echo waiting for $filename to be created
