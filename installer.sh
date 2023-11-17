@@ -12,6 +12,8 @@ DEBIAN_VERSION=bookworm
 HOSTNAME=debian12
 ENABLE_SWAP=partition
 SWAP_SIZE=2
+SSH_PUBLIC_KEY=
+AFTER_INSTALLED_CMD=
 fi
 
 function notify () {
@@ -427,6 +429,23 @@ systemctl disable systemd-networkd-wait-online.service
 EOF
 chroot ${target}/ bash /tmp/run2.sh
 
+if [ ! -z ${SSH_PUBLIC_KEY} ]; then
+  notify adding ssh public key to user and root authorized_keys file
+  mkdir -p ${target}/root/.ssh
+  chmod 700 ${target}/root/.ssh
+  echo ${SSH_PUBLIC_KEY} > ${target}/root/.ssh/authorized_keys
+  chmod 600 ${target}/root/.ssh/authorized_keys
+
+  mkdir -p ${target}/home/${USERNAME}/.ssh
+  chmod 700 ${target}/home/${USERNAME}/.ssh
+  echo ${SSH_PUBLIC_KEY} > ${target}/home/${USERNAME}/.ssh/authorized_keys
+  chmod 600 ${target}/home/${USERNAME}/.ssh/authorized_keys
+  chroot ${target}/ chown -R ${USERNAME} ${target}/home/${USERNAME}/.ssh
+
+  notify installing openssh-server
+  chroot ${target}/ apt-get install -y openssh-server
+fi
+
 if [ x"${NON_INTERACTIVE}" == "x" ]; then
     notify running tasksel
     chroot ${target}/ tasksel
@@ -450,4 +469,9 @@ if [ ${ENABLE_SWAP} == "partition" ]; then
   cryptsetup luksClose /dev/mapper/${swap_device}
 fi
 
-notify "INSTALLATION FINISHED"
+notify INSTALLATION FINISHED
+
+if [ ! -z ${AFTER_INSTALLED_CMD} ]; then
+  notify running ${AFTER_INSTALLED_CMD}
+  sh -c "${AFTER_INSTALLED_CMD}"
+fi

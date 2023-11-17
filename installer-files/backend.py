@@ -46,11 +46,17 @@ def install():
         app.logger.error("Process already running")
         flask.abort(409, "Already running")
 
-    subprocess_env = {"NON_INTERACTIVE": "yes"}
+    subprocess_env = {}
     for k, v in request.form.items():
         subprocess_env[k] = v
         app.logger.info(f"  env: {k} = {v}")
 
+    do_start_installation(subprocess_env)
+    return {}
+
+
+def do_start_installation(subprocess_env):
+    subprocess_env["NON_INTERACTIVE"] = "yes"
     context.running_subprocess = subprocess.Popen(INSTALLER_SCRIPT,
                                                   env=subprocess_env,
                                                   text=True,
@@ -78,13 +84,12 @@ def install():
 
     threading.Thread(target=output_reader,
                      args=(context.running_subprocess.stdout, True),
-                     name="Stdout reader")\
+                     name="Stdout reader") \
         .start()
     threading.Thread(target=output_reader,
                      args=(context.running_subprocess.stderr, False),
-                     name="Stderr reader")\
+                     name="Stderr reader") \
         .start()
-    return {}
 
 
 @app.route("/clear", methods=["GET"])
@@ -133,3 +138,11 @@ def get_process_output(ws):
     while ws in context.output_readers:
         time.sleep(60)
     app.logger.info("Websocket closing")
+
+
+if os.environ.get("AUTO_INSTALL", None) == "true":
+    app.logger.info("Automatically starting the installation")
+    env = {}
+    # inherit environment variables from systemd (and installer.ini)
+    env.update(os.environ)
+    do_start_installation(env)

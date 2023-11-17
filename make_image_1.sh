@@ -191,7 +191,7 @@ else
 fi
 
 notify downloading remaining .deb files for the installer
-chroot ${target}/ apt-get install -y --download-only locales systemd systemd-boot dracut btrfs-progs tasksel network-manager cryptsetup tpm2-tools linux-image-amd64
+chroot ${target}/ apt-get install -y --download-only locales systemd systemd-boot dracut btrfs-progs tasksel network-manager cryptsetup tpm2-tools linux-image-amd64 openssh-server
 
 notify cleaning up
 rm -f ${target}/etc/machine-id

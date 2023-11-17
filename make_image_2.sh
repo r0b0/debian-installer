@@ -218,6 +218,7 @@ install_file var/www/html/opinionated-debian-installer
 install_file etc/systemd/system/installer_backend.service
 install_file etc/systemd/system/link_volatile_root.service
 install_file etc/systemd/system/grow_overlay_top_filesystem.service
+install_file boot/efi/installer.ini
 chroot ${target}/ systemctl enable installer_backend
 chroot ${target}/ systemctl enable link_volatile_root
 chroot ${target}/ systemctl enable grow_overlay_top_filesystem.service
