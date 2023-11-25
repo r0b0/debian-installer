@@ -42,6 +42,10 @@ Screenshot of the full installer GUI:
 
 ![gui screenshot](readme-files/gui.png)
 
+## Configuration, Automatic Installation, Pre-Seeding
+
+Edit [installer.ini](installer-files/boot/efi/installer.ini) on the first (vfat) partition of the installer image.
+
 ## Details
 
 - GPT disk partitions are created on the designated disk drive: 

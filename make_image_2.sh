@@ -100,6 +100,7 @@ notify setup fstab
 cat <<EOF > ${target}/etc/fstab
 PARTUUID=${base_image_uuid} ${overlay_low_mount} btrfs defaults,ro 0 1
 PARTUUID=${top_uuid} ${overlay_top_mount} btrfs defaults 0 1
+PARTUUID=${efi_uuid} /boot/efi vfat defaults,umask=077 0 2
 EOF
 
 if grep -qs 'root:\$' ${target}/etc/shadow ; then

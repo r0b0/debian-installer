@@ -285,7 +285,7 @@ mkdir -p ${target}/root/btrfs1
 cat <<EOF > ${target}/etc/fstab
 UUID=${btrfs_uuid} /home btrfs defaults,subvol=@home,${FSFLAGS} 0 1
 UUID=${btrfs_uuid} /root/btrfs1 btrfs defaults,subvolid=5,${FSFLAGS} 0 1
-PARTUUID=${efi_part_uuid} /boot/efi vfat defaults 0 2
+PARTUUID=${efi_part_uuid} /boot/efi vfat defaults,umask=077 0 2
 EOF
 
 if [ ${ENABLE_SWAP} == "partition" ]; then
@@ -429,18 +429,18 @@ systemctl disable systemd-networkd-wait-online.service
 EOF
 chroot ${target}/ bash /tmp/run2.sh
 
-if [ ! -z ${SSH_PUBLIC_KEY} ]; then
+if [ ! -z "${SSH_PUBLIC_KEY}" ]; then
   notify adding ssh public key to user and root authorized_keys file
   mkdir -p ${target}/root/.ssh
   chmod 700 ${target}/root/.ssh
-  echo ${SSH_PUBLIC_KEY} > ${target}/root/.ssh/authorized_keys
+  echo "${SSH_PUBLIC_KEY}" > ${target}/root/.ssh/authorized_keys
   chmod 600 ${target}/root/.ssh/authorized_keys
 
   mkdir -p ${target}/home/${USERNAME}/.ssh
   chmod 700 ${target}/home/${USERNAME}/.ssh
-  echo ${SSH_PUBLIC_KEY} > ${target}/home/${USERNAME}/.ssh/authorized_keys
+  echo "${SSH_PUBLIC_KEY}" > ${target}/home/${USERNAME}/.ssh/authorized_keys
   chmod 600 ${target}/home/${USERNAME}/.ssh/authorized_keys
-  chroot ${target}/ chown -R ${USERNAME} ${target}/home/${USERNAME}/.ssh
+  chroot ${target}/ chown -R ${USERNAME} /home/${USERNAME}/.ssh
 
   notify installing openssh-server
   chroot ${target}/ apt-get install -y openssh-server
@@ -471,7 +471,7 @@ fi
 
 notify INSTALLATION FINISHED
 
-if [ ! -z ${AFTER_INSTALLED_CMD} ]; then
+if [ ! -z "${AFTER_INSTALLED_CMD}" ]; then
   notify running ${AFTER_INSTALLED_CMD}
   sh -c "${AFTER_INSTALLED_CMD}"
 fi
