@@ -23,6 +23,7 @@ Our opinions of what a modern installation of Debian should look like in 2023 ar
 |---------------------|-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|-------------------------------------------------------------------------|
 | KDE Plasma          | [opinionated-debian-installer-bookworm-kde-plasma-20231117b.img (4.2GB)](https://objectstorage.eu-frankfurt-1.oraclecloud.com/n/fr2rf1wke5iq/b/public/o/opinionated-debian-installer-bookworm-kde-plasma-20231117b.img) | 8ef9e059 411d98e6 cc8c598e 5a489ab0 317fb225 d95a4da4 5a9c4084 7a2ecac5 |
 | Gnome               | [opinionated-debian-installer-bookworm-gnome-20231105a.img (3.3GB)](https://objectstorage.eu-frankfurt-1.oraclecloud.com/n/fr2rf1wke5iq/b/public/o/opinionated-debian-installer-bookworm-gnome-20231105a.img)           | 038f22b7 a387ae08 3ea67b12 84155489 08793b38 d4508ef9 99179865 f70c8006 |
+| Server (beta)       | [opinionated-debian-installer-bookworm-server-20231126a.img (2.4GB)](https://objectstorage.eu-frankfurt-1.oraclecloud.com/n/fr2rf1wke5iq/b/public/o/opinionated-debian-installer-bookworm-server-20231126a.img)         | 45e8196a 57ad9866 d78fe3c2 6fd2512c c2d0f352 7354a794 8aaced89 a6b4a0d2 |
 
 ## Instructions
 
@@ -31,6 +32,14 @@ Our opinions of what a modern installation of Debian should look like in 2023 ar
 3. Boot from the USB flash drive
 4. Start the installer icon from the desktop/dash, fill in the form in the browser and press the big _Install_ button
 5. Reboot and enjoy
+
+## (Optional) Configuration, Automatic Installation
+
+Edit [installer.ini](installer-files/boot/efi/installer.ini) on the first (vfat) partition of the installer image.
+It will allow you to pre-seed and automate the installation.
+
+If you edit it directly in the booted installer image, it is /boot/efi/installer.sh
+Reboot after editing the file for the new values to take effect.
 
 ## Screencast & Screenshot
 
@@ -41,10 +50,6 @@ Video of installation of Debian with KDE Plasma:
 Screenshot of the full installer GUI:
 
 ![gui screenshot](readme-files/gui.png)
-
-## Configuration, Automatic Installation, Pre-Seeding
-
-Edit [installer.ini](installer-files/boot/efi/installer.ini) on the first (vfat) partition of the installer image.
 
 ## Details
 

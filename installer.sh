@@ -318,7 +318,7 @@ fi
 
 if grep -qs 'root:\$' ${target}/etc/shadow ; then
     echo root password already set up
-else
+elif [ ! -z "${ROOT_PASSWORD}" ]; then
     notify set up root password
     echo "root:${ROOT_PASSWORD}" > ${target}/tmp/passwd
     chroot ${target}/ bash -c "chpasswd < /tmp/passwd"
@@ -331,9 +331,11 @@ else
     notify set up ${USERNAME} user
     chroot ${target}/ bash -c "adduser ${USERNAME} --disabled-password --gecos "${USER_FULL_NAME}""
     chroot ${target}/ bash -c "adduser ${USERNAME} sudo"
-    echo "${USERNAME}:${USER_PASSWORD}" > ${target}/tmp/passwd
-    chroot ${target}/ bash -c "chpasswd < /tmp/passwd"
-    rm -f ${target}/tmp/passwd
+    if [ ! -z "${USER_PASSWORD}" ]; then
+      echo "${USERNAME}:${USER_PASSWORD}" > ${target}/tmp/passwd
+      chroot ${target}/ bash -c "chpasswd < /tmp/passwd"
+      rm -f ${target}/tmp/passwd
+    fi
 fi
 
 notify configuring dracut and kernel command line
