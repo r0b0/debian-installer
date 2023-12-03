@@ -1,10 +1,12 @@
 package main
 
 import (
+	"fmt"
 	"io"
 	"github.com/gdamore/tcell/v2"
 	"github.com/rivo/tview"
 	"net/http"
+	"golang.org/x/net/websocket"
 	"net/url"
 	"strconv"
 )
@@ -39,7 +41,7 @@ func (m *model) startInstallation(log io.Writer) error {
 	client := http.Client{}
 	resp, err := client.PostForm("http://localhost:5000/install", post)
 	if err != nil {
-		log.Write([]byte("Error posting form"))
+		log.Write([]byte("Error posting form\n"))
 		return err
 	}
 	log.Write([]byte(resp.Status))
@@ -54,8 +56,29 @@ func main() {
 
 	app := tview.NewApplication()
 	logView := tview.NewTextView().
-		SetLabel("Log")
+		SetScrollable(true).
+		ScrollToEnd().
+		SetLabel("Log").
+		SetChangedFunc(func() {
+			app.Draw()
+		})
 	logView.SetBackgroundColor(tcell.ColorGray)
+
+	origin := "http://localhost/"
+	wsUrl := "ws://localhost:5000/process_output"
+	ws, err := websocket.Dial(wsUrl, "", origin)
+	if err != nil {
+		panic(err)
+	}
+	go func() {
+		for {
+			_, err := io.Copy(logView, ws)
+			if err != nil {
+				logView.Write([]byte(fmt.Sprintf("Error reading websocket %v\n", err)))
+				return
+			}
+		}
+	}()
 
 	form := tview.NewForm().
 		AddDropDown("Installation Target Device", devices, 0, func(option string, _ int) {
