@@ -69,12 +69,21 @@ export default {
           } else {
             this.error_message = "";
           }
+
+          for(const [key, value] of Object.entries(this.installer)) {
+            if(key in response.environ) {
+              console.debug(`Setting ${key} from backend to ${response.environ[key]}`);
+              this.installer[key] = response.environ[key];
+            }
+          }
+          
           this.get_block_devices();
 
         })
-        .catch(() => {
+        .catch((error) => {
           this.error_message = "Backend not yet available";
           console.info("Backend not yet available");
+          console.error(error);
           setTimeout(this.check_login, 1000);
         });
     },

@@ -8,6 +8,7 @@ EnvironmentFile=-/boot/efi/installer.ini
 ExecStart=/usr/bin/flask --app /backend.py run --host ${BACK_END_IP_ADDRESS}
 RuntimeDirectory=installer
 WorkingDirectory=/run/installer
+Type=notify
 User=root
 Group=root
 

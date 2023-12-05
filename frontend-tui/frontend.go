@@ -121,7 +121,7 @@ func processOutput(wsUrl string, log io.Writer) error {
 func main() {
 	var devices []string
 
-	m := model{debianVersion: "bookworm"}
+	m := model{debianVersion: "bookworm"}  // TODO fetch this from GET /login response.environ
 	greenColour := tcell.NewRGBColor(0x08, 0x69, 0x6b)
 
 	app := tview.NewApplication()
@@ -182,6 +182,7 @@ func main() {
 		SetTitleColor(greenColour).
 		SetTitleAlign(tview.AlignCenter)
 
+	// TODO fetch everything from the back-end first and create the form after - it will be much easier
 	_ = processOutput("ws://localhost:5000/process_output", logView)
 	devicesDropdown := form.GetFormItemByLabel("Installation Target Device").(*tview.DropDown)
 	go func() {

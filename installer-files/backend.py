@@ -1,6 +1,7 @@
 import os
 import socket
 import subprocess
+import systemd.daemon
 import threading
 import time
 
@@ -30,8 +31,12 @@ INSTALLER_SCRIPT = os.environ["INSTALLER_SCRIPT"]
 def login():
     hostname = socket.gethostname()
     has_efi = os.path.exists("/sys/firmware/efi")
+    env = {}
+    for k, v in os.environ.items():
+        env[k] = v
     return {"hostname": hostname,
-            "has_efi": has_efi}
+            "has_efi": has_efi,
+            "environ": env}
 
 
 @app.route("/block_devices", methods=["GET"])
@@ -138,7 +143,9 @@ def get_process_output(ws):
     while ws in context.output_readers:
         time.sleep(60)
     app.logger.info("Websocket closing")
-
+    
+    
+systemd.daemon.notify("READY=1")
 
 if os.environ.get("AUTO_INSTALL", None) == "true":
     app.logger.info("Automatically starting the installation")
