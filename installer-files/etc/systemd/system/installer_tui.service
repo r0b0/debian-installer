@@ -1,0 +1,16 @@
+[Unit]
+Description=Opinionated Debian Installer - TUI Front-end
+After=installer_backend.service
+
+[Service]
+ExecStart=/usr/bin/openvt -s -w -f -- /sbin/opinionated-installer-tui
+User=root
+Group=root
+Restart=always
+RestartSec=2
+StandardInput=tty
+StandardOutput=tty
+TTYPath=/dev/tty10
+
+[Install]
+WantedBy=multi-user.target

@@ -6,6 +6,7 @@ USERNAME=live
 
 DEBIAN_VERSION=bookworm
 FSFLAGS="compress=zstd:9"
+USE_TUI=true
 
 target=/target
 root_device=${DISK}2
@@ -223,6 +224,14 @@ install_file boot/efi/installer.ini
 chroot ${target}/ systemctl enable installer_backend
 chroot ${target}/ systemctl enable link_volatile_root
 chroot ${target}/ systemctl enable grow_overlay_top_filesystem.service
+
+if [ "${USE_TUI}" == true ] ; then
+  notify installing tui frontend
+  cp ${SCRIPT_DIR}/frontend-tui/opinionated-installer-tui ${target}/sbin/opinionated-installer-tui
+  chmod +x ${target}/sbin/opinionated-installer-tui
+  install_file etc/systemd/system/installer_tui.service
+  chroot ${target}/ systemctl enable installer_tui.service
+fi
 
 notify umounting the overlay filesystem and the lower
 umount -R ${target}
