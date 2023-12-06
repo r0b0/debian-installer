@@ -1,0 +1,20 @@
+{
+  "environ": {
+    "DISK": "/dev/sda",
+    "DOCKER_HOST": "unix:///run/user/1000/podman/podman.sock",
+    "FLASK_APP": "installer-files/backend.py",
+    "FLASK_RUN_FROM_CLI": "true",
+    "INSTALLER_SCRIPT": "/home/robo/opinionated-debian-installer/dummy.sh",
+    "LANG": "C.UTF-8",
+    "LANGUAGE": "",
+    "LOGNAME": "robo",
+    "PATH": "/home/robo/.sdkman/candidates/quarkus/current/bin:/home/robo/.sdkman/candidates/maven/current/bin:/home/robo/.sdkman/candidates/java/current/bin:/home/robo/.sdkman/candidates/groovy/current/bin:/home/robo/.sdkman/candidates/gradle/current/bin:/home/robo/.sdkman/candidates/cxf/current/bin:/home/robo/go/bin:/home/robo/.local/share/JetBrains/Toolbox/scripts:/home/robo/node/bin:/home/robo/.cargo/bin:/home/robo/.local/bin:/usr/local/bin:/usr/bin:/bin:/usr/local/games:/usr/games:/home/robo/.local/share/JetBrains/Toolbox/scripts",
+    "PWD": "/home/robo/opinionated-debian-installer",
+    "SHELL": "/bin/bash",
+    "TERM": "xterm-256color",
+    "USER": "robo",
+    "_": "venv/bin/python3"
+  },
+  "has_efi": true,
+  "hostname": "aspire"
+}

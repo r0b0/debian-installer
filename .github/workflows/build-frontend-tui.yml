@@ -18,6 +18,11 @@ jobs:
         go-version: '1.21'
         cache-dependency-path: frontend-tui/go.sum
 
+    - name: Test
+      run: |
+        cd frontend-tui
+        go test -v
+        
     - name: Build
       run: |
         cd frontend-tui
