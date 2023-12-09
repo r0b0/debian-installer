@@ -190,7 +190,7 @@ func main() {
 			m.Timezone = text // TODO dropdown
 		}).
 		AddDropDown("Enable Swap", SwapOptionKeys, SwapOptions[m.EnableSwap], func(option string, optionIndex int) {
-			m.EnableSwap = option
+			m.EnableSwap = option  // XXX this is broken, debug this
 		}).
 		AddInputField("Swap Size", m.SwapSize, 0, func(textToCheck string, lastChar rune) bool {
 			_, err := strconv.Atoi(textToCheck)
