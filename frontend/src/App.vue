@@ -20,17 +20,16 @@ export default {
       
       // values for the installer:
       installer: {
-        DISK: "",
-        DEBIAN_VERSION: "bookworm",
-        USERNAME: "user",
-        USER_FULL_NAME: "Debian User",
+        DISK: undefined,
+        USERNAME: undefined,
+        USER_FULL_NAME: undefined,
         USER_PASSWORD: undefined,
         ROOT_PASSWORD: undefined,
         LUKS_PASSWORD: undefined,
-        HOSTNAME: "debian",
-        TIMEZONE: "UTC",
-        ENABLE_SWAP: "partition",
-        SWAP_SIZE: 1,
+        HOSTNAME: undefined,
+        TIMEZONE: undefined,
+        ENABLE_SWAP: undefined,
+        SWAP_SIZE: undefined,
       }
     }
   },
@@ -69,6 +68,12 @@ export default {
           } else {
             this.error_message = "";
           }
+          if(response.running) {
+            this.running = true;
+            this.finished = false;
+          } else {
+            this.running = false;
+          }
 
           for(const [key, value] of Object.entries(this.installer)) {
             if(key in response.environ) {
@@ -78,6 +83,7 @@ export default {
           }
           
           this.get_block_devices();
+          this.read_process_output();
 
         })
         .catch((error) => {
@@ -123,6 +129,22 @@ export default {
         this.timezones.push(line);
       }
     },
+    read_process_output() {
+      this.output_reader_connection = new WebSocket(`ws://${this.hostname}:5000/process_output`);
+      this.output_reader_connection.onmessage = (event) => {
+        // console.log("Websocket event received");
+        // console.log(event);
+        this.install_to_device_status += event.data.toString();
+        nextTick(() => {
+          this.$refs.process_output_ta.scrollTop = 1000000;
+        });
+        // console.log(this.install_to_device_status);
+      }
+      this.output_reader_connection.onclose = (event) => {
+        console.log("Websocket connection closed");
+        this.check_process_status()
+      }
+    },
     install() {
       this.running = true;
       let data = new FormData();
@@ -140,20 +162,7 @@ export default {
         .then(result => {
             console.debug(result);
             this.finished = false;
-            this.output_reader_connection = new WebSocket(`ws://${this.hostname}:5000/process_output`);
-            this.output_reader_connection.onmessage = (event) => {
-              // console.log("Websocket event received");
-              // console.log(event);
-              this.install_to_device_status += event.data.toString();
-              nextTick(() => {
-                this.$refs.process_output_ta.scrollTop = 1000000;
-              });
-              // console.log(this.install_to_device_status);
-            }
-            this.output_reader_connection.onclose = (event) => {
-              console.log("Websocket connection closed");
-              this.check_process_status()
-            }
+            
         })
         .catch(error => {
             this.running = false;
@@ -249,7 +258,7 @@ export default {
           </option>
         </select>
         <label for="DEBIAN_VERSION">Debian Version</label>
-        <select id="DEBIAN_VERSION" v-model="installer.DEBIAN_VERSION" :disabled="running">
+        <select id="DEBIAN_VERSION">
           <option value="bookworm" selected>Debian 12 Bookworm</option>
         </select>
       </fieldset>
@@ -309,13 +318,13 @@ export default {
         <textarea ref="process_output_ta" :class="overall_status">{{ install_to_device_status }}</textarea>
 
         <!-- TODO disable this while not finished instead of hiding -->
-        <a v-if="finished" href="http://{{hostname}}:5000/download_log" download>Download Log</a>
+        <a v-if="finished" :href="'http://' + hostname + ':5000/download_log'" download>Download Log</a>
       </fieldset>
     </form>
   </main>
 
   <footer>
-    <span>Opinionated Debian Installer version 20231126a</span>
+    <span>Opinionated Debian Installer version 20231209a</span>
     <span>Installer &copy;2022-2023 <a href="https://github.com/r0b0/debian-installer">Robert T</a></span>
     <span>Banner &copy;2022 <a href="https://github.com/julietteTaka/Emerald">Juliette Taka</a></span>
   </footer>

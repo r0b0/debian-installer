@@ -8,7 +8,6 @@ USER_FULL_NAME="Debian User"
 USER_PASSWORD=hunter2
 ROOT_PASSWORD=changeme
 LUKS_PASSWORD=luke
-DEBIAN_VERSION=bookworm
 HOSTNAME=debian12
 ENABLE_SWAP=partition
 SWAP_SIZE=2
@@ -23,6 +22,7 @@ function notify () {
     fi
 }
 
+DEBIAN_VERSION=bookworm
 # see https://www.freedesktop.org/software/systemd/man/systemd-cryptenroll.html#--tpm2-pcrs=PCR
 TPM_PCRS="7+14"
 # do not enable this on a live-cd

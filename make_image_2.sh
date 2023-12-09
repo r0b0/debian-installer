@@ -6,7 +6,7 @@ USERNAME=live
 
 DEBIAN_VERSION=bookworm
 FSFLAGS="compress=zstd:9"
-USE_TUI=true
+USE_TUI=false
 
 target=/target
 root_device=${DISK}2

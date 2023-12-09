@@ -19,6 +19,7 @@ CORS(app)
 class Context(object):
     def __init__(self):
         self.running_subprocess = None
+        self.running_parameters = {}
         self.subprocess_output = ""
         self.output_readers = []
 
@@ -34,8 +35,11 @@ def login():
     env = {}
     for k, v in os.environ.items():
         env[k] = v
+    for k, v in context.running_parameters.items():
+        env[k] = v
     return {"hostname": hostname,
             "has_efi": has_efi,
+            "running": context.running_subprocess is not None,
             "environ": env}
 
 
@@ -54,6 +58,7 @@ def install():
     subprocess_env = {}
     for k, v in request.form.items():
         subprocess_env[k] = v
+        context.running_parameters[k] = v
         app.logger.info(f"  env: {k} = {v}")
 
     do_start_installation(subprocess_env)
