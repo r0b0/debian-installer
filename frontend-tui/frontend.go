@@ -1,7 +1,9 @@
 package main
 
 import (
+	_ "embed"
 	"encoding/json"
+	"flag"
 	"fmt"
 	"github.com/gdamore/tcell/v2"
 	"github.com/rivo/tview"
@@ -10,16 +12,11 @@ import (
 	"net/http"
 	"net/url"
 	"strconv"
+	"strings"
 )
 
 func LOG(l io.Writer, format string, args ...any) {
 	_, _ = l.Write([]byte(fmt.Sprintf(format+"\n", args...)))
-}
-
-var SwapOptions = map[string]int{
-	"None":      0,
-	"File":      1,
-	"Partition": 2,
 }
 
 type Model struct {
@@ -39,6 +36,7 @@ type LoginResp struct {
 	Environ  Model  `json:"environ"`
 	HasEfi   bool   `json:"has_efi"`
 	Hostname string `json:"hostname"`
+	Running  bool   `json:"running"`
 }
 
 func parseLoginJson(data io.Reader) (Model, error) {
@@ -49,14 +47,14 @@ func parseLoginJson(data io.Reader) (Model, error) {
 	}
 	return login.Environ, nil
 }
-func loginToBackend() (Model, error) {
+func loginToBackend(hostname string) (Model, error) {
 	client := http.Client{}
-	res, err := client.Get("http://localhost:5000/login")
+	resp, err := client.Get("http://" + hostname + ":5000/login")
 	if err != nil {
 		return Model{}, err
 	}
-	defer res.Body.Close()
-	return parseLoginJson(res.Body)
+	defer resp.Body.Close()
+	return parseLoginJson(resp.Body)
 }
 
 type BlockDevice struct {
@@ -76,14 +74,14 @@ func parseLsblkJson(data io.Reader) (LsblkResp, error) {
 	}
 	return devices, nil
 }
-func getAvailableDrives() ([]string, []string, error) {
+func getAvailableDrives(hostname string) ([]string, []string, error) {
 	client := http.Client{}
-	res, err := client.Get("http://localhost:5000/block_devices")
+	resp, err := client.Get("http://" + hostname + ":5000/block_devices")
 	if err != nil {
 		return []string{}, []string{}, err
 	}
-	defer res.Body.Close()
-	devices, err := parseLsblkJson(res.Body)
+	defer resp.Body.Close()
+	devices, err := parseLsblkJson(resp.Body)
 	if err != nil {
 		return []string{}, []string{}, err
 	}
@@ -114,7 +112,7 @@ func processOutput(wsUrl string, log io.Writer) {
 	}()
 }
 
-func (m *Model) startInstallation(log io.Writer) error {
+func (m *Model) startInstallation(hostname string, log io.Writer) error {
 	post := url.Values{}
 
 	post.Set("DISK", m.Disk)
@@ -129,22 +127,39 @@ func (m *Model) startInstallation(log io.Writer) error {
 	post.Set("ENABLE_SWAP", m.EnableSwap)
 	post.Set("SWAP_SIZE", m.SwapSize)
 	client := http.Client{}
-	resp, err := client.PostForm("http://localhost:5000/install", post)
+	resp, err := client.PostForm("http://"+hostname+":5000/install", post)
 	if err != nil {
 		LOG(log, "Error posting form: %v", err)
 		return err
 	}
+	defer resp.Body.Close()
 	LOG(log, "Post status: %s", resp.Status)
 	return nil
 }
 
+func stop(hostname string) error {
+	client := http.Client{}
+	resp, err := client.Get("http://" + hostname + ":5000/clear")
+	if err != nil {
+		return err
+	}
+	defer resp.Body.Close()
+	return nil
+}
+
+//go:embed timezones.txt
+var timezonesStr string
+
 func main() {
-	devices, deviceNames, err := getAvailableDrives()
+	hostname := flag.String("hostname", "localhost", "backend host")
+	flag.Parse()
+
+	devices, deviceNames, err := getAvailableDrives(*hostname)
 	if err != nil {
 		panic(fmt.Sprintf("Failed to get available drives from back-end: %v", err))
 	}
 
-	m, err := loginToBackend()
+	m, err := loginToBackend(*hostname)
 	if err != nil {
 		panic(fmt.Sprintf("Failed to get configuration from back-end: %v", err))
 	}
@@ -155,15 +170,26 @@ func main() {
 	logView := tview.NewTextView().
 		SetScrollable(true).
 		ScrollToEnd().
-		SetLabel("Log").
+		SetLabelWidth(10).
+		SetLabel(" Log").
 		SetChangedFunc(func() {
 			app.Draw()
 		})
 
-	var SwapOptionKeys []string
-	for k := range SwapOptions {
-		SwapOptionKeys = append(SwapOptionKeys, k)
+	SwapOptionKeys := []string{"none", "partition", "file"}
+	var swapIndex int
+	switch m.EnableSwap {
+	case "partition":
+		swapIndex = 1
+	case "file":
+		swapIndex = 2
+	default:
+		swapIndex = 0
 	}
+
+	timezones := strings.Split(timezonesStr, "\n")
+	utcIndex := 589
+
 	form := tview.NewForm().
 		AddDropDown("Installation Target Device", deviceNames, 0, func(_ string, optionIndex int) {
 			m.Disk = devices[optionIndex]
@@ -186,11 +212,11 @@ func main() {
 		AddInputField("Hostname", m.Hostname, 0, nil, func(text string) {
 			m.Hostname = text
 		}).
-		AddInputField("Time Zone", m.Timezone, 0, nil, func(text string) {
-			m.Timezone = text // TODO dropdown
+		AddDropDown("Time Zone", timezones, utcIndex, func(option string, _ int) {
+			m.Timezone = option
 		}).
-		AddDropDown("Enable Swap", SwapOptionKeys, SwapOptions[m.EnableSwap], func(option string, optionIndex int) {
-			m.EnableSwap = option  // XXX this is broken, debug this
+		AddDropDown("Enable Swap", SwapOptionKeys, swapIndex, func(option string, _ int) {
+			m.EnableSwap = option
 		}).
 		AddInputField("Swap Size", m.SwapSize, 0, func(textToCheck string, lastChar rune) bool {
 			_, err := strconv.Atoi(textToCheck)
@@ -199,20 +225,30 @@ func main() {
 			m.SwapSize = text
 		}).
 		AddButton("Install OVERWRITING THE WHOLE DRIVE", func() {
-			err := m.startInstallation(logView)
+			err := m.startInstallation(*hostname, logView)
 			if err != nil {
 				LOG(logView, "Failed to start installation: %v", err)
 			}
 		}).
-		AddFormItem(logView)
-	form.SetBorder(true).
+		AddButton("Stop", func() {
+			err := stop(*hostname)
+			if err != nil {
+				LOG(logView, "Failed to stop installation: %v", err)
+			}
+		})
+
+	processOutput("ws://"+*hostname+":5000/process_output", logView)
+
+	grid := tview.NewGrid().
+		SetRows(23, 0).
+		AddItem(form, 0, 0, 1, 1, 0, 0, true).
+		AddItem(logView, 1, 0, 1, 1, 0, 0, false)
+	grid.SetBorder(true).
 		SetTitle("Opinionated Debian Installer").
 		SetTitleColor(greenColour).
 		SetTitleAlign(tview.AlignCenter)
 
-	processOutput("ws://localhost:5000/process_output", logView)
-
-	if err := app.SetRoot(form, true).EnableMouse(true).Run(); err != nil {
+	if err := app.SetRoot(grid, true).EnableMouse(true).SetFocus(grid).Run(); err != nil {
 		panic(err)
 	}
 }

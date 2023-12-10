@@ -35,7 +35,7 @@ func TestParseLoginJson(t *testing.T) {
 		t.Fatalf("Failed to parse json: %v", err)
 	}
 
-	if "/dev/sda" != login.Disk {
-		t.Errorf("Disk for installation = %s; want /dev/sda", login.Disk)
+	if "partition" != login.EnableSwap {
+		t.Errorf("Enable Swap = %s; want partition", login.EnableSwap)
 	}
 }
