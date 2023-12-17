@@ -269,7 +269,7 @@ if grep -qs "${efi_partition} " /proc/mounts ; then
 else
     notify mount efi esp partition ${efi_partition} on ${target}/boot/efi
     mkdir -p ${target}/boot/efi
-    mount ${efi_partition} ${target}/boot/efi
+    mount ${efi_partition} ${target}/boot/efi -o umask=077
 fi
 
 notify setup hostname

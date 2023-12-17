@@ -51,6 +51,26 @@ Screenshot of the full installer GUI:
 
 ![gui screenshot](readme-files/gui.png)
 
+## Headless Installation
+
+You can use the installer for server installation.
+**This is currently in beta testing phase.**
+
+As a start, edit the configuration file installer.ini (see above), set option BACK_END_IP_ADDRESS to 0.0.0.0 and reboot the installer.
+**There is no encryption or authentication in the communication so only do this on a trusted network.**
+
+You have several options to access the installer. 
+Assuming the IP address of the installed machine is 192.168.1.29 and you can reach it from your PC:
+
+* Use the web interface in a browser on a PC - open http://192.168.1.29/opinionated-debian-installer/
+* Use the text mode interface - start `opinionated-installer-tui -baseUrl http://192.168.1.29:5000`
+* Use curl - again, see the [installer.ini](installer-files/boot/efi/installer.ini) file for list of all options for the form data in -F parameters:
+
+
+    curl -v -F DISK=/dev/vda" -F "USER_PASSWORD=hunter2" \
+     -F "ROOT_PASSWORD=changeme" -F "LUKS_PASSWORD=luke" \ 
+     http://192.168.1.29:5000/install
+
 ## Details
 
 - GPT disk partitions are created on the designated disk drive: 

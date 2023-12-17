@@ -94,7 +94,7 @@ if grep -qs "${DISK}1 " /proc/mounts ; then
 else
     notify mount efi esp partition ${DISK}1 on ${target}/boot/efi
     mkdir -p ${target}/boot/efi
-    mount ${DISK}1 ${target}/boot/efi
+    mount ${DISK}1 ${target}/boot/efi -o umask=077
 fi
 
 notify setup fstab

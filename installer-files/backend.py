@@ -58,7 +58,6 @@ def install():
     subprocess_env = {}
     for k, v in request.form.items():
         subprocess_env[k] = v
-        context.running_parameters[k] = v
         app.logger.info(f"  env: {k} = {v}")
 
     do_start_installation(subprocess_env)
@@ -66,9 +65,13 @@ def install():
 
 
 def do_start_installation(subprocess_env):
+    context.running_parameters = {}
+    # inherit environment variables from systemd (and installer.ini)
+    context.running_parameters.update(os.environ)
     subprocess_env["NON_INTERACTIVE"] = "yes"
+    context.running_parameters.update(subprocess_env)
     context.running_subprocess = subprocess.Popen(INSTALLER_SCRIPT,
-                                                  env=subprocess_env,
+                                                  env=context.running_parameters,
                                                   text=True,
                                                   stdout=subprocess.PIPE,
                                                   stderr=subprocess.PIPE)
@@ -154,7 +157,4 @@ systemd.daemon.notify("READY=1")
 
 if os.environ.get("AUTO_INSTALL", None) == "true":
     app.logger.info("Automatically starting the installation")
-    env = {}
-    # inherit environment variables from systemd (and installer.ini)
-    env.update(os.environ)
-    do_start_installation(env)
+    do_start_installation({})
