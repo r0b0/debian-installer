@@ -62,14 +62,14 @@ As a start, edit the configuration file installer.ini (see above), set option BA
 You have several options to access the installer. 
 Assuming the IP address of the installed machine is 192.168.1.29 and you can reach it from your PC:
 
-* Use the web interface in a browser on a PC - open http://192.168.1.29/opinionated-debian-installer/
+* Use the web interface in a browser on a PC - open `http://192.168.1.29/opinionated-debian-installer/`
 * Use the text mode interface - start `opinionated-installer-tui -baseUrl http://192.168.1.29:5000`
 * Use curl - again, see the [installer.ini](installer-files/boot/efi/installer.ini) file for list of all options for the form data in -F parameters:
 
 
-    curl -v -F DISK=/dev/vda" -F "USER_PASSWORD=hunter2" \
-     -F "ROOT_PASSWORD=changeme" -F "LUKS_PASSWORD=luke" \ 
-     http://192.168.1.29:5000/install
+      curl -v -F "DISK=/dev/vda" -F "USER_PASSWORD=hunter2" \
+      -F "ROOT_PASSWORD=changeme" -F "LUKS_PASSWORD=luke" \ 
+      http://192.168.1.29:5000/install
 
 ## Details
 

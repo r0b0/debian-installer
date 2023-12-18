@@ -25,6 +25,9 @@ class Context(object):
 
 
 context = Context()
+# inherit environment variables from systemd (and installer.ini)
+context.running_parameters.update(os.environ)
+context.running_parameters["NON_INTERACTIVE"] = "yes"
 INSTALLER_SCRIPT = os.environ["INSTALLER_SCRIPT"]
 
 
@@ -32,15 +35,10 @@ INSTALLER_SCRIPT = os.environ["INSTALLER_SCRIPT"]
 def login():
     hostname = socket.gethostname()
     has_efi = os.path.exists("/sys/firmware/efi")
-    env = {}
-    for k, v in os.environ.items():
-        env[k] = v
-    for k, v in context.running_parameters.items():
-        env[k] = v
     return {"hostname": hostname,
             "has_efi": has_efi,
             "running": context.running_subprocess is not None,
-            "environ": env}
+            "environ": context.running_parameters}
 
 
 @app.route("/block_devices", methods=["GET"])
@@ -55,21 +53,15 @@ def install():
         app.logger.error("Process already running")
         flask.abort(409, "Already running")
 
-    subprocess_env = {}
     for k, v in request.form.items():
-        subprocess_env[k] = v
+        context.running_parameters[k] = v
         app.logger.info(f"  env: {k} = {v}")
 
-    do_start_installation(subprocess_env)
+    do_start_installation()
     return {}
 
 
-def do_start_installation(subprocess_env):
-    context.running_parameters = {}
-    # inherit environment variables from systemd (and installer.ini)
-    context.running_parameters.update(os.environ)
-    subprocess_env["NON_INTERACTIVE"] = "yes"
-    context.running_parameters.update(subprocess_env)
+def do_start_installation():
     context.running_subprocess = subprocess.Popen(INSTALLER_SCRIPT,
                                                   env=context.running_parameters,
                                                   text=True,
@@ -157,4 +149,4 @@ systemd.daemon.notify("READY=1")
 
 if os.environ.get("AUTO_INSTALL", None) == "true":
     app.logger.info("Automatically starting the installation")
-    do_start_installation({})
+    do_start_installation()
