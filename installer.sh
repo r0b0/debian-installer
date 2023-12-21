@@ -1,6 +1,6 @@
 #!/bin/bash
 
-if [ x"${NON_INTERACTIVE}" == "x" ]; then
+if [ -z "${NON_INTERACTIVE}" ]; then
 # edit this:
 DISK=/dev/vda
 USERNAME=user
@@ -17,7 +17,7 @@ fi
 
 function notify () {
     echo $@
-    if [ x"${NON_INTERACTIVE}" == "x" ]; then
+    if [ -z "${NON_INTERACTIVE}" ]; then
       read -p "Enter to continue"
     fi
 }
@@ -36,7 +36,17 @@ if [ "$(id -u)" -ne 0 ]; then
     exit 1
 fi
 
-if [ x"${NON_INTERACTIVE}" == "x" ]; then
+if [ -z "${DISK}" ]; then
+    echo "DISK variable is missing" >&2
+    exit 2
+fi
+
+if [ -z "${LUKS_PASSWORD}" ]; then
+    echo "LUKS_PASSWORD variable is missing" >&2
+    exit 3
+fi
+
+if [ -z "${NON_INTERACTIVE}" ]; then
     notify install required packages
     apt-get update -y
     apt-get install -y cryptsetup debootstrap uuid-runtime btrfs-progs dosfstools
@@ -74,7 +84,7 @@ kernel_params="luks.options=tpm2-device=auto rw quiet rootfstype=btrfs rootflags
 efi_partition=/dev/disk/by-partuuid/${efi_part_uuid}
 root_partition=/dev/disk/by-partuuid/${luks_part_uuid}
 
-if [ ${ENABLE_SWAP} == "partition" ]; then
+if [ "${ENABLE_SWAP}" == "partition" ]; then
 swap_part_uuid=$(cat swap-part.uuid)
 swap_size_blocks=$((${SWAP_SIZE}*2048*1024))
 root_start_blocks=$((2099200+${swap_size_blocks}))
@@ -114,17 +124,17 @@ sfdisk -d $DISK > partitions_created.txt
 fi
 
 function wait_for_file {
-  filename="$1"
-  while [ ! -e $filename ]
-  do
-    echo waiting for $filename to be created
-    sleep 3
-  done
+    filename="$1"
+    while [ ! -e $filename ]
+    do
+        echo waiting for $filename to be created
+        sleep 3
+    done
 }
 
 wait_for_file ${root_partition}
-if [ ${ENABLE_SWAP} == "partition" ]; then
-  wait_for_file ${swap_partition}
+if [ "${ENABLE_SWAP}" == "partition" ]; then
+    wait_for_file ${swap_partition}
 fi
 
 if [ ! -f $KEYFILE ]; then
@@ -135,9 +145,9 @@ if [ ! -f $KEYFILE ]; then
     cryptsetup erase --batch-mode ${root_partition}
     wipefs -a ${root_partition}
     if [ -e ${swap_partition} ]; then
-      notify "remove any old luks on ${swap_partition} (swap)"
-      cryptsetup erase --batch-mode ${swap_partition}
-      wipefs -a ${swap_partition}
+        notify "remove any old luks on ${swap_partition} (swap)"
+        cryptsetup erase --batch-mode ${swap_partition}
+        wipefs -a ${swap_partition}
     fi
 fi
 
@@ -188,21 +198,20 @@ if [ ! -f vfat_created.txt ]; then
     touch vfat_created.txt
 fi
 
-if [ ${ENABLE_SWAP} == "partition" ]; then
-setup_luks ${swap_partition}
-swap_uuid=$(cat luks.uuid)
+if [ "${ENABLE_SWAP}" == "partition" ]; then
+    setup_luks ${swap_partition}
+    swap_uuid=$(cat luks.uuid)
 
-kernel_params="${kernel_params} luks.name=${swap_uuid}=${swap_device} resume=/dev/mapper/${swap_device}"
+    kernel_params="${kernel_params} luks.name=${swap_uuid}=${swap_device} resume=/dev/mapper/${swap_device}"
 
-if [ ! -e /dev/mapper/${swap_device} ]; then
-    notify open luks swap
-    cryptsetup luksOpen ${swap_partition} ${swap_device} --key-file $KEYFILE
-fi
+    if [ ! -e /dev/mapper/${swap_device} ]; then
+        notify open luks swap
+        cryptsetup luksOpen ${swap_partition} ${swap_device} --key-file $KEYFILE
+    fi
 
-notify making swap
-mkswap /dev/mapper/${swap_device}
-swapon /dev/mapper/${swap_device}
-
+    notify making swap
+    mkswap /dev/mapper/${swap_device}
+    swapon /dev/mapper/${swap_device}
 fi  # swap as partition
 
 if grep -qs "${top_level_mount}" /proc/mounts ; then
@@ -218,7 +227,7 @@ if [ ! -e ${top_level_mount}/@ ]; then
     notify create @ and @home subvolumes on ${top_level_mount}
     btrfs subvolume create ${top_level_mount}/@
     btrfs subvolume create ${top_level_mount}/@home
-    if [ ${ENABLE_SWAP} == "file" ]; then
+    if [ "${ENABLE_SWAP}" == "file" ]; then
         notify create @swap subvolume for swap file on ${top_level_mount}
         btrfs subvolume create ${top_level_mount}/@swap
         chmod 700 ${top_level_mount}/@swap
@@ -234,14 +243,14 @@ else
     mount ${root_device} ${target} -o ${FSFLAGS},subvol=@
     mkdir -p ${target}/home
     mount ${root_device} ${target}/home -o ${FSFLAGS},subvol=@home
-    if [ ${ENABLE_SWAP} == "file" ]; then
+    if [ "${ENABLE_SWAP}" == "file" ]; then
         notify mount swap subvolume on ${target}
         mkdir -p ${target}/swap
         mount ${root_device} ${target}/swap -o noatime,subvol=@swap
     fi
 fi
 
-if [ ${ENABLE_SWAP} == "file" ]; then
+if [ "${ENABLE_SWAP}" == "file" ]; then
     notify make swap file at ${target}/swap/swapfile
     btrfs filesystem mkswapfile --size ${SWAP_SIZE}G ${target}/swap/swapfile
     swapon ${target}/swap/swapfile
@@ -269,11 +278,13 @@ if grep -qs "${efi_partition} " /proc/mounts ; then
 else
     notify mount efi esp partition ${efi_partition} on ${target}/boot/efi
     mkdir -p ${target}/boot/efi
-    mount ${efi_partition} ${target}/boot/efi
+    mount ${efi_partition} ${target}/boot/efi -o umask=077
 fi
 
-notify setup hostname
-echo "$HOSTNAME" > ${target}/etc/hostname
+if [ ! -z "${HOSTNAME}" ]; then
+    notify setup hostname
+    echo "$HOSTNAME" > ${target}/etc/hostname
+fi
 
 notify setup timezone
 echo "${TIMEZONE}" > ${target}/etc/timezone
@@ -288,11 +299,11 @@ UUID=${btrfs_uuid} /root/btrfs1 btrfs defaults,subvolid=5,${FSFLAGS} 0 1
 PARTUUID=${efi_part_uuid} /boot/efi vfat defaults,umask=077 0 2
 EOF
 
-if [ ${ENABLE_SWAP} == "partition" ]; then
+if [ "${ENABLE_SWAP}" == "partition" ]; then
 cat <<EOF >> ${target}/etc/fstab
 /dev/mapper/${swap_device} swap swap defaults 0 0
 EOF
-elif [ ${ENABLE_SWAP} == "file" ]; then
+elif [ "${ENABLE_SWAP}" == "file" ]; then
 cat <<EOF >> ${target}/etc/fstab
 UUID=${btrfs_uuid} /swap btrfs defaults,subvol=@swap,noatime 0 0
 /swap/swapfile none swap defaults 0 0
@@ -325,16 +336,18 @@ elif [ ! -z "${ROOT_PASSWORD}" ]; then
     rm -f ${target}/tmp/passwd
 fi
 
-if grep -qs "^${USERNAME}:" ${target}/etc/shadow ; then
-    echo ${USERNAME} user already set up
-else
-    notify set up ${USERNAME} user
-    chroot ${target}/ bash -c "adduser ${USERNAME} --disabled-password --gecos "${USER_FULL_NAME}""
-    chroot ${target}/ bash -c "adduser ${USERNAME} sudo"
-    if [ ! -z "${USER_PASSWORD}" ]; then
-      echo "${USERNAME}:${USER_PASSWORD}" > ${target}/tmp/passwd
-      chroot ${target}/ bash -c "chpasswd < /tmp/passwd"
-      rm -f ${target}/tmp/passwd
+if [ ! -z "${USERNAME}" ]; then
+    if grep -qs "^${USERNAME}:" ${target}/etc/shadow ; then
+        echo ${USERNAME} user already set up
+    else
+        notify set up ${USERNAME} user
+        chroot ${target}/ bash -c "adduser ${USERNAME} --disabled-password --gecos "${USER_FULL_NAME}""
+        chroot ${target}/ bash -c "adduser ${USERNAME} sudo"
+        if [ ! -z "${USER_PASSWORD}" ]; then
+            echo "${USERNAME}:${USER_PASSWORD}" > ${target}/tmp/passwd
+            chroot ${target}/ bash -c "chpasswd < /tmp/passwd"
+            rm -f ${target}/tmp/passwd
+        fi
     fi
 fi
 
@@ -348,15 +361,15 @@ cat <<EOF > ${target}/etc/kernel/cmdline
 ${kernel_params}
 EOF
 
-if [ ${ENABLE_SWAP} == "partition" ]; then
+if [ "${ENABLE_SWAP}" == "partition" ]; then
 cat <<EOF > ${target}/etc/dracut.conf.d/90-hibernate.conf
 add_dracutmodules+=" resume "
 EOF
 fi
 
 notify install required packages on ${target}
-if [ x"${NON_INTERACTIVE}" == "x" ]; then
-  chroot ${target}/ apt-get update -y
+if [ -z "${NON_INTERACTIVE}" ]; then
+    chroot ${target}/ apt-get update -y
 fi
 cat <<EOF > ${target}/tmp/run1.sh
 #!/bin/bash
@@ -372,14 +385,13 @@ chmod 600 ${target}/${KEYFILE}
 cat <<EOF > ${target}/tmp/run4.sh
 systemd-cryptenroll --tpm2-device=list > /tmp/tpm-list.txt
 if grep -qs "/dev/tpm" /tmp/tpm-list.txt ; then
-    echo tpm available, enrolling
-    cp $KEYFILE /target
-    echo "... on root"
-    systemd-cryptenroll --unlock-key-file=/${KEYFILE} --tpm2-device=auto ${root_partition} --tpm2-pcrs=${TPM_PCRS}
-    if [ -e ${swap_partition} ]; then
-      echo "... on swap"
-      systemd-cryptenroll --unlock-key-file=/${KEYFILE} --tpm2-device=auto ${swap_partition} --tpm2-pcrs=${TPM_PCRS}
-    fi
+      echo tpm available, enrolling
+      echo "... on root"
+      systemd-cryptenroll --unlock-key-file=/${KEYFILE} --tpm2-device=auto ${root_partition} --tpm2-pcrs=${TPM_PCRS}
+      if [ -e "${swap_partition}" ]; then
+          echo "... on swap"
+          systemd-cryptenroll --unlock-key-file=/${KEYFILE} --tpm2-device=auto ${swap_partition} --tpm2-pcrs=${TPM_PCRS}
+      fi
 else
     echo tpm not avaialble
 fi
@@ -432,23 +444,25 @@ EOF
 chroot ${target}/ bash /tmp/run2.sh
 
 if [ ! -z "${SSH_PUBLIC_KEY}" ]; then
-  notify adding ssh public key to user and root authorized_keys file
-  mkdir -p ${target}/root/.ssh
-  chmod 700 ${target}/root/.ssh
-  echo "${SSH_PUBLIC_KEY}" > ${target}/root/.ssh/authorized_keys
-  chmod 600 ${target}/root/.ssh/authorized_keys
+    notify adding ssh public key to user and root authorized_keys file
+    mkdir -p ${target}/root/.ssh
+    chmod 700 ${target}/root/.ssh
+    echo "${SSH_PUBLIC_KEY}" > ${target}/root/.ssh/authorized_keys
+    chmod 600 ${target}/root/.ssh/authorized_keys
 
-  mkdir -p ${target}/home/${USERNAME}/.ssh
-  chmod 700 ${target}/home/${USERNAME}/.ssh
-  echo "${SSH_PUBLIC_KEY}" > ${target}/home/${USERNAME}/.ssh/authorized_keys
-  chmod 600 ${target}/home/${USERNAME}/.ssh/authorized_keys
-  chroot ${target}/ chown -R ${USERNAME} /home/${USERNAME}/.ssh
+    if [ ! -z "${USERNAME}" ]; then
+        mkdir -p ${target}/home/${USERNAME}/.ssh
+        chmod 700 ${target}/home/${USERNAME}/.ssh
+        echo "${SSH_PUBLIC_KEY}" > ${target}/home/${USERNAME}/.ssh/authorized_keys
+        chmod 600 ${target}/home/${USERNAME}/.ssh/authorized_keys
+        chroot ${target}/ chown -R ${USERNAME} /home/${USERNAME}/.ssh
 
-  notify installing openssh-server
-  chroot ${target}/ apt-get install -y openssh-server
+        notify installing openssh-server
+        chroot ${target}/ apt-get install -y openssh-server
+    fi
 fi
 
-if [ x"${NON_INTERACTIVE}" == "x" ]; then
+if [ -z "${NON_INTERACTIVE}" ]; then
     notify running tasksel
     chroot ${target}/ tasksel
 fi
@@ -457,17 +471,17 @@ notify reverting backports apt-pin
 rm -f ${target}/etc/apt/preferences.d/99backports-temp
 
 notify umounting all filesystems
-if [ ${ENABLE_SWAP} == "partition" ]; then
-  swapoff /dev/mapper/${swap_device}
-elif [ ${ENABLE_SWAP} == "file" ]; then
-  swapoff ${target}/swap/swapfile
+if [ "${ENABLE_SWAP}" == "partition" ]; then
+    swapoff /dev/mapper/${swap_device}
+elif [ "${ENABLE_SWAP}" == "file" ]; then
+    swapoff ${target}/swap/swapfile
 fi
 umount -R ${target}
 umount -R ${top_level_mount}
 
 notify closing luks
 cryptsetup luksClose ${luks_device}
-if [ ${ENABLE_SWAP} == "partition" ]; then
+if [ "${ENABLE_SWAP}" == "partition" ]; then
   cryptsetup luksClose /dev/mapper/${swap_device}
 fi
 

@@ -39,3 +39,21 @@ func TestParseLoginJson(t *testing.T) {
 		t.Errorf("Enable Swap = %s; want partition", login.EnableSwap)
 	}
 }
+
+func TestGetTimeZoneOffset(t *testing.T) {
+	const UTC_OFFSET = 589
+	o := getTimeZoneOffset("UTC")
+	if UTC_OFFSET != o {
+		t.Errorf("Offset of UTC timezone = %d; want %d", o, UTC_OFFSET)
+	}
+}
+
+func TestGetSliceIndex(t *testing.T) {
+	var WHERE = []string{"a", "b", "c"}
+	const WHAT = "b"
+	o := getSliceIndex(WHAT, WHERE)
+	if 1 != o {
+		t.Errorf("Slice index = %d; want %d", o, 2)
+	}
+}
+

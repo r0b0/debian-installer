@@ -6,8 +6,7 @@ After=getty@tty1.service
 
 [Service]
 ExecStart=/sbin/opinionated-installer-tui
-User=root
-Group=root
+DynamicUser=yes
 Restart=always
 RestartSec=2
 StandardInput=tty

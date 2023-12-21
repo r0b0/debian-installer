@@ -94,7 +94,7 @@ if grep -qs "${DISK}1 " /proc/mounts ; then
 else
     notify mount efi esp partition ${DISK}1 on ${target}/boot/efi
     mkdir -p ${target}/boot/efi
-    mount ${DISK}1 ${target}/boot/efi
+    mount ${DISK}1 ${target}/boot/efi -o umask=077
 fi
 
 notify setup fstab
@@ -170,7 +170,7 @@ cat <<EOF > ${target}/tmp/run1.sh
 export DEBIAN_FRONTEND=noninteractive
 apt-get update -y
 apt-get upgrade -y
-apt-get install systemd-boot dracut cryptsetup debootstrap uuid-runtime lighttpd python3-pip python3-systemd python3-flask python3-flask-cors python3-h11 python3-wsproto -y
+apt-get install systemd-boot dracut cryptsetup debootstrap uuid-runtime lighttpd python3-pip python3-systemd python3-flask python3-flask-cors python3-h11 python3-wsproto curl -y
 apt-get purge initramfs-tools initramfs-tools-core -y
 bootctl install
 systemctl enable lighttpd
@@ -225,10 +225,10 @@ chroot ${target}/ systemctl enable installer_backend
 chroot ${target}/ systemctl enable link_volatile_root
 chroot ${target}/ systemctl enable grow_overlay_top_filesystem.service
 
+notify installing tui frontend
+cp ${SCRIPT_DIR}/frontend-tui/opinionated-installer-tui ${target}/sbin/opinionated-installer-tui
+chmod +x ${target}/sbin/opinionated-installer-tui
 if [ "${USE_TUI}" == true ] ; then
-  notify installing tui frontend
-  cp ${SCRIPT_DIR}/frontend-tui/opinionated-installer-tui ${target}/sbin/opinionated-installer-tui
-  chmod +x ${target}/sbin/opinionated-installer-tui
   install_file etc/systemd/system/installer_tui.service
   chroot ${target}/ systemctl enable installer_tui.service
 fi
@@ -238,8 +238,6 @@ umount -R ${target}
 umount -R ${overlay_low_mount}
 
 shrink_btrfs_filesystem ${overlay_top_mount}
-# XXX not it has too little free space
-# we should add systemd-repart and systemd-growfs
 notify umounting the overlay top
 umount -R ${overlay_top_mount}
 
