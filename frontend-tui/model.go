@@ -59,8 +59,12 @@ var timezonesStr string
 var timezones = strings.Split(timezonesStr, "\n")
 
 func getTimeZoneOffset(tz string) int {
-	for i, t := range timezones {
-		if tz == t {
+	return getSliceIndex(tz, timezones)
+}
+
+func getSliceIndex(what string, where []string) int {
+	for i, t := range where {
+		if what == t {
 			return i
 		}
 	}

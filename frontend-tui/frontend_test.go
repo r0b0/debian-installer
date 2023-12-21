@@ -47,3 +47,13 @@ func TestGetTimeZoneOffset(t *testing.T) {
 		t.Errorf("Offset of UTC timezone = %d; want %d", o, UTC_OFFSET)
 	}
 }
+
+func TestGetSliceIndex(t *testing.T) {
+	var WHERE = []string{"a", "b", "c"}
+	const WHAT = "b"
+	o := getSliceIndex(WHAT, WHERE)
+	if 1 != o {
+		t.Errorf("Slice index = %d; want %d", o, 2)
+	}
+}
+

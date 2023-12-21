@@ -56,7 +56,7 @@ func main() {
 	}
 
 	form := tview.NewForm().
-		AddDropDown("Installation Target Device", deviceNames, 0, func(_ string, optionIndex int) {
+		AddDropDown("Installation Target Device", deviceNames, getSliceIndex(m.Disk, devices), func(_ string, optionIndex int) {
 			m.Disk = devices[optionIndex]
 		}).
 		AddPasswordField("Disk Encryption Passphrase", m.LuksPassword, 0, '*', func(text string) {

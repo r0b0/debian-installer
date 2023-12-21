@@ -21,7 +21,7 @@ Our opinions of what a modern installation of Debian should look like in 2023 ar
 
 | Desktop environment | Download                                                                                                                                                                                                                | SHA-256 Checksum                                                        |
 |---------------------|-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|-------------------------------------------------------------------------|
-| KDE Plasma          | [opinionated-debian-installer-bookworm-kde-plasma-20231117b.img (4.2GB)](https://objectstorage.eu-frankfurt-1.oraclecloud.com/n/fr2rf1wke5iq/b/public/o/opinionated-debian-installer-bookworm-kde-plasma-20231117b.img) | 8ef9e059 411d98e6 cc8c598e 5a489ab0 317fb225 d95a4da4 5a9c4084 7a2ecac5 |
+| KDE Plasma          | [opinionated-debian-installer-bookworm-kde-plasma-20231221a.img (4.2GB)](https://objectstorage.eu-frankfurt-1.oraclecloud.com/n/fr2rf1wke5iq/b/public/o/opinionated-debian-installer-bookworm-kde-plasma-20231221a.img) | 5f941073 905ecdff 2cc113f8 11d1eae1 76767610 a6bc2245 f266ece0 0ea8013a |
 | Gnome               | [opinionated-debian-installer-bookworm-gnome-20231209a.img (3.3GB)](https://objectstorage.eu-frankfurt-1.oraclecloud.com/n/fr2rf1wke5iq/b/public/o/opinionated-debian-installer-bookworm-gnome-20231209a.img)           | b4117d2a e88a0cff b65a971b efa4d565 e084ee35 69dc5ac5 ae81043d cf86a259 |
 | Server (beta)       | [opinionated-debian-installer-bookworm-server-20231209a.img (2.4GB)](https://objectstorage.eu-frankfurt-1.oraclecloud.com/n/fr2rf1wke5iq/b/public/o/opinionated-debian-installer-bookworm-server-20231209a.img)         | 297e0f7d a665b9fd 35c4c05b 518b0318 3689f9c7 b17a049b 470547e0 33a8f506 |
 
@@ -66,10 +66,13 @@ Assuming the IP address of the installed machine is 192.168.1.29 and you can rea
 * Use the text mode interface - start `opinionated-installer-tui -baseUrl http://192.168.1.29:5000`
 * Use curl - again, see the [installer.ini](installer-files/boot/efi/installer.ini) file for list of all options for the form data in -F parameters:
 
-
       curl -v -F "DISK=/dev/vda" -F "USER_PASSWORD=hunter2" \
       -F "ROOT_PASSWORD=changeme" -F "LUKS_PASSWORD=luke" \ 
       http://192.168.1.29:5000/install
+
+* Use curl to prompt for logs:
+
+      curl  http://192.168.1.29:5000/download_log
 
 ## Details
 
@@ -153,6 +156,37 @@ Run the following commands to build it:
     cd frontend
     npm run build
 
+### Building the Text-User-Interface Front-end
+
+The TUI front-end is a [go](https://go.dev/) application.
+Run the following commands to build it:
+
+    cd frontend-tui
+    go build -o opinionated-installer-tui
+
+### Configuration Flow
+
+```mermaid
+flowchart LR
+    A[installer.ini] -->|EnvironmentFile| B(installer_backend.service)
+    B -->|ExecStart| C[backend.py]
+    D(Web Frontend) --->|HTTP POST| C
+    E(TUI Frontend) --->|HTTP POST| C
+    G(curl) --->|HTTP POST| C
+    C -->|environment| F[installer.sh]
+```
+
+### Output Flow
+
+```mermaid
+flowchart RL
+    C[backend.py] -->|stdout| B(installer_backend.service)
+    C --->|websocket| D(Web Frontend)
+    C --->|websocket| E(TUI Frontend)
+    C --->|HTTP GET| G(curl)
+    F[installer.sh] -->|stdout| C
+```
+
 ## Comparison
 
 The following table contains comparison of features between our opinionated debian installer and official debian installers.
@@ -176,3 +210,4 @@ The following table contains comparison of features between our opinionated debi
 [3] `@rootfs`
 
 [4] Fixed partitioning (see Details above), LUKS is automatic, BTRFS is used as filesystem
+
