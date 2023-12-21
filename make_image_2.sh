@@ -6,6 +6,8 @@ USERNAME=live
 
 DEBIAN_VERSION=bookworm
 FSFLAGS="compress=zstd:9"
+
+# TODO: autodetect this from tasksel output?
 USE_TUI=false
 
 target=/target

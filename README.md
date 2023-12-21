@@ -23,7 +23,7 @@ Our opinions of what a modern installation of Debian should look like in 2023 ar
 |---------------------|-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|-------------------------------------------------------------------------|
 | KDE Plasma          | [opinionated-debian-installer-bookworm-kde-plasma-20231221a.img (4.2GB)](https://objectstorage.eu-frankfurt-1.oraclecloud.com/n/fr2rf1wke5iq/b/public/o/opinionated-debian-installer-bookworm-kde-plasma-20231221a.img) | 5f941073 905ecdff 2cc113f8 11d1eae1 76767610 a6bc2245 f266ece0 0ea8013a |
 | Gnome               | [opinionated-debian-installer-bookworm-gnome-20231209a.img (3.3GB)](https://objectstorage.eu-frankfurt-1.oraclecloud.com/n/fr2rf1wke5iq/b/public/o/opinionated-debian-installer-bookworm-gnome-20231209a.img)           | b4117d2a e88a0cff b65a971b efa4d565 e084ee35 69dc5ac5 ae81043d cf86a259 |
-| Server (beta)       | [opinionated-debian-installer-bookworm-server-20231209a.img (2.4GB)](https://objectstorage.eu-frankfurt-1.oraclecloud.com/n/fr2rf1wke5iq/b/public/o/opinionated-debian-installer-bookworm-server-20231209a.img)         | 297e0f7d a665b9fd 35c4c05b 518b0318 3689f9c7 b17a049b 470547e0 33a8f506 |
+| Server (beta)       | [opinionated-debian-installer-bookworm-server-20231221a.img (2.4GB)](https://objectstorage.eu-frankfurt-1.oraclecloud.com/n/fr2rf1wke5iq/b/public/o/opinionated-debian-installer-bookworm-server-20231221a.img)         | 9c99efad 30b33a82 66b4c2b9 d3622529 9b78cf4d 13cce9c3 88aee6f4 dd28c4b2 |
 
 ## Instructions
 
