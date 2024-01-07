@@ -230,8 +230,9 @@ chroot ${target}/ systemctl enable grow_overlay_top_filesystem.service
 notify installing tui frontend
 cp ${SCRIPT_DIR}/frontend-tui/opinionated-installer-tui ${target}/sbin/opinionated-installer-tui
 chmod +x ${target}/sbin/opinionated-installer-tui
+install_file etc/systemd/system/installer_tui.service
 if [ "${USE_TUI}" == true ] ; then
-  install_file etc/systemd/system/installer_tui.service
+  # TODO check systemctl is-enabled sddm gdm
   chroot ${target}/ systemctl enable installer_tui.service
 fi
 

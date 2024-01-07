@@ -324,8 +324,8 @@ export default {
   </main>
 
   <footer>
-    <span>Opinionated Debian Installer version 20231221a</span>
-    <span>Installer &copy;2022-2023 <a href="https://github.com/r0b0/debian-installer">Robert T</a></span>
+    <span>Opinionated Debian Installer version 20240107a</span>
+    <span>Installer &copy;2022-2024 <a href="https://github.com/r0b0/debian-installer">Robert T</a></span>
     <span>Banner &copy;2022 <a href="https://github.com/julietteTaka/Emerald">Juliette Taka</a></span>
   </footer>
 </template>
