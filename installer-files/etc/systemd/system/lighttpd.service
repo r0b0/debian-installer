@@ -1,6 +1,7 @@
 [Unit]
 Description=Lighttpd Daemon
-After=network.target  # changed to start before network is online
+# changed to start before network is online
+After=network.target
 
 [Service]
 Type=simple

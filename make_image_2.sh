@@ -7,9 +7,6 @@ USERNAME=live
 DEBIAN_VERSION=bookworm
 FSFLAGS="compress=zstd:9"
 
-# TODO: autodetect this from tasksel output?
-USE_TUI=false
-
 target=/target
 root_device=${DISK}2
 overlay_low_mount=/mnt/overlay_low
@@ -231,12 +228,22 @@ notify installing tui frontend
 cp ${SCRIPT_DIR}/frontend-tui/opinionated-installer-tui ${target}/sbin/opinionated-installer-tui
 chmod +x ${target}/sbin/opinionated-installer-tui
 install_file etc/systemd/system/installer_tui.service
-if [ "${USE_TUI}" == true ] ; then
-  # TODO check systemctl is-enabled sddm gdm
-  chroot ${target}/ systemctl enable installer_tui.service
+cat <<EOF > ${target}/tmp/run1.sh
+if systemctl is-enabled display-manager.service ; then
+    echo "A login manager enabled in systemd, disabling installer TUI frontend"
+    systemctl disable installer_tui.service
+    # we need to remove the file because systemd.preset would re-enable the unit
+    rm /etc/systemd/system/installer_tui.service
+else
+    echo "No login manager enabled in systemd, enabling installer TUI frontend"
+    systemctl enable installer_tui.service
 fi
+EOF
+chroot ${target}/ bash /tmp/run1.sh
+rm -f ${target}/tmp/run1.sh
 
 notify umounting the overlay filesystem and the lower
+sync
 umount -R ${target}
 umount -R ${overlay_low_mount}
 
