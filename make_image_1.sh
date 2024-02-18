@@ -14,7 +14,7 @@ SCRIPT_DIR=$( cd -- "$( dirname -- "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )
 
 notify install required packages
 apt-get update -y
-DEBIAN_FRONTEND=noninteractive apt-get install -y debootstrap uuid-runtime
+DEBIAN_FRONTEND=noninteractive apt-get install -y debootstrap uuid-runtime btrfs-progs dosfstools
 
 if [ ! -f efi-part.uuid ]; then
     echo generate uuid for efi partition

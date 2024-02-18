@@ -3,6 +3,7 @@
 This tool can be used to create a modern installation of Debian. 
 Our opinions of what a modern installation of Debian should look like in 2024 are as follows:
 
+ - Debian 12 (Bookworm)
  - Backports and non-free enabled
  - Firmware installed
  - Installed on btrfs subvolumes
@@ -13,7 +14,6 @@ Our opinions of what a modern installation of Debian should look like in 2024 ar
 ## Limitations
 
  - **The installer will take over your whole disk**
- - Debian 12 (Bookworm) only
  - Amd64 with EFI only
  - The installer is in english only
 
@@ -22,7 +22,7 @@ Our opinions of what a modern installation of Debian should look like in 2024 ar
 | Desktop environment | Download                                                                                                                                                                                                                | SHA-256 Checksum                                                        |
 |---------------------|-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|-------------------------------------------------------------------------|
 | KDE Plasma          | [opinionated-debian-installer-bookworm-kde-plasma-20240119a.img (4.2GB)](https://objectstorage.eu-frankfurt-1.oraclecloud.com/n/fr2rf1wke5iq/b/public/o/opinionated-debian-installer-bookworm-kde-plasma-20240119a.img) | 9f68a423 710ab099 dc7d68f0 afd903f4 4fd4836a 6c40675a 76c403cd fafbed7f |
-| Gnome               | [opinionated-debian-installer-bookworm-gnome-20240107a.img (4.0GB)](https://objectstorage.eu-frankfurt-1.oraclecloud.com/n/fr2rf1wke5iq/b/public/o/opinionated-debian-installer-bookworm-gnome-20240107a.img)           | f0491433 8777dd1b b971d9d6 9a674b17 067bb635 15482f90 d9ec20ef 747ab4ac |
+| Gnome               | [opinionated-debian-installer-bookworm-gnome-20240218a.img (4.0GB)](https://objectstorage.eu-frankfurt-1.oraclecloud.com/n/fr2rf1wke5iq/b/public/o/opinionated-debian-installer-bookworm-gnome-20240218a.img)           | 45c58fdf 991fde17 1b032dd4 8b0c92b8 cf5241d2 d54d5799 8f051eaa bbca2400 |
 | Server (beta)       | [opinionated-debian-installer-bookworm-server-20231221a.img (2.4GB)](https://objectstorage.eu-frankfurt-1.oraclecloud.com/n/fr2rf1wke5iq/b/public/o/opinionated-debian-installer-bookworm-server-20231221a.img)         | 9c99efad 30b33a82 66b4c2b9 d3622529 9b78cf4d 13cce9c3 88aee6f4 dd28c4b2 |
 
 ## Instructions
