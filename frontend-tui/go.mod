@@ -3,7 +3,7 @@ module github.com/r0b0/debian-installer/frontend-tui
 go 1.22
 
 require (
-	github.com/gdamore/tcell/v2 v2.7.0
+	github.com/gdamore/tcell/v2 v2.7.1
 	github.com/rivo/tview v0.0.0-20231126152417-33a1d271f2b6
 	golang.org/x/net v0.21.0
 )
