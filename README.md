@@ -16,12 +16,13 @@ Our opinions of what a modern installation of Debian should look like in 2024 ar
  - **The installer will take over your whole disk**
  - Amd64 with EFI only
  - The installer is in english only
+ - Secure boot is not supported 
 
 ## Downloads
 
 | Desktop environment | Download                                                                                                                                                                                                                | SHA-256 Checksum                                                        |
 |---------------------|-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|-------------------------------------------------------------------------|
-| KDE Plasma          | [opinionated-debian-installer-bookworm-kde-plasma-20240119a.img (4.2GB)](https://objectstorage.eu-frankfurt-1.oraclecloud.com/n/fr2rf1wke5iq/b/public/o/opinionated-debian-installer-bookworm-kde-plasma-20240119a.img) | 9f68a423 710ab099 dc7d68f0 afd903f4 4fd4836a 6c40675a 76c403cd fafbed7f |
+| KDE Plasma          | [opinionated-debian-installer-bookworm-kde-plasma-20240310a.img (5.0GB)](https://objectstorage.eu-frankfurt-1.oraclecloud.com/n/fr2rf1wke5iq/b/public/o/opinionated-debian-installer-bookworm-kde-plasma-20240310a.img) | ffe3954e 13d52df3 6cb75c82 c6485466 69280344 7c0721ce f7bef838 1cd4319a |
 | Gnome               | [opinionated-debian-installer-bookworm-gnome-20240218a.img (4.0GB)](https://objectstorage.eu-frankfurt-1.oraclecloud.com/n/fr2rf1wke5iq/b/public/o/opinionated-debian-installer-bookworm-gnome-20240218a.img)           | 45c58fdf 991fde17 1b032dd4 8b0c92b8 cf5241d2 d54d5799 8f051eaa bbca2400 |
 | Server (beta)       | [opinionated-debian-installer-bookworm-server-20240218a.img (2.1GB)](https://objectstorage.eu-frankfurt-1.oraclecloud.com/n/fr2rf1wke5iq/b/public/o/opinionated-debian-installer-bookworm-server-20240218a.img)         | 34138285 02fec76d bdc7bf56 6e537763 8a8eab3d f2bdf7ea 173c8f24 55009f33 |
 
