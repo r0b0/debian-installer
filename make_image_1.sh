@@ -112,7 +112,8 @@ fi
 notify setup sources.list
 cat <<EOF > ${target}/etc/apt/sources.list
 deb http://deb.debian.org/debian ${DEBIAN_VERSION} main contrib non-free non-free-firmware
-deb http://security.debian.org/ ${DEBIAN_VERSION}-security main contrib non-free non-free-firmware
+deb http://deb.debian.org/debian ${DEBIAN_VERSION}-updates main contrib non-free non-free-firmware
+deb http://security.debian.org/debian-security ${DEBIAN_VERSION}-security main contrib non-free non-free-firmware
 deb http://deb.debian.org/debian ${DEBIAN_VERSION}-backports main contrib non-free non-free-firmware
 EOF
 

@@ -23,7 +23,7 @@ Our opinions of what a modern installation of Debian should look like in 2024 ar
 | Desktop environment | Download                                                                                                                                                                                                                | SHA-256 Checksum                                                        |
 |---------------------|-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|-------------------------------------------------------------------------|
 | KDE Plasma          | [opinionated-debian-installer-bookworm-kde-plasma-20240310a.img (5.0GB)](https://objectstorage.eu-frankfurt-1.oraclecloud.com/n/fr2rf1wke5iq/b/public/o/opinionated-debian-installer-bookworm-kde-plasma-20240310a.img) | ffe3954e 13d52df3 6cb75c82 c6485466 69280344 7c0721ce f7bef838 1cd4319a |
-| Gnome               | [opinionated-debian-installer-bookworm-gnome-20240218a.img (4.0GB)](https://objectstorage.eu-frankfurt-1.oraclecloud.com/n/fr2rf1wke5iq/b/public/o/opinionated-debian-installer-bookworm-gnome-20240218a.img)           | 45c58fdf 991fde17 1b032dd4 8b0c92b8 cf5241d2 d54d5799 8f051eaa bbca2400 |
+| Gnome               | [opinionated-debian-installer-bookworm-gnome-20240323a.img (4.0GB)](https://objectstorage.eu-frankfurt-1.oraclecloud.com/n/fr2rf1wke5iq/b/public/o/opinionated-debian-installer-bookworm-gnome-20240323a.img)           | dd714096 9b7ef948 c2697e25 7d1dc5e6 d6bb97b9 d6a39768 030b769f c268ad9b |
 | Server (beta)       | [opinionated-debian-installer-bookworm-server-20240218a.img (2.1GB)](https://objectstorage.eu-frankfurt-1.oraclecloud.com/n/fr2rf1wke5iq/b/public/o/opinionated-debian-installer-bookworm-server-20240218a.img)         | 34138285 02fec76d bdc7bf56 6e537763 8a8eab3d f2bdf7ea 173c8f24 55009f33 |
 
 ## Instructions
@@ -39,7 +39,7 @@ Our opinions of what a modern installation of Debian should look like in 2024 ar
 Edit [installer.ini](installer-files/boot/efi/installer.ini) on the first (vfat) partition of the installer image.
 It will allow you to pre-seed and automate the installation.
 
-If you edit it directly in the booted installer image, it is /boot/efi/installer.sh
+If you edit it directly in the booted installer image, it is /boot/efi/installer.ini
 Reboot after editing the file for the new values to take effect.
 
 ## Screencast & Screenshot
