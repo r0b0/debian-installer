@@ -178,6 +178,7 @@ fi
 if [ -e /dev/disk/by-partlabel/BaseImage ]; then
     if [ ! -f base_image_copied.txt ]; then
         notify copy base image to ${root_device}
+        wipefs -a ${root_device}
         dd if=/dev/disk/by-partlabel/BaseImage of=${root_device} bs=4M conv=sync status=progress
         notify check the filesystem on root
         btrfs check ${root_device}
@@ -188,12 +189,14 @@ if [ -e /dev/disk/by-partlabel/BaseImage ]; then
 else
     if [ ! -f btrfs_created.txt ]; then
         notify create root filesystem on ${root_device}
+        wipefs -a ${root_device}
         mkfs.btrfs -U ${btrfs_uuid} ${root_device} | tee btrfs_created.txt
     fi
 fi
     
 if [ ! -f vfat_created.txt ]; then
     notify create esp filesystem on ${efi_partition}
+    wipefs -a ${efi_partition}
     mkfs.vfat ${efi_partition}
     touch vfat_created.txt
 fi

@@ -129,6 +129,7 @@ passwd
 sudo
 systemd
 btrfs-progs
+dosfstools
 tasksel
 network-manager
 firmware-linux
