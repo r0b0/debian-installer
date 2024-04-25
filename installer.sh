@@ -61,10 +61,14 @@ if [ ! -f luks-part.uuid ]; then
     notify generate uuid for luks partition
     uuidgen > luks-part.uuid
 fi
-if [ ! -f swap-part.uuid ]; then
-    notify generate uuid for swap partition
-    uuidgen > swap-part.uuid
+
+if [ "${ENABLE_SWAP}" == "partition" ]; then
+    if [ ! -f swap-part.uuid ]; then
+        notify generate uuid for swap partition
+        uuidgen > swap-part.uuid
+    fi
 fi
+
 if [ ! -f btrfs.uuid ]; then
     notify generate uuid for btrfs filesystem
     uuidgen > btrfs.uuid
@@ -193,7 +197,7 @@ else
         mkfs.btrfs -U ${btrfs_uuid} ${root_device} | tee btrfs_created.txt
     fi
 fi
-    
+
 if [ ! -f vfat_created.txt ]; then
     notify create esp filesystem on ${efi_partition}
     wipefs -a ${efi_partition}
