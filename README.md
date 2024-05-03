@@ -46,7 +46,7 @@ Reboot after editing the file for the new values to take effect.
 
 Video of installation of Debian with KDE Plasma:
 
-[![Watch the video](https://img.youtube.com/vi/sbnKvGMcagI/maxresdefault.jpg)](https://youtu.be/sbnKvGMcagI)
+[![Watch the video](https://img.youtube.com/vi/sbnKvGMcagI/maxresdefault.jpg)](https://youtu.be/sbnKvGMcagI?si=W9NvZygB8Z7-LCT8&t=92)
 
 Screenshot of the full installer GUI:
 
