@@ -84,7 +84,7 @@ top_level_mount=/mnt/top_level_mount
 target=/target
 luks_device=root
 root_device=/dev/mapper/${luks_device}
-kernel_params="luks.options=tpm2-device=auto rw quiet rootfstype=btrfs rootflags=${FSFLAGS} rd.auto=1 splash"
+kernel_params="rd.luks.options=tpm2-device=auto rw quiet rootfstype=btrfs rootflags=${FSFLAGS} rd.auto=1 splash"
 efi_partition=/dev/disk/by-partuuid/${efi_part_uuid}
 root_partition=/dev/disk/by-partuuid/${luks_part_uuid}
 
@@ -209,7 +209,7 @@ if [ "${ENABLE_SWAP}" == "partition" ]; then
     setup_luks ${swap_partition}
     swap_uuid=$(cat luks.uuid)
 
-    kernel_params="${kernel_params} luks.name=${swap_uuid}=${swap_device} resume=/dev/mapper/${swap_device}"
+    kernel_params="${kernel_params} rd.luks.name=${swap_uuid}=${swap_device} resume=/dev/mapper/${swap_device}"
 
     if [ ! -e /dev/mapper/${swap_device} ]; then
         notify open luks swap
@@ -262,7 +262,7 @@ if [ "${ENABLE_SWAP}" == "file" ]; then
     btrfs filesystem mkswapfile --size ${SWAP_SIZE}G ${target}/swap/swapfile
     swapon ${target}/swap/swapfile
     swapfile_offset=$(btrfs inspect-internal map-swapfile -r ${target}//swap/swapfile)
-    kernel_params="${kernel_params} luks.name=${root_uuid}=${luks_device} resume=${root_device} resume_offset=${swapfile_offset}"
+    kernel_params="${kernel_params} rd.luks.name=${root_uuid}=${luks_device} resume=${root_device} resume_offset=${swapfile_offset}"
 fi
 
 if [ ! -f ${target}/etc/debian_version ]; then
