@@ -24,7 +24,7 @@ Our opinions of what a modern installation of Debian should look like in 2024 ar
 |---------------------|-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|-------------------------------------------------------------------------|
 | KDE Plasma          | [opinionated-debian-installer-bookworm-kde-plasma-20240420a.img (4.7GB)](https://objectstorage.eu-frankfurt-1.oraclecloud.com/n/fr2rf1wke5iq/b/public/o/opinionated-debian-installer-bookworm-kde-plasma-20240420a.img) | 3a49101e 6d336442 18eee733 53274faa 3c7fe42f 86e96016 2e0e28b2 43d155a2 |
 | Gnome               | [opinionated-debian-installer-bookworm-gnome-20240501a.img (4.0GB)](https://objectstorage.eu-frankfurt-1.oraclecloud.com/n/fr2rf1wke5iq/b/public/o/opinionated-debian-installer-bookworm-gnome-20240501a.img)           | afe26c88 b8890336 a351c7f7 539ddf25 67c35078 dfc7c24d 08c83c95 e96cfed9 |
-| Server (beta)       | [opinionated-debian-installer-bookworm-server-20240414a.img (1.9GB)](https://objectstorage.eu-frankfurt-1.oraclecloud.com/n/fr2rf1wke5iq/b/public/o/opinionated-debian-installer-bookworm-server-20240414a.img)         | 9dc5c585 dca71771 2c695b95 5357b326 241399bf 538eb844 f8eb8df6 ef345ed5 |
+| Server (beta)       | [opinionated-debian-installer-bookworm-server-20240519a.img (2.1GB)](https://objectstorage.eu-frankfurt-1.oraclecloud.com/n/fr2rf1wke5iq/b/public/o/opinionated-debian-installer-bookworm-server-20240519a.img)         | 570fe613 3f674cc1 621d2372 6f0e742f a917001e feeb886a 877fe886 0b64f14b |
 
 ## Instructions
 
