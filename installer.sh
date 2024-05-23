@@ -401,7 +401,7 @@ if grep -qs "/dev/tpm" /tmp/tpm-list.txt ; then
           systemd-cryptenroll --unlock-key-file=/${KEYFILE} --tpm2-device=auto ${swap_partition} --tpm2-pcrs=${TPM_PCRS}
       fi
 else
-    echo tpm not avaialble
+    echo tpm not available
 fi
 EOF
 chroot ${target}/ bash /tmp/run4.sh
