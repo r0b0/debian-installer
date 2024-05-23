@@ -278,6 +278,7 @@ else
     mount --make-rslave --rbind /sys ${target}/sys
     mount --make-rslave --rbind /dev ${target}/dev
     mount --make-rslave --rbind /run ${target}/run
+    mount --bind /etc/resolv.conf ${target}/etc/resolv.conf
 fi
 
 if grep -qs "${efi_partition} " /proc/mounts ; then
