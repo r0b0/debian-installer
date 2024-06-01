@@ -278,6 +278,7 @@ else
     mount --make-rslave --rbind /sys ${target}/sys
     mount --make-rslave --rbind /dev ${target}/dev
     mount --make-rslave --rbind /run ${target}/run
+    mount --bind /etc/resolv.conf ${target}/etc/resolv.conf
 fi
 
 if grep -qs "${efi_partition} " /proc/mounts ; then
@@ -401,7 +402,7 @@ if grep -qs "/dev/tpm" /tmp/tpm-list.txt ; then
           systemd-cryptenroll --unlock-key-file=/${KEYFILE} --tpm2-device=auto ${swap_partition} --tpm2-pcrs=${TPM_PCRS}
       fi
 else
-    echo tpm not avaialble
+    echo tpm not available
 fi
 EOF
 chroot ${target}/ bash /tmp/run4.sh
