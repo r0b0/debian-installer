@@ -64,7 +64,7 @@ if grep -qs "/mnt/btrfs1" /proc/mounts ; then
 else
     notify mount top-level subvolume on /mnt/btrfs1
     mkdir -p /mnt/btrfs1
-    mount ${root_device} /mnt/btrfs1 -o ${FSFLAGS}
+    mount ${root_device} /mnt/btrfs1 -o ${FSFLAGS},subvolid=5
 fi
 
 if [ ! -e /mnt/btrfs1/@ ]; then
@@ -72,7 +72,6 @@ if [ ! -e /mnt/btrfs1/@ ]; then
     btrfs subvolume create /mnt/btrfs1/@
     btrfs subvolume create /mnt/btrfs1/@home
     btrfs subvolume create /mnt/btrfs1/@swap
-    btrfs subvolume set-default /mnt/btrfs1/@
 fi
 
 if grep -qs "${target}" /proc/mounts ; then

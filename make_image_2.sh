@@ -49,7 +49,7 @@ if grep -qs "${overlay_low_mount}" /proc/mounts ; then
 else
     notify mount base image read only on ${overlay_low_mount}
     mkdir -p ${overlay_low_mount}
-    mount ${root_device} ${overlay_low_mount} -o ${FSFLAGS},ro
+    mount ${root_device} ${overlay_low_mount} -o ${FSFLAGS},ro,subvol=@
 fi
 
 if grep -qs "${overlay_top_mount}" /proc/mounts ; then
@@ -98,7 +98,7 @@ fi
 
 notify setup fstab
 cat <<EOF > ${target}/etc/fstab
-PARTUUID=${base_image_uuid} ${overlay_low_mount} btrfs defaults,ro 0 1
+PARTUUID=${base_image_uuid} ${overlay_low_mount} btrfs defaults,ro,subvol=@ 0 1
 PARTUUID=${top_uuid} ${overlay_top_mount} btrfs defaults 0 1
 PARTUUID=${efi_uuid} /boot/efi vfat defaults,umask=077 0 2
 EOF

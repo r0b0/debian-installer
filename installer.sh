@@ -84,7 +84,7 @@ top_level_mount=/mnt/top_level_mount
 target=/target
 luks_device=root
 root_device=/dev/mapper/${luks_device}
-kernel_params="rd.luks.options=tpm2-device=auto rw quiet rootfstype=btrfs rootflags=${FSFLAGS} rd.auto=1 splash"
+kernel_params="rd.luks.options=tpm2-device=auto rw quiet rootfstype=btrfs rootflags=${FSFLAGS},subvol=@ rd.auto=1 splash"
 efi_partition=/dev/disk/by-partuuid/${efi_part_uuid}
 root_partition=/dev/disk/by-partuuid/${luks_part_uuid}
 
@@ -239,7 +239,6 @@ if [ ! -e ${top_level_mount}/@ ]; then
         btrfs subvolume create ${top_level_mount}/@swap
         chmod 700 ${top_level_mount}/@swap
     fi
-    btrfs subvolume set-default ${top_level_mount}/@
 fi
 
 if grep -qs "${target}" /proc/mounts ; then
@@ -302,6 +301,7 @@ rm -f ${target}/etc/localtime
 notify setup fstab
 mkdir -p ${target}/root/btrfs1
 cat <<EOF > ${target}/etc/fstab
+UUID=${btrfs_uuid} / btrfs defaults,subvol=@,${FSFLAGS} 0 1
 UUID=${btrfs_uuid} /home btrfs defaults,subvol=@home,${FSFLAGS} 0 1
 UUID=${btrfs_uuid} /root/btrfs1 btrfs defaults,subvolid=5,${FSFLAGS} 0 1
 PARTUUID=${efi_part_uuid} /boot/efi vfat defaults,umask=077 0 2
