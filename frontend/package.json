@@ -8,10 +8,10 @@
     "preview": "vite preview --port 4173"
   },
   "dependencies": {
-    "vue": "^3.4.31"
+    "vue": "^3.4.33"
   },
   "devDependencies": {
     "@vitejs/plugin-vue": "^5.0.5",
-    "vite": "^5.3.3"
+    "vite": "^5.3.4"
   }
 }
