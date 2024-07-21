@@ -465,10 +465,10 @@ if [ ! -z "${SSH_PUBLIC_KEY}" ]; then
         echo "${SSH_PUBLIC_KEY}" > ${target}/home/${USERNAME}/.ssh/authorized_keys
         chmod 600 ${target}/home/${USERNAME}/.ssh/authorized_keys
         chroot ${target}/ chown -R ${USERNAME} /home/${USERNAME}/.ssh
-
-        notify installing openssh-server
-        chroot ${target}/ apt-get install -y openssh-server
     fi
+
+    notify installing openssh-server
+    chroot ${target}/ apt-get install -y openssh-server
 fi
 
 if [ -z "${NON_INTERACTIVE}" ]; then
