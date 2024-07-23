@@ -34,14 +34,6 @@ Our opinions of what a modern installation of Debian should look like in 2024 ar
 4. Start the installer icon from the desktop/dash, fill in the form in the browser and press the big _Install_ button
 5. Reboot and enjoy
 
-## (Optional) Configuration, Automatic Installation
-
-Edit [installer.ini](installer-files/boot/efi/installer.ini) on the first (vfat) partition of the installer image.
-It will allow you to pre-seed and automate the installation.
-
-If you edit it directly in the booted installer image, it is /boot/efi/installer.ini
-Reboot after editing the file for the new values to take effect.
-
 ## Screencast & Screenshot
 
 Video of installation of Debian with KDE Plasma:
@@ -51,6 +43,29 @@ Video of installation of Debian with KDE Plasma:
 Screenshot of the full installer GUI:
 
 ![gui screenshot](readme-files/gui.png)
+
+## Details
+
+- GPT disk partitions are created on the designated disk drive: 
+  - UEFI ESP partition
+  - Optional swap partition - LUKS encrypted
+  - Root partition - [LUKS](https://cryptsetup-team.pages.debian.net/cryptsetup/README.Debian.html) encrypted (rest of the drive)
+- GPT root partition is [auto-discoverable](https://www.freedesktop.org/software/systemd/man/systemd-gpt-auto-generator.html)
+- Btrfs subvolumes will be called `@` for `/` (marked as default) and `@home` for `/home` (compatible with [timeshift](https://github.com/teejee2008/timeshift#supported-system-configurations)); the top-level subvolume will be mounted to `/root/btrfs1`
+- The system is installed using an image from the live iso. This will speed up the installation significantly and allow off-line installation.
+- [Dracut](https://github.com/dracutdevs/dracut/wiki/) is used instead of initramfs-tools
+- [Systemd-boot](https://www.freedesktop.org/wiki/Software/systemd/systemd-boot/) is used instead of grub
+- [Network-manager](https://wiki.debian.org/NetworkManager) is used for networking
+- [Systemd-cryptenroll](https://www.freedesktop.org/software/systemd/man/systemd-cryptenroll.html#--tpm2-device=PATH) is used to unlock the disk, using TPM (if available)
+- [Sudo](https://wiki.debian.org/sudo) is installed and configured for the created user 
+
+## (Optional) Configuration, Automatic Installation
+
+Edit [installer.ini](installer-files/boot/efi/installer.ini) on the first (vfat) partition of the installer image.
+It will allow you to pre-seed and automate the installation.
+
+If you edit it directly in the booted installer image, it is /boot/efi/installer.ini
+Reboot after editing the file for the new values to take effect.
 
 ## Headless Installation
 
@@ -73,21 +88,6 @@ Assuming the IP address of the installed machine is 192.168.1.29 and you can rea
 * Use curl to prompt for logs:
 
       curl  http://192.168.1.29:5000/download_log
-
-## Details
-
-- GPT disk partitions are created on the designated disk drive: 
-  - UEFI ESP partition
-  - Optional swap partition - LUKS encrypted
-  - Root partition - [LUKS](https://cryptsetup-team.pages.debian.net/cryptsetup/README.Debian.html) encrypted (rest of the drive)
-- GPT root partition is [auto-discoverable](https://www.freedesktop.org/software/systemd/man/systemd-gpt-auto-generator.html)
-- Btrfs subvolumes will be called `@` for `/` (marked as default) and `@home` for `/home` (compatible with [timeshift](https://github.com/teejee2008/timeshift#supported-system-configurations)); the top-level subvolume will be mounted to `/root/btrfs1`
-- The system is installed using an image from the live iso. This will speed up the installation significantly and allow off-line installation.
-- [Dracut](https://github.com/dracutdevs/dracut/wiki/) is used instead of initramfs-tools
-- [Systemd-boot](https://www.freedesktop.org/wiki/Software/systemd/systemd-boot/) is used instead of grub
-- [Network-manager](https://wiki.debian.org/NetworkManager) is used for networking
-- [Systemd-cryptenroll](https://www.freedesktop.org/software/systemd/man/systemd-cryptenroll.html#--tpm2-device=PATH) is used to unlock the disk, using TPM (if available)
-- [Sudo](https://wiki.debian.org/sudo) is installed and configured for the created user 
 
 ## Testing
 
