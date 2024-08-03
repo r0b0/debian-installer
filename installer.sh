@@ -269,6 +269,18 @@ if [ ! -f ${target}/etc/debian_version ]; then
     debootstrap ${DEBIAN_VERSION} ${target} http://deb.debian.org/debian
 fi
 
+if [ ! -f ${target}/etc/apt/preferences.d/99backports-temp ]; then
+    notify enable ${DEBIAN_VERSION}-backports
+    cat <<EOF > ${target}/etc/apt/preferences.d/99backports-temp
+# /etc/apt/preferences.d/99backports-temp
+# use packages from backports if available
+
+Package: *
+Pin: release n=bookworm-backports
+Pin-Priority: 500
+EOF
+fi
+
 if grep -qs "${target}/proc" /proc/mounts ; then
     echo bind mounts already set up on ${target}
 else
