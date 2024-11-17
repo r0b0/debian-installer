@@ -17,7 +17,7 @@ export default {
       finished: false,
       output_reader_connection: null,
       timezones: [],
-      
+
       // values for the installer:
       installer: {
         DISK: undefined,
@@ -81,7 +81,7 @@ export default {
               this.installer[key] = response.environ[key];
             }
           }
-          
+
           this.get_block_devices();
           this.read_process_output();
 
@@ -162,7 +162,7 @@ export default {
         .then(result => {
             console.debug(result);
             this.finished = false;
-            
+
         })
         .catch(error => {
             this.running = false;

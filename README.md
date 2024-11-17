@@ -1,6 +1,6 @@
 # Opinionated Debian Installer
 
-This tool can be used to create a modern installation of Debian. 
+This tool can be used to create a modern installation of Debian.
 Our opinions of what a modern installation of Debian should look like in 2024 are as follows:
 
  - Debian 12 (Bookworm)
@@ -10,13 +10,13 @@ Our opinions of what a modern installation of Debian should look like in 2024 ar
  - Full disk encryption, unlocked by TPM
  - Fast installation using an image
  - Browser-based installer
-  
+
 ## Limitations
 
  - **The installer will take over your whole disk**
  - Amd64 with EFI only
  - The installer is in english only
- - Secure boot is not supported 
+ - Secure boot is not supported
 
 ## Downloads
 
@@ -29,7 +29,7 @@ Our opinions of what a modern installation of Debian should look like in 2024 ar
 ## Instructions
 
 1. Download one of the live image files from the table above
-2. Write the image file to a USB flash drive. **Do not use ventoy** or similar "clever" tools - they are not compatible with these images. If you need a GUI, use [etcher](https://github.com/balena-io/etcher/releases) or [win32DiskImager](https://sourceforge.net/projects/win32diskimager/files/Archive/) or just use dd - `dd if=opinionated-debian-installer*.img of=/dev/sdX bs=8MB status=progress conv=sync` where sdX is your USB flash drive 
+2. Write the image file to a USB flash drive. **Do not use ventoy** or similar "clever" tools - they are not compatible with these images. If you need a GUI, use [etcher](https://github.com/balena-io/etcher/releases) or [win32DiskImager](https://sourceforge.net/projects/win32diskimager/files/Archive/) or just use dd - `dd if=opinionated-debian-installer*.img of=/dev/sdX bs=8MB status=progress conv=sync` where sdX is your USB flash drive
 3. Boot from the USB flash drive
 4. Start the installer icon from the desktop/dash, fill in the form in the browser and press the big _Install_ button
 5. Reboot and enjoy
@@ -46,7 +46,7 @@ Screenshot of the full installer GUI:
 
 ## Details
 
-- GPT disk partitions are created on the designated disk drive: 
+- GPT disk partitions are created on the designated disk drive:
   - UEFI ESP partition
   - Optional swap partition - LUKS encrypted
   - Root partition - [LUKS](https://cryptsetup-team.pages.debian.net/cryptsetup/README.Debian.html) encrypted (rest of the drive)
@@ -57,7 +57,7 @@ Screenshot of the full installer GUI:
 - [Systemd-boot](https://www.freedesktop.org/wiki/Software/systemd/systemd-boot/) is used instead of grub
 - [Network-manager](https://wiki.debian.org/NetworkManager) is used for networking
 - [Systemd-cryptenroll](https://www.freedesktop.org/software/systemd/man/systemd-cryptenroll.html#--tpm2-device=PATH) is used to unlock the disk, using TPM (if available)
-- [Sudo](https://wiki.debian.org/sudo) is installed and configured for the created user 
+- [Sudo](https://wiki.debian.org/sudo) is installed and configured for the created user
 
 ## (Optional) Configuration, Automatic Installation
 
@@ -74,7 +74,7 @@ You can use the installer for server installation.
 As a start, edit the configuration file installer.ini (see above), set option BACK_END_IP_ADDRESS to 0.0.0.0 and reboot the installer.
 **There is no encryption or authentication in the communication so only do this on a trusted network.**
 
-You have several options to access the installer. 
+You have several options to access the installer.
 Assuming the IP address of the installed machine is 192.168.1.29 and you can reach it from your PC:
 
 * Use the web interface in a browser on a PC - open `http://192.168.1.29/opinionated-debian-installer/`
@@ -82,7 +82,7 @@ Assuming the IP address of the installed machine is 192.168.1.29 and you can rea
 * Use curl - again, see the [installer.ini](installer-files/boot/efi/installer.ini) file for list of all options for the form data in -F parameters:
 
       curl -v -F "DISK=/dev/vda" -F "USER_PASSWORD=hunter2" \
-      -F "ROOT_PASSWORD=changeme" -F "LUKS_PASSWORD=luke" \ 
+      -F "ROOT_PASSWORD=changeme" -F "LUKS_PASSWORD=luke" \
       http://192.168.1.29:5000/install
 
 * Use curl to prompt for logs:
@@ -111,7 +111,7 @@ Attach the downloaded installer image file as _Device type: Disk device_, not ~~
 
 ### Hyper-V
 
-To test with the MS hyper-v virtualization, make sure to create your VM with [Generation 2](https://learn.microsoft.com/en-us/windows-server/virtualization/hyper-v/plan/Should-I-create-a-generation-1-or-2-virtual-machine-in-Hyper-V). 
+To test with the MS hyper-v virtualization, make sure to create your VM with [Generation 2](https://learn.microsoft.com/en-us/windows-server/virtualization/hyper-v/plan/Should-I-create-a-generation-1-or-2-virtual-machine-in-Hyper-V).
 This will enable UEFI.
 TPM can be enabled and Secure Boot disabled in the Security tab of the Hyper-V settings.
 
@@ -142,14 +142,14 @@ In the first stage of image generation, you will get a _tasksel_ prompt where yo
 There are 3 GPT partitions on the installer image:
 
  1. EFI boot partition
- 2. Base Image - Btrfs partition with maximum zstd compression. 
-    When the live system is running, this is used as a [read-only lower device for overlayfs](https://docs.kernel.org/filesystems/overlayfs.html). 
+ 2. Base Image - Btrfs partition with maximum zstd compression.
+    When the live system is running, this is used as a [read-only lower device for overlayfs](https://docs.kernel.org/filesystems/overlayfs.html).
     When installing the target system, the installer will copy this to the target system, mount it read-write, resize to expand to the whole partition and continue with the system installation.
  3. Top Overlay - upper and work device for the overlayfs for the live system. The changes you make while the live system is running are persisted here.
 
 ### Building the Front-End
 
-The front-end is a [vue](https://vuejs.org/) application. 
+The front-end is a [vue](https://vuejs.org/) application.
 You need [npm](https://www.npmjs.com/) to build it.
 Run the following commands to build it:
 
@@ -210,4 +210,3 @@ The following table contains comparison of features between our opinionated debi
 [3] `@rootfs`
 
 [4] Fixed partitioning (see Details above), LUKS is automatic, BTRFS is used as filesystem
-
