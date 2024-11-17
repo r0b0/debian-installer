@@ -2,10 +2,11 @@ package main
 
 import (
 	"fmt"
-	"golang.org/x/net/websocket"
 	"io"
 	"net/http"
 	"net/url"
+
+	"golang.org/x/net/websocket"
 )
 
 func loginToBackend(baseUrl *url.URL) (Model, error) {
