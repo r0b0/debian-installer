@@ -22,9 +22,9 @@ Our opinions of what a modern installation of Debian should look like in 2024 ar
 
 | Desktop environment | Download                                                                                                                                                                                                                | SHA-256 Checksum                                                        |
 |---------------------|-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|-------------------------------------------------------------------------|
-| KDE Plasma          | [opinionated-debian-installer-bookworm-kde-plasma-20240929a.img (5.1GB)](https://objectstorage.eu-frankfurt-1.oraclecloud.com/n/fr2rf1wke5iq/b/public/o/opinionated-debian-installer-bookworm-kde-plasma-20240929a.img) | 08278bf0 4d512918 7ea106dd 544388c0 ec54564e 3982a096 047f9f83 9feaf48f |
+| KDE Plasma          | [opinionated-debian-installer-bookworm-kde-plasma-20241130a.img (5.1GB)](https://objectstorage.eu-frankfurt-1.oraclecloud.com/n/fr2rf1wke5iq/b/public/o/opinionated-debian-installer-bookworm-kde-plasma-20241130a.img) | 0b9c7779 33c6bb69 ae614ed0 c1e973f4 b67bc837 967862c8 f5114384 18550ea7 |
 | Gnome               | [opinionated-debian-installer-bookworm-gnome-20241020a.img (4.3GB)](https://objectstorage.eu-frankfurt-1.oraclecloud.com/n/fr2rf1wke5iq/b/public/o/opinionated-debian-installer-bookworm-gnome-20241020a.img)           | f329462a 358a7bed 89bb2d7c b0a194da df2d0a11 028e226f a65da968 6ffe07f4 |
-| Server              | [opinionated-debian-installer-bookworm-server-20241110a.img (1.9GB)](https://objectstorage.eu-frankfurt-1.oraclecloud.com/n/fr2rf1wke5iq/b/public/o/opinionated-debian-installer-bookworm-server-20241110a.img)         | 9b4a37fc d371ae1b4 ce143eb 58e97e66 a1805497 466cf696 4dd7ebdf bed42833 |
+| Server              | [opinionated-debian-installer-bookworm-server-20241110a.img (1.9GB)](https://objectstorage.eu-frankfurt-1.oraclecloud.com/n/fr2rf1wke5iq/b/public/o/opinionated-debian-installer-bookworm-server-20241110a.img)         | 9b4a37fc d371ae1b 4ce143eb 58e97e66 a1805497 466cf696 4dd7ebdf bed42833 |
 
 ## Instructions
 
