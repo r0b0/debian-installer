@@ -127,6 +127,7 @@ adduser
 passwd
 sudo
 systemd
+systemd-cryptsetup
 btrfs-progs
 dosfstools
 tasksel
@@ -155,15 +156,12 @@ firmware-realtek
 firmware-samsung
 firmware-siano
 firmware-ti-connectivity
-firmware-tomu
 firmware-zd1211
-hdmi2usb-fx2-firmware
 midisport-firmware
 sigrok-firmware-fx2lafw
 binutils
 console-setup
 cryptsetup
-dmraid
 exim4-daemon-light
 kpartx
 lvm2

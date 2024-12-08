@@ -448,9 +448,7 @@ firmware-realtek
 firmware-samsung
 firmware-siano
 firmware-ti-connectivity
-firmware-tomu
 firmware-zd1211
-hdmi2usb-fx2-firmware
 midisport-firmware
 sigrok-firmware-fx2lafw
 EOF

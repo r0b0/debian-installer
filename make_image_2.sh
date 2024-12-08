@@ -169,7 +169,7 @@ cat <<EOF > ${target}/tmp/run1.sh
 export DEBIAN_FRONTEND=noninteractive
 apt-get update -y
 apt-get upgrade -y
-apt-get install systemd-boot dracut cryptsetup debootstrap uuid-runtime lighttpd python3-pip python3-systemd python3-flask python3-flask-cors python3-h11 python3-wsproto curl -y
+apt-get install systemd-boot systemd-repart dracut cryptsetup debootstrap uuid-runtime lighttpd python3-pip python3-systemd python3-flask python3-flask-cors python3-h11 python3-wsproto curl -y
 apt-get purge initramfs-tools initramfs-tools-core -y
 bootctl install
 systemctl enable lighttpd
