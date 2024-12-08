@@ -275,9 +275,9 @@ if [ ! -f ${target}/etc/apt/preferences.d/99backports-temp ]; then
 # /etc/apt/preferences.d/99backports-temp
 # use packages from backports if available
 
-Package: *
-Pin: release n=bookworm-backports
-Pin-Priority: 500
+Package: firmware* fonts* *mesa* libreoffice* *systemd* linux-image* *udev* *drm* libgbm*
+Pin: release o=Debian Backports
+Pin-Priority: 600
 EOF
 fi
 

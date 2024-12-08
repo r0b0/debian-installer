@@ -1,12 +1,6 @@
 # /etc/apt/preferences.d/99backports-temp
 # use packages from backports if available
 
-Package: *
-Pin: release n=bookworm-backports
-Pin-Priority: 500
-
-# as of 2024-09-29, wayland from backports breaks kde
-# see https://lists.debian.org/debian-backports/2024/09/msg00016.html
-Package: libwayland*
-Pin: release n=bookworm
+Package: firmware* fonts* *mesa* libreoffice* *systemd* linux-image* *udev* *drm* libgbm*
+Pin: release o=Debian Backports
 Pin-Priority: 600
