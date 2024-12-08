@@ -217,7 +217,7 @@ export default {
 }
 </script>
 <template>
-  <img alt="banner" class="logo" src="@/assets/Emerald_installer.svg" />
+  <img alt="banner" class="logo" src="@/assets/Ceratopsian_installer.svg" />
 
   <header>
     <h1>Opinionated Debian Installer</h1>
@@ -259,7 +259,7 @@ export default {
         </select>
         <label for="DEBIAN_VERSION">Debian Version</label>
         <select id="DEBIAN_VERSION">
-          <option value="bookworm" selected>Debian 12 Bookworm</option>
+          <option value="trixie" selected>Debian 13 Trixie</option>
         </select>
       </fieldset>
 
@@ -326,7 +326,7 @@ export default {
   <footer>
     <span>Opinionated Debian Installer version 20241130a</span>
     <span>Installer &copy;2022-2024 <a href="https://github.com/r0b0/debian-installer">Robert T</a></span>
-    <span>Banner &copy;2022 <a href="https://github.com/julietteTaka/Emerald">Juliette Taka</a></span>
+    <span>Banner &copy;2024 <a href="https://github.com/pccouper/trixie">Elise Couper</a></span>
   </footer>
 </template>
 
@@ -355,7 +355,7 @@ header {
 a,
 .green {
   text-decoration: none;
-  color: #08696b;
+  color: #26475b;
   transition: 0.4s;
 }
 

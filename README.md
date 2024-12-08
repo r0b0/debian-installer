@@ -3,7 +3,7 @@
 This tool can be used to create a modern installation of Debian. 
 Our opinions of what a modern installation of Debian should look like in 2024 are as follows:
 
- - Debian 12 (Bookworm)
+ - Debian 13 (Trixie)
  - Backports and non-free enabled
  - Firmware installed
  - Installed on btrfs subvolumes

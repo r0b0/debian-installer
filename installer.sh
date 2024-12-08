@@ -22,7 +22,7 @@ function notify () {
     fi
 }
 
-DEBIAN_VERSION=bookworm
+DEBIAN_VERSION=trixie
 # see https://www.freedesktop.org/software/systemd/man/systemd-cryptenroll.html#--tpm2-pcrs=PCR
 TPM_PCRS="7+14"
 # do not enable this on a live-cd

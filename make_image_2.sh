@@ -4,7 +4,7 @@
 DISK=/dev/vdb
 USERNAME=live
 
-DEBIAN_VERSION=bookworm
+DEBIAN_VERSION=trixie
 FSFLAGS="compress=zstd:9"
 
 target=/target
