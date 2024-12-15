@@ -68,6 +68,7 @@ func (m *Model) startInstallation(baseUrl *url.URL, log io.Writer) error {
 	post.Set("USER_PASSWORD", m.UserPassword)
 	post.Set("ROOT_PASSWORD", m.UserPassword)
 	post.Set("LUKS_PASSWORD", m.LuksPassword)
+	post.Set("ENABLE_TPM", boolString(m.EnableTpm))
 	post.Set("HOSTNAME", m.Hostname)
 	post.Set("TIMEZONE", m.Timezone)
 	post.Set("ENABLE_SWAP", m.EnableSwap)
@@ -81,6 +82,14 @@ func (m *Model) startInstallation(baseUrl *url.URL, log io.Writer) error {
 	defer resp.Body.Close()
 	LOG(log, "Post status: %s", resp.Status)
 	return nil
+}
+
+func boolString(i bool) string {
+	if i {
+		return "true"
+	} else {
+		return "false"
+	}
 }
 
 func stop(baseUrl *url.URL) error {

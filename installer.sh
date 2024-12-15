@@ -8,6 +8,7 @@ USER_FULL_NAME="Debian User"
 USER_PASSWORD=hunter2
 ROOT_PASSWORD=changeme
 LUKS_PASSWORD=luke
+ENABLE_TPM=true
 HOSTNAME=debian12
 ENABLE_SWAP=partition
 SWAP_SIZE=2
@@ -400,10 +401,11 @@ bootctl install
 EOF
 chroot ${target}/ sh /tmp/run1.sh
 
-notify checking for tpm
-cp ${KEYFILE} ${target}/
-chmod 600 ${target}/${KEYFILE}
-cat <<EOF > ${target}/tmp/run4.sh
+if [ "${ENABLE_TPM}" == "true" ]; then
+  notify checking for tpm
+  cp ${KEYFILE} ${target}/
+  chmod 600 ${target}/${KEYFILE}
+  cat <<EOF > ${target}/tmp/run4.sh
 systemd-cryptenroll --tpm2-device=list > /tmp/tpm-list.txt
 if grep -qs "/dev/tpm" /tmp/tpm-list.txt ; then
       echo tpm available, enrolling
@@ -417,8 +419,11 @@ else
     echo tpm not available
 fi
 EOF
-chroot ${target}/ bash /tmp/run4.sh
-rm ${target}/${KEYFILE}
+  chroot ${target}/ bash /tmp/run4.sh
+  rm ${target}/${KEYFILE}
+else
+  notify tpm disabled
+fi
 
 notify install kernel and firmware on ${target}
 cat <<EOF > ${target}/tmp/packages.txt

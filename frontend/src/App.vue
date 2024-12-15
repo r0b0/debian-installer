@@ -26,6 +26,7 @@ export default {
         USER_PASSWORD: undefined,
         ROOT_PASSWORD: undefined,
         LUKS_PASSWORD: undefined,
+        ENABLE_TPM: undefined,
         HOSTNAME: undefined,
         TIMEZONE: undefined,
         ENABLE_SWAP: undefined,
@@ -264,8 +265,11 @@ export default {
       </fieldset>
 
       <fieldset>
-        <legend>Disk Encryption Passphrase</legend>
+        <legend>Disk Encryption</legend>
         <Password v-model="installer.LUKS_PASSWORD" :disabled="running" />
+
+        <input type="checkbox" v-model="installer.ENABLE_TPM" id="ENABLE_TPM" class="inline">
+        <label for="ENABLE_TPM" class="inline">Unlock with TPM</label>
       </fieldset>
 
       <fieldset>
@@ -324,7 +328,7 @@ export default {
   </main>
 
   <footer>
-    <span>Opinionated Debian Installer version 20241130a</span>
+    <span>Opinionated Debian Installer TESTING version 20241215a</span>
     <span>Installer &copy;2022-2024 <a href="https://github.com/r0b0/debian-installer">Robert T</a></span>
     <span>Banner &copy;2024 <a href="https://github.com/pccouper/trixie">Elise Couper</a></span>
   </footer>

@@ -32,7 +32,7 @@ func main() {
 		panic(fmt.Sprintf("Failed to get configuration from back-end: %v", err))
 	}
 
-	greenColour := tcell.NewRGBColor(0x08, 0x69, 0x6b)
+	greenColour := tcell.NewRGBColor(0x51, 0xa1, 0xd0)
 
 	app := tview.NewApplication()
 	logView := tview.NewTextView().
@@ -62,6 +62,9 @@ func main() {
 		AddPasswordField("Disk Encryption Passphrase", m.LuksPassword, 0, '*', func(text string) {
 			m.LuksPassword = text
 		}). // TODO second time
+		AddCheckbox("Unlock with TPM", m.EnableTpm, func(checked bool) {
+			m.EnableTpm = checked
+		}).
 		AddPasswordField("Root Password", m.RootPassword, 0, '*', func(text string) {
 			m.RootPassword = text
 		}).
@@ -105,7 +108,7 @@ func main() {
 	processOutput(baseUrl, logView)
 
 	grid := tview.NewGrid().
-		SetRows(23, 0).
+		SetRows(25, 0).
 		AddItem(form, 0, 0, 1, 1, 0, 0, true).
 		AddItem(logView, 1, 0, 1, 1, 0, 0, false)
 	grid.SetBorder(true).

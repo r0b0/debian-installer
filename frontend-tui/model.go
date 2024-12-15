@@ -15,6 +15,7 @@ type Model struct {
 	UserPassword  string `json:"USER_PASSWORD"`
 	RootPassword  string `json:"ROOT_PASSWORD"`
 	LuksPassword  string `json:"LUKS_PASSWORD"`
+	EnableTpm     bool   `json:"ENABLE_TPM"`
 	Hostname      string `json:"HOSTNAME"`
 	Timezone      string `json:"TIMEZONE"`
 	EnableSwap    string `json:"ENABLE_SWAP"`
