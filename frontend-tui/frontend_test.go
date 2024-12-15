@@ -56,4 +56,3 @@ func TestGetSliceIndex(t *testing.T) {
 		t.Errorf("Slice index = %d; want %d", o, 2)
 	}
 }
-

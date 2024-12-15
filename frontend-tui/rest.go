@@ -2,10 +2,11 @@ package main
 
 import (
 	"fmt"
-	"golang.org/x/net/websocket"
 	"io"
 	"net/http"
 	"net/url"
+
+	"golang.org/x/net/websocket"
 )
 
 func loginToBackend(baseUrl *url.URL) (Model, error) {
@@ -61,6 +62,7 @@ func processOutput(baseUrl *url.URL, log io.Writer) {
 func (m *Model) startInstallation(baseUrl *url.URL, log io.Writer) error {
 	post := url.Values{}
 
+	post.Set("HEADLESS", "yes")
 	post.Set("DISK", m.Disk)
 	post.Set("DEBIAN_VERSION", m.DebianVersion)
 	post.Set("USERNAME", m.Username)

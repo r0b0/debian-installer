@@ -17,9 +17,10 @@ export default {
       finished: false,
       output_reader_connection: null,
       timezones: [],
-      
+
       // values for the installer:
       installer: {
+        HEADLESS: undefined,
         DISK: undefined,
         USERNAME: undefined,
         USER_FULL_NAME: undefined,
@@ -81,7 +82,7 @@ export default {
               this.installer[key] = response.environ[key];
             }
           }
-          
+
           this.get_block_devices();
           this.read_process_output();
 
@@ -162,7 +163,7 @@ export default {
         .then(result => {
             console.debug(result);
             this.finished = false;
-            
+
         })
         .catch(error => {
             this.running = false;
@@ -301,6 +302,9 @@ export default {
 
         <label for="SWAP_SIZE">Swap Size (GB)</label>
         <input type="number" id="SWAP_SIZE" v-model="installer.SWAP_SIZE" :disabled="installer.ENABLE_SWAP == 'none' || running">
+
+        <label for="HEADLESS">Headless/Server Install</label>
+        <input type="checkbox" id="HEADLESS">
       </fieldset>
 
       <fieldset>
@@ -363,7 +367,7 @@ a,
   color: #cd130f;
 }
 
-input:not(.inline), select, textarea {
+input:not(.inline):not([type='checkbox']), select, textarea {
   width: 100%;
 }
 
