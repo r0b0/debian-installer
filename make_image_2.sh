@@ -5,7 +5,7 @@ DISK=/dev/vdb
 USERNAME=live
 
 DEBIAN_VERSION=trixie
-FSFLAGS="compress=zstd:9"
+FSFLAGS="compress=zstd:19"
 
 target=/target
 root_device=${DISK}2
@@ -133,6 +133,13 @@ install_file usr/share/applications/installer.desktop
 # kde - place the icon on the desktop
 mkdir -p ${target}/home/live/Desktop
 install_file home/live/Desktop/installer.desktop
+# kde - customize the welcome center
+mkdir -p ${target}/home/live/.config
+install_file home/live/.config/plasma-welcomerc
+mkdir -p ${target}/usr/share/pixmaps
+install_file usr/share/pixmaps/Ceratopsian_installer.svg
+mkdir -p ${target}/usr/share/plasma/plasma-welcome
+install_file usr/share/plasma/plasma-welcome/intro-customization.desktop
 # gnome - place the icon to the 'dash'
 if [ -f ${target}/usr/bin/dconf ]; then
   mkdir -p ${target}/etc/dconf/profile

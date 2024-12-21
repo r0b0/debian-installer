@@ -4,7 +4,7 @@
 DISK=/dev/vdb
 
 DEBIAN_VERSION=trixie
-FSFLAGS="compress=zstd:9"
+FSFLAGS="compress=zstd:19"
 
 target=/target
 root_device=${DISK}2
