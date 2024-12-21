@@ -430,6 +430,7 @@ cat <<EOF > ${target}/tmp/packages.txt
 dracut
 linux-image-amd64
 firmware-linux
+atmel-firmware
 bluez-firmware
 dahdi-firmware-nonfree
 firmware-amd-graphics
@@ -438,24 +439,22 @@ firmware-atheros
 firmware-bnx2
 firmware-bnx2x
 firmware-brcm80211
+firmware-carl9170
 firmware-cavium
+firmware-intel-misc
 firmware-intel-sound
+firmware-ipw2x00
 firmware-iwlwifi
 firmware-libertas
 firmware-misc-nonfree
 firmware-myricom
 firmware-netronome
 firmware-netxen
-firmware-qcom-media
 firmware-qcom-soc
 firmware-qlogic
 firmware-realtek
-firmware-samsung
-firmware-siano
 firmware-ti-connectivity
 firmware-zd1211
-midisport-firmware
-sigrok-firmware-fx2lafw
 EOF
 cat <<EOF > ${target}/tmp/run2.sh
 #!/bin/bash
