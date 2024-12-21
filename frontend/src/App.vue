@@ -1,7 +1,7 @@
 <script>
 import Password from "./components/Password.vue";
 import timezonesTxt from './assets/timezones.txt?raw';
-import {nextTick} from "vue";
+import {nextTick, provide, ref} from "vue";
 
 export default {
   components: {Password},
@@ -55,6 +55,10 @@ export default {
     hostname() {
       return window.location.hostname;
     }
+  },
+  setup() {
+    provide('singlePasswordActive', ref(false));
+    provide('singlePasswordValue', ref(""));
   },
   mounted() {
     this.get_available_timezones();
@@ -221,7 +225,7 @@ export default {
   <img alt="banner" class="logo" src="@/assets/Ceratopsian_installer.svg" />
 
   <header>
-    <h1>Opinionated Debian Installer</h1>
+    <h1>Opinionated Debian Installer - TESTING</h1>
     <p>
       This is an <strong>unofficial</strong> installer for the Debian GNU/Linux operating system.
       For more information, read the <a href="https://github.com/r0b0/debian-installer">project page</a>.
@@ -266,10 +270,10 @@ export default {
 
       <fieldset>
         <legend>Disk Encryption</legend>
-        <Password v-model="installer.LUKS_PASSWORD" :disabled="running" />
+        <Password v-model="installer.LUKS_PASSWORD" :disabled="running" :is-main="true" />
 
         <input type="checkbox" v-model="installer.ENABLE_TPM" id="ENABLE_TPM" class="inline">
-        <label for="ENABLE_TPM" class="inline">Unlock with TPM</label>
+        <label for="ENABLE_TPM" class="inline">Unlock disk with TPM</label>
       </fieldset>
 
       <fieldset>
