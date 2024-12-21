@@ -222,7 +222,7 @@ if [ "${ENABLE_SWAP}" == "partition" ]; then
     swapon /dev/mapper/${swap_device}
 fi  # swap as partition
 
-if grep -qs "${top_level_mount}" /proc/mounts ; then
+if mountpoint -q "${top_level_mount}" ; then
     echo top-level subvolume already mounted on ${top_level_mount}
 else
     notify mount top-level subvolume on ${top_level_mount} and resize to fit the whole partition
@@ -242,7 +242,7 @@ if [ ! -e ${top_level_mount}/@ ]; then
     fi
 fi
 
-if grep -qs "${target}" /proc/mounts ; then
+if mountpoint -q "${target}" ; then
     echo root subvolume already mounted on ${target}
 else
     notify mount root and home subvolume on ${target}
@@ -282,7 +282,7 @@ Pin-Priority: 600
 EOF
 fi
 
-if grep -qs "${target}/proc" /proc/mounts ; then
+if mountpoint -q "${target}/proc" ; then
     echo bind mounts already set up on ${target}
 else
     notify bind mount dev, proc, sys, run on ${target}
@@ -293,7 +293,7 @@ else
     mount --bind /etc/resolv.conf ${target}/etc/resolv.conf
 fi
 
-if grep -qs "${efi_partition} " /proc/mounts ; then
+if mountpoint -q "${efi_partition}" ; then
     echo efi esp partition ${efi_partition} already mounted on ${target}/boot/efi
 else
     notify mount efi esp partition ${efi_partition} on ${target}/boot/efi
@@ -341,7 +341,7 @@ EOF
 
 if [ "$SHARE_APT_ARCHIVE" = true ] ; then
     mkdir -p ${target}/var/cache/apt/archives
-    if grep -qs "${target}/var/cache/apt/archives" /proc/mounts ; then
+    if mountpoint -q "${target}/var/cache/apt/archives" ; then
         echo apt cache directory already bind mounted on target
     else
         notify bind mounting apt cache directory to target
@@ -443,7 +443,6 @@ firmware-carl9170
 firmware-cavium
 firmware-intel-misc
 firmware-intel-sound
-firmware-ipw2x00
 firmware-iwlwifi
 firmware-libertas
 firmware-misc-nonfree

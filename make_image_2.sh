@@ -44,7 +44,7 @@ if [ ! -f fs_top_created.txt ]; then
     touch fs_top_created.txt
 fi
 
-if grep -qs "${overlay_low_mount}" /proc/mounts ; then
+if mountpoint -q "${overlay_low_mount}" ; then
     echo base image already mounted on ${overlay_low_mount}
 else
     notify mount base image read only on ${overlay_low_mount}
@@ -52,7 +52,7 @@ else
     mount ${root_device} ${overlay_low_mount} -o ${FSFLAGS},ro,subvol=@
 fi
 
-if grep -qs "${overlay_top_mount}" /proc/mounts ; then
+if mountpoint -q "${overlay_top_mount}" ; then
     echo overlay top already mounted on ${overlay_top_mount}
 else
     notify mount overlay top on ${overlay_top_mount}
@@ -62,7 +62,7 @@ else
     mkdir -p ${overlay_top_mount}/work
 fi
 
-if grep -qs "overlay /target" /proc/mounts ; then
+if mountpoint -q "/target" ; then
     echo overlay already mounted on /target
 else
     notify mount overlay on /target
@@ -70,14 +70,14 @@ else
 fi
 
 mkdir -p ${target}/var/cache/apt/archives
-if grep -qs "${target}/var/cache/apt/archives" /proc/mounts ; then
+if mountpoint -q "${target}/var/cache/apt/archives" ; then
     echo apt cache directory already bind mounted on target
 else
     notify bind mounting apt cache directory to target
     mount /var/cache/apt/archives ${target}/var/cache/apt/archives -o bind
 fi
 
-if grep -qs "${target}/proc" /proc/mounts ; then
+if mountpoint -q "${target}/proc" ; then
     echo bind mounts already set up on ${target}
 else
     notify bind mount dev, proc, sys, run, var/tmp on ${target}
@@ -88,7 +88,7 @@ else
     mount --make-rslave --rbind /var/tmp ${target}/var/tmp
 fi
 
-if grep -qs "${DISK}1 " /proc/mounts ; then
+if mountpoint -q "${DISK}1" ; then
     echo efi esp partition ${DISK}1 already mounted on ${target}/boot/efi
 else
     notify mount efi esp partition ${DISK}1 on ${target}/boot/efi

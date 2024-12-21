@@ -59,7 +59,7 @@ if [ ! -f vfat_created.txt ]; then
     mkfs.vfat ${DISK}1 | tee vfat_created.txt
 fi
 
-if grep -qs "/mnt/btrfs1" /proc/mounts ; then
+if mountpoint -q "/mnt/btrfs1" ; then
     echo top-level subvolume already mounted on /mnt/btrfs1
 else
     notify mount top-level subvolume on /mnt/btrfs1
@@ -74,7 +74,7 @@ if [ ! -e /mnt/btrfs1/@ ]; then
     btrfs subvolume create /mnt/btrfs1/@swap
 fi
 
-if grep -qs "${target}" /proc/mounts ; then
+if mountpoint -q "${target}" ; then
     echo root subvolume already mounted on ${target}
 else
     notify mount root and home subvolume on ${target}
@@ -85,7 +85,7 @@ else
 fi
 
 mkdir -p ${target}/var/cache/apt/archives
-if grep -qs "${target}/var/cache/apt/archives" /proc/mounts ; then
+if mountpoint -q "${target}/var/cache/apt/archives" ; then
     echo apt cache directory already bind mounted on target
 else
     notify bind mounting apt cache directory to target
@@ -97,7 +97,7 @@ if [ ! -f ${target}/etc/debian_version ]; then
     debootstrap ${DEBIAN_VERSION} ${target} http://deb.debian.org/debian
 fi
 
-if grep -qs "${target}/proc" /proc/mounts ; then
+if mountpoint -q "${target}/proc" ; then
     echo bind mounts already set up on ${target}
 else
     notify bind mount dev, proc, sys, run, var/tmp on ${target}
@@ -146,7 +146,6 @@ firmware-carl9170
 firmware-cavium
 firmware-intel-misc
 firmware-intel-sound
-firmware-ipw2x00
 firmware-iwlwifi
 firmware-libertas
 firmware-misc-nonfree
@@ -181,7 +180,7 @@ chroot ${target}/ bash /tmp/run2.sh
 notify running tasksel
 chroot ${target}/ tasksel
 
-if grep -qs "${target}/var/cache/apt/archives" /proc/mounts ; then
+if mountpoint -q "${target}/var/cache/apt/archives" ; then
     notify unmounting apt cache directory from target
     umount ${target}/var/cache/apt/archives
 else
