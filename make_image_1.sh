@@ -4,6 +4,7 @@
 DISK=/dev/vdb
 
 DEBIAN_VERSION=trixie
+BACKPORTS_VERSION=${DEBIAN_VERSION}  # TODO append "-backports" when available
 FSFLAGS="compress=zstd:19"
 
 target=/target
@@ -116,22 +117,26 @@ deb http://security.debian.org/debian-security ${DEBIAN_VERSION}-security main c
 deb http://deb.debian.org/debian ${DEBIAN_VERSION}-backports main contrib non-free non-free-firmware
 EOF
 
-notify enable ${DEBIAN_VERSION}-backports
-mkdir -p ${target}/etc/apt/preferences.d
-cp "${SCRIPT_DIR}/installer-files/etc/apt/preferences.d/99backports-temp" "${target}/etc/apt/preferences.d/"
-
 notify install required packages on ${target}
 cat <<EOF > ${target}/tmp/packages.txt
 locales
 adduser
 passwd
 sudo
+tasksel
+network-manager
+binutils
+console-setup
+exim4-daemon-light
+kpartx
+pigz
+pkg-config
+EOF
+cat <<EOF > ${target}/tmp/packages_backports.txt
 systemd
 systemd-cryptsetup
 btrfs-progs
 dosfstools
-tasksel
-network-manager
 firmware-linux
 atmel-firmware
 bluez-firmware
@@ -157,15 +162,9 @@ firmware-qlogic
 firmware-realtek
 firmware-ti-connectivity
 firmware-zd1211
-binutils
-console-setup
 cryptsetup
-exim4-daemon-light
-kpartx
 lvm2
 mdadm
-pigz
-pkg-config
 tpm2-tools
 tpm-udev
 EOF
@@ -174,6 +173,7 @@ cat <<EOF > ${target}/tmp/run2.sh
 export DEBIAN_FRONTEND=noninteractive
 apt-get update
 xargs apt-get install -y < /tmp/packages.txt
+xargs apt-get install -t ${BACKPORTS_VERSION} -y < /tmp/packages_backports.txt
 EOF
 chroot ${target}/ bash /tmp/run2.sh
 
@@ -188,7 +188,8 @@ else
 fi
 
 notify downloading remaining .deb files for the installer
-chroot ${target}/ apt-get install -y --download-only locales systemd systemd-boot dracut btrfs-progs tasksel network-manager cryptsetup tpm2-tools linux-image-amd64 openssh-server
+chroot ${target}/ apt-get install -y --download-only locales tasksel openssh-server
+chroot ${target}/ apt-get install -t ${BACKPORTS_VERSION} -y --download-only systemd systemd-boot dracut btrfs-progs network-manager cryptsetup tpm2-tools linux-image-amd64
 
 notify cleaning up
 rm -f ${target}/etc/machine-id

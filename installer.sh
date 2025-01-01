@@ -24,6 +24,7 @@ function notify () {
 }
 
 DEBIAN_VERSION=trixie
+BACKPORTS_VERSION=${DEBIAN_VERSION}  # TODO append "-backports" when available
 # see https://www.freedesktop.org/software/systemd/man/systemd-cryptenroll.html#--tpm2-pcrs=PCR
 TPM_PCRS="7+14"
 # do not enable this on a live-cd
@@ -270,18 +271,6 @@ if [ ! -f ${target}/etc/debian_version ]; then
     debootstrap ${DEBIAN_VERSION} ${target} http://deb.debian.org/debian
 fi
 
-if [ ! -f ${target}/etc/apt/preferences.d/99backports-temp ]; then
-    notify enable ${DEBIAN_VERSION}-backports
-    cat <<EOF > ${target}/etc/apt/preferences.d/99backports-temp
-# /etc/apt/preferences.d/99backports-temp
-# use packages from backports if available
-
-Package: firmware* fonts* *mesa* libreoffice* *systemd* linux-image* *udev* *drm* libgbm*
-Pin: release o=Debian Backports
-Pin-Priority: 600
-EOF
-fi
-
 if mountpoint -q "${target}/proc" ; then
     echo bind mounts already set up on ${target}
 else
@@ -396,7 +385,8 @@ fi
 cat <<EOF > ${target}/tmp/run1.sh
 #!/bin/bash
 export DEBIAN_FRONTEND=noninteractive
-apt-get install locales systemd systemd-boot dracut btrfs-progs tasksel network-manager cryptsetup sudo tpm2-tools tpm-udev -y
+apt-get install -y locales  tasksel network-manager sudo
+apt-get install -y -t ${BACKPORTS_VERSION} systemd systemd-boot dracut btrfs-progs cryptsetup tpm2-tools tpm-udev
 bootctl install
 EOF
 chroot ${target}/ sh /tmp/run1.sh
@@ -427,8 +417,24 @@ fi
 
 notify install kernel and firmware on ${target}
 cat <<EOF > ${target}/tmp/packages.txt
-dracut
-linux-image-amd64
+locales
+adduser
+passwd
+sudo
+tasksel
+network-manager
+binutils
+console-setup
+exim4-daemon-light
+kpartx
+pigz
+pkg-config
+EOF
+cat <<EOF > ${target}/tmp/packages_backports.txt
+systemd
+systemd-cryptsetup
+btrfs-progs
+dosfstools
 firmware-linux
 atmel-firmware
 bluez-firmware
@@ -454,11 +460,17 @@ firmware-qlogic
 firmware-realtek
 firmware-ti-connectivity
 firmware-zd1211
+cryptsetup
+lvm2
+mdadm
+tpm2-tools
+tpm-udev
 EOF
 cat <<EOF > ${target}/tmp/run2.sh
 #!/bin/bash
 export DEBIAN_FRONTEND=noninteractive
 xargs apt-get install -y < /tmp/packages.txt
+xargs apt-get install -t ${BACKPORTS_VERSION} -y < /tmp/packages_backports.txt
 systemctl disable systemd-networkd.service  # seems to fight with NetworkManager
 systemctl disable systemd-networkd.socket
 systemctl disable systemd-networkd-wait-online.service
@@ -488,9 +500,6 @@ if [ -z "${NON_INTERACTIVE}" ]; then
     notify running tasksel
     chroot ${target}/ tasksel
 fi
-
-notify reverting backports apt-pin
-rm -f ${target}/etc/apt/preferences.d/99backports-temp
 
 notify umounting all filesystems
 if [ "${ENABLE_SWAP}" == "partition" ]; then

@@ -1,7 +1,7 @@
 # Opinionated Debian Installer
 
 This tool can be used to create a modern installation of Debian. 
-Our opinions of what a modern installation of Debian should look like in 2024 are as follows:
+Our opinions of what a modern installation of Debian should look like in 2025 are as follows:
 
  - Debian 13 (Trixie)
  - Backports and non-free enabled
@@ -20,11 +20,7 @@ Our opinions of what a modern installation of Debian should look like in 2024 ar
 
 ## Downloads
 
-| Desktop environment | Download                                                                                                                                                                                                                | SHA-256 Checksum                                                        |
-|---------------------|-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|-------------------------------------------------------------------------|
-| KDE Plasma          | [opinionated-debian-installer-bookworm-kde-plasma-20241130a.img (5.1GB)](https://objectstorage.eu-frankfurt-1.oraclecloud.com/n/fr2rf1wke5iq/b/public/o/opinionated-debian-installer-bookworm-kde-plasma-20241130a.img) | 0b9c7779 33c6bb69 ae614ed0 c1e973f4 b67bc837 967862c8 f5114384 18550ea7 |
-| Gnome               | [opinionated-debian-installer-bookworm-gnome-20241221a.img (4.3GB)](https://objectstorage.eu-frankfurt-1.oraclecloud.com/n/fr2rf1wke5iq/b/public/o/opinionated-debian-installer-bookworm-gnome-20241221a.img)           | d2e3d9da 567e7ad5 592c4622 9a5fe41c 83212a59 0fdf1c69 4f9bb9ab df63e913 |
-| Server              | [opinionated-debian-installer-bookworm-server-20241110a.img (1.9GB)](https://objectstorage.eu-frankfurt-1.oraclecloud.com/n/fr2rf1wke5iq/b/public/o/opinionated-debian-installer-bookworm-server-20241110a.img)         | 9b4a37fc d371ae1b 4ce143eb 58e97e66 a1805497 466cf696 4dd7ebdf bed42833 |
+Coming soon.
 
 ## Instructions
 
