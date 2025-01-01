@@ -88,7 +88,7 @@ else
     mount --make-rslave --rbind /var/tmp ${target}/var/tmp
 fi
 
-if mountpoint -q "${DISK}1" ; then
+if mountpoint -q "${target}/boot/efi" ; then
     echo efi esp partition ${DISK}1 already mounted on ${target}/boot/efi
 else
     notify mount efi esp partition ${DISK}1 on ${target}/boot/efi
@@ -176,7 +176,7 @@ cat <<EOF > ${target}/tmp/run1.sh
 export DEBIAN_FRONTEND=noninteractive
 apt-get update -y
 apt-get upgrade -y
-apt-get install systemd-boot systemd-repart dracut cryptsetup debootstrap uuid-runtime lighttpd python3-pip python3-systemd python3-flask python3-flask-cors python3-h11 python3-wsproto curl -y
+apt-get install systemd-boot systemd-repart libsystemd-dev dracut cryptsetup debootstrap uuid-runtime lighttpd python3-pip python3-venv python3-systemd curl -y
 apt-get purge initramfs-tools initramfs-tools-core -y
 bootctl install
 systemctl enable lighttpd
@@ -187,9 +187,11 @@ systemctl disable systemd-networkd-wait-online.service
 systemctl mask systemd-networkd-wait-online.service
 systemctl disable apt-daily-upgrade.timer
 systemctl disable apt-daily.timer
-pip install flask-sock --break-system-packages
+python3 -m venv /opt/installer-venv
+source /opt/installer-venv/bin/activate
+pip install flask flask-sock flask-cors systemd-python
 EOF
-chroot ${target}/ sh /tmp/run1.sh
+chroot ${target}/ bash /tmp/run1.sh
 
 notify install kernel on ${target}
 cat <<EOF > ${target}/tmp/run1.sh
@@ -197,7 +199,7 @@ cat <<EOF > ${target}/tmp/run1.sh
 export DEBIAN_FRONTEND=noninteractive
 apt-get install linux-image-amd64 -y
 EOF
-chroot ${target}/ sh /tmp/run1.sh
+chroot ${target}/ bash /tmp/run1.sh
 
 echo configuring autologin
 mkdir -p ${target}/etc/sddm.conf.d/

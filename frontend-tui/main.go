@@ -62,8 +62,12 @@ func main() {
 		AddPasswordField("Disk Encryption Passphrase", m.LuksPassword, 0, '*', func(text string) {
 			m.LuksPassword = text
 		}). // TODO second time
-		AddCheckbox("Unlock with TPM", m.EnableTpm, func(checked bool) {
-			m.EnableTpm = checked
+		AddCheckbox("Unlock with TPM", m.EnableTpm == "true", func(checked bool) {
+			if checked {
+				m.EnableTpm = "true"
+			} else {
+				m.EnableTpm = "false"
+			}
 		}).
 		AddPasswordField("Root Password", m.RootPassword, 0, '*', func(text string) {
 			m.RootPassword = text
