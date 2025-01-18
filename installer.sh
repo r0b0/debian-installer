@@ -50,30 +50,30 @@ fi
 
 if [ -z "${NON_INTERACTIVE}" ]; then
     notify install required packages
-    apt-get update -y
-    apt-get install -y cryptsetup debootstrap uuid-runtime btrfs-progs dosfstools
+    apt-get update -y  || exit 1
+    apt-get install -y cryptsetup debootstrap uuid-runtime btrfs-progs dosfstools || exit 1
 fi
 
 KEYFILE=luks.key
 if [ ! -f efi-part.uuid ]; then
     notify generate uuid for efi partition
-    uuidgen > efi-part.uuid
+    uuidgen > efi-part.uuid || exit 1
 fi
 if [ ! -f luks-part.uuid ]; then
     notify generate uuid for luks partition
-    uuidgen > luks-part.uuid
+    uuidgen > luks-part.uuid || exit 1
 fi
 
 if [ "${ENABLE_SWAP}" == "partition" ]; then
     if [ ! -f swap-part.uuid ]; then
         notify generate uuid for swap partition
-        uuidgen > swap-part.uuid
+        uuidgen > swap-part.uuid || exit 1
     fi
 fi
 
 if [ ! -f btrfs.uuid ]; then
     notify generate uuid for btrfs filesystem
-    uuidgen > btrfs.uuid
+    uuidgen > btrfs.uuid || exit 1
 fi
 
 root_part_type="4f68bce3-e8cd-4db1-96e7-fbcaf984b709"  # X86_64
@@ -115,7 +115,7 @@ fi
 
 if [ ! -f partitions_created.txt ]; then
 notify create ${root_partition_nr} partitions on ${DISK}
-sfdisk $DISK <<EOF
+sfdisk $DISK <<EOF || exit 1
 label: gpt
 unit: sectors
 sector-size: 512
@@ -124,9 +124,9 @@ ${sfdisk_format}
 EOF
 
 notify resize the root partition on ${DISK} to fill available space
-echo ", +" | sfdisk -N ${root_partition_nr} $DISK
+echo ", +" | sfdisk -N ${root_partition_nr} $DISK || exit 1
 
-sfdisk -d $DISK > partitions_created.txt
+sfdisk -d $DISK > partitions_created.txt || exit 1
 fi
 
 function wait_for_file {
@@ -146,14 +146,14 @@ fi
 if [ ! -f $KEYFILE ]; then
     # TODO do we want to store this file in the installed system?
     notify generate key file for luks
-    dd if=/dev/random of=${KEYFILE} bs=512 count=1
+    dd if=/dev/random of=${KEYFILE} bs=512 count=1 || exit 1
     notify "remove any old luks on ${root_partition} (root)"
-    cryptsetup erase --batch-mode ${root_partition}
-    wipefs -a ${root_partition}
+    cryptsetup erase --batch-mode ${root_partition} || exit 1
+    wipefs -a ${root_partition} || exit 1
     if [ -e ${swap_partition} ]; then
         notify "remove any old luks on ${swap_partition} (swap)"
-        cryptsetup erase --batch-mode ${swap_partition}
-        wipefs -a ${swap_partition}
+        cryptsetup erase --batch-mode ${swap_partition} || exit 1
+        wipefs -a ${swap_partition} || exit 1
     fi
 fi
 
@@ -162,15 +162,15 @@ function setup_luks {
   retVal=$?
   if [ $retVal -ne 0 ]; then
       notify setup luks on "$1"
-      cryptsetup luksFormat "$1" --type luks2 --batch-mode --key-file $KEYFILE
+      cryptsetup luksFormat "$1" --type luks2 --batch-mode --key-file $KEYFILE || exit 1
       notify setup luks password on "$1"
       echo -n "${LUKS_PASSWORD}" > /tmp/passwd
-      cryptsetup --key-file=luks.key luksAddKey "$1" /tmp/passwd
+      cryptsetup --key-file=luks.key luksAddKey "$1" /tmp/passwd || exit 1
       rm -f /tmp/passwd
   else
       echo luks already set up on "$1"
   fi
-  cryptsetup luksUUID "$1" > luks.uuid
+  cryptsetup luksUUID "$1" > luks.uuid || exit 1
 }
 
 setup_luks ${root_partition}
@@ -178,68 +178,68 @@ root_uuid=$(cat luks.uuid)
 
 if [ ! -e ${root_device} ]; then
     notify open luks on root
-    cryptsetup luksOpen ${root_partition} ${luks_device} --key-file $KEYFILE
+    cryptsetup luksOpen ${root_partition} ${luks_device} --key-file $KEYFILE || exit 1
 fi
 
 if [ -e /dev/disk/by-partlabel/BaseImage ]; then
     if [ ! -f base_image_copied.txt ]; then
         notify copy base image to ${root_device}
-        wipefs -a ${root_device}
-        dd if=/dev/disk/by-partlabel/BaseImage of=${root_device} bs=4M conv=sync status=progress
+        wipefs -a ${root_device} || exit 1
+        dd if=/dev/disk/by-partlabel/BaseImage of=${root_device} bs=4M conv=sync status=progress || exit 1
         notify check the filesystem on root
-        btrfs check ${root_device}
+        btrfs check ${root_device} || exit 1
         notify change the filesystem uuid on root
-        btrfstune -U ${btrfs_uuid} -f ${root_device}  # change the uuid
+        btrfstune -U ${btrfs_uuid} -f ${root_device} || exit 1  # change the uuid
         touch base_image_copied.txt
     fi
 else
     if [ ! -f btrfs_created.txt ]; then
         notify create root filesystem on ${root_device}
-        wipefs -a ${root_device}
-        mkfs.btrfs -U ${btrfs_uuid} ${root_device} | tee btrfs_created.txt
+        wipefs -a ${root_device} || exit 1
+        mkfs.btrfs -U ${btrfs_uuid} ${root_device} | tee btrfs_created.txt || exit 1
     fi
 fi
 
 if [ ! -f vfat_created.txt ]; then
     notify create esp filesystem on ${efi_partition}
-    wipefs -a ${efi_partition}
-    mkfs.vfat ${efi_partition}
+    wipefs -a ${efi_partition} || exit 1
+    mkfs.vfat ${efi_partition} || exit 1
     touch vfat_created.txt
 fi
 
 if [ "${ENABLE_SWAP}" == "partition" ]; then
-    setup_luks ${swap_partition}
+    setup_luks ${swap_partition} || exit 1
     swap_uuid=$(cat luks.uuid)
 
     kernel_params="${kernel_params} rd.luks.name=${swap_uuid}=${swap_device} resume=/dev/mapper/${swap_device}"
 
     if [ ! -e /dev/mapper/${swap_device} ]; then
         notify open luks swap
-        cryptsetup luksOpen ${swap_partition} ${swap_device} --key-file $KEYFILE
+        cryptsetup luksOpen ${swap_partition} ${swap_device} --key-file $KEYFILE || exit 1
     fi
 
     notify making swap
-    mkswap /dev/mapper/${swap_device}
-    swapon /dev/mapper/${swap_device}
+    mkswap /dev/mapper/${swap_device} || exit 1
+    swapon /dev/mapper/${swap_device} || exit 1
 fi  # swap as partition
 
 if mountpoint -q "${top_level_mount}" ; then
     echo top-level subvolume already mounted on ${top_level_mount}
 else
     notify mount top-level subvolume on ${top_level_mount} and resize to fit the whole partition
-    mkdir -p ${top_level_mount}
-    mount ${root_device} ${top_level_mount} -o rw,${FSFLAGS},subvolid=5
-    btrfs filesystem resize max ${top_level_mount}
+    mkdir -p ${top_level_mount} || exit 1
+    mount ${root_device} ${top_level_mount} -o rw,${FSFLAGS},subvolid=5 || exit 1
+    btrfs filesystem resize max ${top_level_mount} || exit 1
 fi
 
 if [ ! -e ${top_level_mount}/@ ]; then
     notify create @ and @home subvolumes on ${top_level_mount}
-    btrfs subvolume create ${top_level_mount}/@
-    btrfs subvolume create ${top_level_mount}/@home
+    btrfs subvolume create ${top_level_mount}/@ || exit 1
+    btrfs subvolume create ${top_level_mount}/@home || exit 1
     if [ "${ENABLE_SWAP}" == "file" ]; then
         notify create @swap subvolume for swap file on ${top_level_mount}
-        btrfs subvolume create ${top_level_mount}/@swap
-        chmod 700 ${top_level_mount}/@swap
+        btrfs subvolume create ${top_level_mount}/@swap || exit 1
+        chmod 700 ${top_level_mount}/@swap || exit 1
     fi
 fi
 
@@ -247,62 +247,62 @@ if mountpoint -q "${target}" ; then
     echo root subvolume already mounted on ${target}
 else
     notify mount root and home subvolume on ${target}
-    mkdir -p ${target}
-    mount ${root_device} ${target} -o ${FSFLAGS},subvol=@
-    mkdir -p ${target}/home
-    mount ${root_device} ${target}/home -o ${FSFLAGS},subvol=@home
+    mkdir -p ${target} || exit 1
+    mount ${root_device} ${target} -o ${FSFLAGS},subvol=@ || exit 1
+    mkdir -p ${target}/home || exit 1
+    mount ${root_device} ${target}/home -o ${FSFLAGS},subvol=@home || exit 1
     if [ "${ENABLE_SWAP}" == "file" ]; then
         notify mount swap subvolume on ${target}
-        mkdir -p ${target}/swap
-        mount ${root_device} ${target}/swap -o noatime,subvol=@swap
+        mkdir -p ${target}/swap || exit 1
+        mount ${root_device} ${target}/swap -o noatime,subvol=@swap || exit 1
     fi
 fi
 
 if [ "${ENABLE_SWAP}" == "file" ]; then
     notify make swap file at ${target}/swap/swapfile
-    btrfs filesystem mkswapfile --size ${SWAP_SIZE}G ${target}/swap/swapfile
-    swapon ${target}/swap/swapfile
+    btrfs filesystem mkswapfile --size ${SWAP_SIZE}G ${target}/swap/swapfile || exit 1
+    swapon ${target}/swap/swapfile || exit 1
     swapfile_offset=$(btrfs inspect-internal map-swapfile -r ${target}//swap/swapfile)
     kernel_params="${kernel_params} rd.luks.name=${root_uuid}=${luks_device} resume=${root_device} resume_offset=${swapfile_offset}"
 fi
 
 if [ ! -f ${target}/etc/debian_version ]; then
     notify install debian on ${target}
-    debootstrap ${DEBIAN_VERSION} ${target} http://deb.debian.org/debian
+    debootstrap ${DEBIAN_VERSION} ${target} http://deb.debian.org/debian || exit 1
 fi
 
 if mountpoint -q "${target}/proc" ; then
     echo bind mounts already set up on ${target}
 else
     notify bind mount dev, proc, sys, run on ${target}
-    mount -t proc none ${target}/proc
-    mount --make-rslave --rbind /sys ${target}/sys
-    mount --make-rslave --rbind /dev ${target}/dev
-    mount --make-rslave --rbind /run ${target}/run
-    mount --bind /etc/resolv.conf ${target}/etc/resolv.conf
+    mount -t proc none ${target}/proc || exit 1
+    mount --make-rslave --rbind /sys ${target}/sys || exit 1
+    mount --make-rslave --rbind /dev ${target}/dev || exit 1
+    mount --make-rslave --rbind /run ${target}/run || exit 1
+    mount --bind /etc/resolv.conf ${target}/etc/resolv.conf || exit 1
 fi
 
 if mountpoint -q "${efi_partition}" ; then
     echo efi esp partition ${efi_partition} already mounted on ${target}/boot/efi
 else
     notify mount efi esp partition ${efi_partition} on ${target}/boot/efi
-    mkdir -p ${target}/boot/efi
-    mount ${efi_partition} ${target}/boot/efi -o umask=077
+    mkdir -p ${target}/boot/efi || exit 1
+    mount ${efi_partition} ${target}/boot/efi -o umask=077 || exit 1
 fi
 
 if [ ! -z "${HOSTNAME}" ]; then
     notify setup hostname
-    echo "$HOSTNAME" > ${target}/etc/hostname
+    echo "$HOSTNAME" > ${target}/etc/hostname || exit 1
 fi
 
 notify setup timezone
-echo "${TIMEZONE}" > ${target}/etc/timezone
+echo "${TIMEZONE}" > ${target}/etc/timezone || exit 1
 rm -f ${target}/etc/localtime
 (cd ${target} && ln -s /usr/share/zoneinfo/${TIMEZONE} etc/localtime)
 
 notify setup fstab
-mkdir -p ${target}/root/btrfs1
-cat <<EOF > ${target}/etc/fstab
+mkdir -p ${target}/root/btrfs1 || exit 1
+cat <<EOF > ${target}/etc/fstab || exit 1
 UUID=${btrfs_uuid} / btrfs defaults,subvol=@,${FSFLAGS} 0 1
 UUID=${btrfs_uuid} /home btrfs defaults,subvol=@home,${FSFLAGS} 0 1
 UUID=${btrfs_uuid} /root/btrfs1 btrfs defaults,subvolid=5,${FSFLAGS} 0 1
@@ -310,18 +310,18 @@ PARTUUID=${efi_part_uuid} /boot/efi vfat defaults,umask=077 0 2
 EOF
 
 if [ "${ENABLE_SWAP}" == "partition" ]; then
-cat <<EOF >> ${target}/etc/fstab
+cat <<EOF >> ${target}/etc/fstab || exit 1
 /dev/mapper/${swap_device} swap swap defaults 0 0
 EOF
 elif [ "${ENABLE_SWAP}" == "file" ]; then
-cat <<EOF >> ${target}/etc/fstab
+cat <<EOF >> ${target}/etc/fstab || exit 1
 UUID=${btrfs_uuid} /swap btrfs defaults,subvol=@swap,noatime 0 0
 /swap/swapfile none swap defaults 0 0
 EOF
 fi
 
 notify setup sources.list
-cat <<EOF > ${target}/etc/apt/sources.list
+cat <<EOF > ${target}/etc/apt/sources.list || exit 1
 deb http://deb.debian.org/debian ${DEBIAN_VERSION} main contrib non-free non-free-firmware
 deb http://deb.debian.org/debian ${DEBIAN_VERSION}-updates main contrib non-free non-free-firmware
 deb http://security.debian.org/debian-security ${DEBIAN_VERSION}-security main contrib non-free non-free-firmware
@@ -329,12 +329,12 @@ deb http://deb.debian.org/debian ${DEBIAN_VERSION}-backports main contrib non-fr
 EOF
 
 if [ "$SHARE_APT_ARCHIVE" = true ] ; then
-    mkdir -p ${target}/var/cache/apt/archives
+    mkdir -p ${target}/var/cache/apt/archives || exit 1
     if mountpoint -q "${target}/var/cache/apt/archives" ; then
         echo apt cache directory already bind mounted on target
     else
         notify bind mounting apt cache directory to target
-        mount /var/cache/apt/archives ${target}/var/cache/apt/archives -o bind
+        mount /var/cache/apt/archives ${target}/var/cache/apt/archives -o bind || exit 1
     fi
 fi
 
@@ -342,8 +342,8 @@ if grep -qs 'root:\$' ${target}/etc/shadow ; then
     echo root password already set up
 elif [ ! -z "${ROOT_PASSWORD}" ]; then
     notify set up root password
-    echo "root:${ROOT_PASSWORD}" > ${target}/tmp/passwd
-    chroot ${target}/ bash -c "chpasswd < /tmp/passwd"
+    echo "root:${ROOT_PASSWORD}" > ${target}/tmp/passwd || exit 1
+    chroot ${target}/ bash -c "chpasswd < /tmp/passwd" || exit 1
     rm -f ${target}/tmp/passwd
 fi
 
@@ -352,11 +352,11 @@ if [ ! -z "${USERNAME}" ]; then
         echo ${USERNAME} user already set up
     else
         notify set up ${USERNAME} user
-        chroot ${target}/ bash -c "adduser ${USERNAME} --disabled-password --gecos "${USER_FULL_NAME}""
-        chroot ${target}/ bash -c "adduser ${USERNAME} sudo"
+        chroot ${target}/ bash -c "adduser ${USERNAME} --disabled-password --gecos "${USER_FULL_NAME}"" || exit 1
+        chroot ${target}/ bash -c "adduser ${USERNAME} sudo" || exit 1
         if [ ! -z "${USER_PASSWORD}" ]; then
-            echo "${USERNAME}:${USER_PASSWORD}" > ${target}/tmp/passwd
-            chroot ${target}/ bash -c "chpasswd < /tmp/passwd"
+            echo "${USERNAME}:${USER_PASSWORD}" > ${target}/tmp/passwd || exit 1
+            chroot ${target}/ bash -c "chpasswd < /tmp/passwd" || exit 1
             rm -f ${target}/tmp/passwd
         fi
     fi
@@ -364,59 +364,59 @@ fi
 
 notify configuring dracut and kernel command line
 mkdir -p ${target}/etc/dracut.conf.d
-cat <<EOF > ${target}/etc/dracut.conf.d/90-luks.conf
+cat <<EOF > ${target}/etc/dracut.conf.d/90-luks.conf || exit 1
 add_dracutmodules+=" systemd crypt btrfs tpm2-tss "
 kernel_cmdline="${kernel_params}"
 EOF
-cat <<EOF > ${target}/etc/kernel/cmdline
+cat <<EOF > ${target}/etc/kernel/cmdline || exit 1
 ${kernel_params}
 EOF
 
 if [ "${ENABLE_SWAP}" == "partition" ]; then
-cat <<EOF > ${target}/etc/dracut.conf.d/90-hibernate.conf
+cat <<EOF > ${target}/etc/dracut.conf.d/90-hibernate.conf || exit 1
 add_dracutmodules+=" resume "
 EOF
 fi
 
 notify install required packages on ${target}
 if [ -z "${NON_INTERACTIVE}" ]; then
-    chroot ${target}/ apt-get update -y
+    chroot ${target}/ apt-get update -y || exit 1
 fi
-cat <<EOF > ${target}/tmp/run1.sh
+cat <<EOF > ${target}/tmp/run1.sh || exit 1
 #!/bin/bash
 export DEBIAN_FRONTEND=noninteractive
-apt-get install -y locales  tasksel network-manager sudo
-apt-get install -y -t ${BACKPORTS_VERSION} systemd systemd-boot dracut btrfs-progs cryptsetup tpm2-tools tpm-udev
-bootctl install
+apt-get install -y locales  tasksel network-manager sudo || exit 1
+apt-get install -y -t ${BACKPORTS_VERSION} systemd systemd-boot dracut btrfs-progs cryptsetup tpm2-tools tpm-udev || exit 1
+bootctl install || exit 1
 EOF
-chroot ${target}/ sh /tmp/run1.sh
+chroot ${target}/ sh /tmp/run1.sh || exit 1
 
 if [ "${ENABLE_TPM}" == "true" ]; then
   notify checking for tpm
-  cp ${KEYFILE} ${target}/
-  chmod 600 ${target}/${KEYFILE}
-  cat <<EOF > ${target}/tmp/run4.sh
-systemd-cryptenroll --tpm2-device=list > /tmp/tpm-list.txt
+  cp ${KEYFILE} ${target}/ || exit 1
+  chmod 600 ${target}/${KEYFILE} || exit 1
+  cat <<EOF > ${target}/tmp/run4.sh || exit 1
+systemd-cryptenroll --tpm2-device=list > /tmp/tpm-list.txt || exit 1
 if grep -qs "/dev/tpm" /tmp/tpm-list.txt ; then
       echo tpm available, enrolling
       echo "... on root"
-      systemd-cryptenroll --unlock-key-file=/${KEYFILE} --tpm2-device=auto ${root_partition} --tpm2-pcrs=${TPM_PCRS}
+      systemd-cryptenroll --unlock-key-file=/${KEYFILE} --tpm2-device=auto ${root_partition} --tpm2-pcrs=${TPM_PCRS} || exit 1
       if [ -e "${swap_partition}" ]; then
           echo "... on swap"
-          systemd-cryptenroll --unlock-key-file=/${KEYFILE} --tpm2-device=auto ${swap_partition} --tpm2-pcrs=${TPM_PCRS}
+          systemd-cryptenroll --unlock-key-file=/${KEYFILE} --tpm2-device=auto ${swap_partition} --tpm2-pcrs=${TPM_PCRS} || exit 1
       fi
 else
     echo tpm not available
 fi
 EOF
-  chroot ${target}/ bash /tmp/run4.sh
-  rm ${target}/${KEYFILE}
+  chroot ${target}/ bash /tmp/run4.sh || exit 1
+  rm ${target}/${KEYFILE} || exit 1
 else
   notify tpm disabled
 fi
 
 notify install kernel and firmware on ${target}
-cat <<EOF > ${target}/tmp/packages.txt
+cat <<EOF > ${target}/tmp/packages.txt || exit 1
 locales
 adduser
 passwd
@@ -430,9 +430,11 @@ kpartx
 pigz
 pkg-config
 EOF
-cat <<EOF > ${target}/tmp/packages_backports.txt
+cat <<EOF > ${target}/tmp/packages_backports.txt || exit 1
+linux-image-amd64
 systemd
 systemd-cryptsetup
+systemd-timesyncd
 btrfs-progs
 dosfstools
 firmware-linux
@@ -463,37 +465,40 @@ firmware-zd1211
 cryptsetup
 lvm2
 mdadm
+plymouth-themes
+polkitd
+python3
 tpm2-tools
 tpm-udev
 EOF
-cat <<EOF > ${target}/tmp/run2.sh
+cat <<EOF > ${target}/tmp/run2.sh || exit 1
 #!/bin/bash
 export DEBIAN_FRONTEND=noninteractive
-xargs apt-get install -y < /tmp/packages.txt
-xargs apt-get install -t ${BACKPORTS_VERSION} -y < /tmp/packages_backports.txt
+xargs apt-get install -y < /tmp/packages.txt || exit 1
+xargs apt-get install -t ${BACKPORTS_VERSION} -y < /tmp/packages_backports.txt || exit 1
 systemctl disable systemd-networkd.service  # seems to fight with NetworkManager
 systemctl disable systemd-networkd.socket
 systemctl disable systemd-networkd-wait-online.service
 EOF
-chroot ${target}/ bash /tmp/run2.sh
+chroot ${target}/ bash /tmp/run2.sh || exit 1
 
 if [ ! -z "${SSH_PUBLIC_KEY}" ]; then
     notify adding ssh public key to user and root authorized_keys file
-    mkdir -p ${target}/root/.ssh
-    chmod 700 ${target}/root/.ssh
-    echo "${SSH_PUBLIC_KEY}" > ${target}/root/.ssh/authorized_keys
-    chmod 600 ${target}/root/.ssh/authorized_keys
+    mkdir -p ${target}/root/.ssh || exit 1
+    chmod 700 ${target}/root/.ssh || exit 1
+    echo "${SSH_PUBLIC_KEY}" > ${target}/root/.ssh/authorized_keys || exit 1
+    chmod 600 ${target}/root/.ssh/authorized_keys || exit 1
 
     if [ ! -z "${USERNAME}" ]; then
-        mkdir -p ${target}/home/${USERNAME}/.ssh
-        chmod 700 ${target}/home/${USERNAME}/.ssh
-        echo "${SSH_PUBLIC_KEY}" > ${target}/home/${USERNAME}/.ssh/authorized_keys
-        chmod 600 ${target}/home/${USERNAME}/.ssh/authorized_keys
-        chroot ${target}/ chown -R ${USERNAME} /home/${USERNAME}/.ssh
+        mkdir -p ${target}/home/${USERNAME}/.ssh || exit 1
+        chmod 700 ${target}/home/${USERNAME}/.ssh || exit 1
+        echo "${SSH_PUBLIC_KEY}" > ${target}/home/${USERNAME}/.ssh/authorized_keys || exit 1
+        chmod 600 ${target}/home/${USERNAME}/.ssh/authorized_keys || exit 1
+        chroot ${target}/ chown -R ${USERNAME} /home/${USERNAME}/.ssh || exit 1
     fi
 
     notify installing openssh-server
-    chroot ${target}/ apt-get install -y openssh-server
+    chroot ${target}/ apt-get install -y openssh-server || exit 1
 fi
 
 if [ -z "${NON_INTERACTIVE}" ]; then
@@ -520,5 +525,5 @@ notify INSTALLATION FINISHED
 
 if [ ! -z "${AFTER_INSTALLED_CMD}" ]; then
   notify running ${AFTER_INSTALLED_CMD}
-  sh -c "${AFTER_INSTALLED_CMD}"
+  sh -c "${AFTER_INSTALLED_CMD}" || exit 1
 fi

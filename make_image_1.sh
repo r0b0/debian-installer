@@ -165,6 +165,9 @@ firmware-zd1211
 cryptsetup
 lvm2
 mdadm
+plymouth-themes
+polkitd
+python3
 tpm2-tools
 tpm-udev
 EOF
@@ -189,7 +192,7 @@ fi
 
 notify downloading remaining .deb files for the installer
 chroot ${target}/ apt-get install -y --download-only locales tasksel openssh-server
-chroot ${target}/ apt-get install -t ${BACKPORTS_VERSION} -y --download-only systemd systemd-boot dracut btrfs-progs network-manager cryptsetup tpm2-tools linux-image-amd64
+chroot ${target}/ apt-get install -t ${BACKPORTS_VERSION} -y --download-only systemd systemd-boot systemd-timesyncd dracut btrfs-progs network-manager cryptsetup tpm2-tools linux-image-amd64
 
 notify cleaning up
 rm -f ${target}/etc/machine-id
