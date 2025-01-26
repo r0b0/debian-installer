@@ -124,7 +124,7 @@ export default {
                 device.available = true;
               }
             }
-          });
+          }); // TODO check errors
     },
     get_available_timezones() {
       for(const line of timezonesTxt.split("\n")) {
@@ -147,7 +147,7 @@ export default {
       }
       this.output_reader_connection.onclose = (event) => {
         console.log("Websocket connection closed");
-        this.check_process_status()
+        this.check_process_status();
       }
     },
     install() {
@@ -171,6 +171,7 @@ export default {
         })
         .catch(error => {
             this.running = false;
+            // TODO set this.error_message
             throw Error(error);
         });
     },
@@ -184,11 +185,12 @@ export default {
               this.finished = true;
               if (response.return_code == 0) {
                 this.overall_status = "green";
+                this.$refs.completed_dialog.showModal();
               } else {
                 this.overall_status = "red";
               }
             }
-          });
+          }); // TODO error checking
     },
     clear() {
       this.fetch_from_backend("/clear")
@@ -200,6 +202,7 @@ export default {
             this.running = false;
           })
           .catch(error => {
+            // TODO set this.error_message
             throw Error(error);
           });
     },
@@ -215,6 +218,7 @@ export default {
           })
           .catch(error => {
             // console.error(error);
+            // TODO set this.error_message
             throw Error(error);
           });
     },
@@ -336,6 +340,13 @@ export default {
     <span>Installer &copy;2022-2025 <a href="https://github.com/r0b0/debian-installer">Robert T</a></span>
     <span>Banner &copy;2024 <a href="https://github.com/pccouper/trixie">Elise Couper</a></span>
   </footer>
+
+  <dialog ref="completed_dialog">
+    <p>
+      Debian successfully installed. You can now turn off your computer, remove the installation media and start it again.
+    </p>
+    <button class="right-align" @click="$refs.completed_dialog.close()">Close</button>
+  </dialog>
 </template>
 
 <style>
@@ -389,6 +400,10 @@ label:not(.inline) {
 
 button {
   margin-top: 0.5em;
+}
+
+.right-align {
+  float: right;
 }
 
 @media (hover: hover) {
