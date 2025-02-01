@@ -210,8 +210,3 @@ The following table contains comparison of features between our opinionated debi
 [3] `@rootfs`
 
 [4] Fixed partitioning (see Details above), LUKS is automatic, BTRFS is used as filesystem
-
----
-
-[Buy me coffee](bitcoin:?lno=lno1zrxq8pjw7qjlm68mtp7e3yvxee4y5xrgjhhyf2fxhlphpckrvevh50u0qw5eeh2dypr2ws0vxrfz4vj2d2lzhq3hgwhza228gj64ud6dt26p5qsztygcehaen2n9mwhrv632sr9v6ry5p608gaefcv9cpljyzaj24q0qqvagjs2n7nst777j5pc5l77gcu2zzafxjwkr5kpld5fxmqlxnn9f4h4eyjw5mgk6a6tujfffcu04nd2jz5vgqt4k2eejms45hcqht2ku5ftzlaxefequk5n4r7kjztpghal8cs5mvqqsx4gsnd2relr38qeuzay625rklc) (₿ lightning)
-
