@@ -12,6 +12,8 @@ export default {
       block_devices: [],
       install_to_device_process_key: "",
       install_to_device_status: "",
+      has_nvidia: false,
+      want_nvidia: false,
       overall_status: "",
       running: false,
       finished: false,
@@ -31,6 +33,7 @@ export default {
         TIMEZONE: undefined,
         ENABLE_SWAP: undefined,
         SWAP_SIZE: undefined,
+        NVIDIA_PACKAGE: undefined,
       }
     }
   },
@@ -41,6 +44,9 @@ export default {
         ret = false;
       }
       for(const [key, value] of Object.entries(this.installer)) {
+        if(key === "NVIDIA_PACKAGE") {
+          continue;  // XXX not nice
+        }
         if(typeof value === 'undefined') {
           ret = false;
           break;
@@ -79,6 +85,8 @@ export default {
           } else {
             this.running = false;
           }
+          this.has_nvidia = response.has_nvidia;
+          this.want_nvidia = response.has_nvidia;
 
           for(const [key, value] of Object.entries(this.installer)) {
             if(key in response.environ) {
@@ -152,6 +160,11 @@ export default {
     },
     install() {
       this.running = true;
+      if(this.want_nvidia) {
+        this.installer["NVIDIA_PACKAGE"] = "nvidia-driver";
+      } else {
+        this.installer["NVIDIA_PACKAGE"] = "";
+      }
       let data = new FormData();
       for(const [key, value] of Object.entries(this.installer)) {
         data.append(key, value);
@@ -313,6 +326,9 @@ export default {
 
         <label for="SWAP_SIZE">Swap Size (GB)</label>
         <input type="number" id="SWAP_SIZE" v-model="installer.SWAP_SIZE" :disabled="installer.ENABLE_SWAP == 'none' || running">
+
+        <input type="checkbox" v-model="want_nvidia" id="WANT_NVIDIA" class="inline" :disabled="!has_nvidia">
+        <label for="WANT_NVIDIA" class="inline">Install the proprietary NVIDIA Accelerated Linux Graphics Driver</label>
       </fieldset>
 
       <fieldset>

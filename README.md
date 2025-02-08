@@ -16,7 +16,6 @@ Our opinions of what a modern installation of Debian should look like in 2025 ar
  - **The installer will take over your whole disk**
  - Amd64 with EFI only
  - The installer is in english only
- - Secure boot is not supported 
 
 ## Downloads
 
@@ -25,7 +24,7 @@ Coming soon.
 ## Instructions
 
 1. Download one of the live image files from the table above
-2. Write the image file to a USB flash drive. **Do not use ventoy** or similar "clever" tools - they are not compatible with these images. If you need a GUI, use [etcher](https://github.com/balena-io/etcher/releases) or [win32DiskImager](https://sourceforge.net/projects/win32diskimager/files/Archive/) or just use dd - `dd if=opinionated-debian-installer*.img of=/dev/sdX bs=8MB status=progress conv=sync` where sdX is your USB flash drive 
+2. Write the image file to a USB flash drive. **Do not use ventoy** or similar "clever" tools - they are not compatible with these images. If you need a GUI, use [etcher](https://github.com/balena-io/etcher/releases) or [win32DiskImager](https://sourceforge.net/projects/win32diskimager/files/Archive/) or just use dd - `dd if=opinionated-debian-installer*.img of=/dev/sdX bs=8MB status=progress oflag=sync` where sdX is your USB flash drive 
 3. Boot from the USB flash drive
 4. Start the installer icon from the desktop/dash, fill in the form in the browser and press the big _Install_ button
 5. Reboot and enjoy

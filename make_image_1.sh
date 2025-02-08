@@ -135,6 +135,7 @@ EOF
 cat <<EOF > ${target}/tmp/packages_backports.txt
 systemd
 systemd-cryptsetup
+systemd-timesyncd
 btrfs-progs
 dosfstools
 firmware-linux
@@ -192,7 +193,7 @@ fi
 
 notify downloading remaining .deb files for the installer
 chroot ${target}/ apt-get install -y --download-only locales tasksel openssh-server
-chroot ${target}/ apt-get install -t ${BACKPORTS_VERSION} -y --download-only systemd systemd-boot systemd-timesyncd dracut btrfs-progs network-manager cryptsetup tpm2-tools linux-image-amd64
+chroot ${target}/ apt-get install -t ${BACKPORTS_VERSION} -y --download-only systemd-boot dracut linux-image-amd64 linux-headers-amd64 nvidia-driver
 
 notify cleaning up
 rm -f ${target}/etc/machine-id

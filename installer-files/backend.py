@@ -35,8 +35,14 @@ INSTALLER_SCRIPT = os.environ["INSTALLER_SCRIPT"]
 def login():
     hostname = socket.gethostname()
     has_efi = os.path.exists("/sys/firmware/efi")
+    nvidia_detect = subprocess.run("nvidia-detect", capture_output=True, text=True)
+    has_nvidia = False
+    if "No NVIDIA GPU detected" not in nvidia_detect.stdout:  # XXX not nice
+        has_nvidia = True
+
     return {"hostname": hostname,
             "has_efi": has_efi,
+            "has_nvidia": has_nvidia,
             "running": context.running_subprocess is not None,
             "environ": context.running_parameters}
 

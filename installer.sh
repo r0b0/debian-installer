@@ -9,9 +9,10 @@ USER_PASSWORD=hunter2
 ROOT_PASSWORD=changeme
 LUKS_PASSWORD=luke
 ENABLE_TPM=true
-HOSTNAME=debian12
+HOSTNAME=debian13
 ENABLE_SWAP=partition
 SWAP_SIZE=2
+NVIDIA_PACKAGE=
 SSH_PUBLIC_KEY=
 AFTER_INSTALLED_CMD=
 fi
@@ -148,11 +149,11 @@ if [ ! -f $KEYFILE ]; then
     notify generate key file for luks
     dd if=/dev/random of=${KEYFILE} bs=512 count=1 || exit 1
     notify "remove any old luks on ${root_partition} (root)"
-    cryptsetup erase --batch-mode ${root_partition} || exit 1
+    cryptsetup erase --batch-mode ${root_partition}
     wipefs -a ${root_partition} || exit 1
     if [ -e ${swap_partition} ]; then
         notify "remove any old luks on ${swap_partition} (swap)"
-        cryptsetup erase --batch-mode ${swap_partition} || exit 1
+        cryptsetup erase --batch-mode ${swap_partition}
         wipefs -a ${swap_partition} || exit 1
     fi
 fi
@@ -185,7 +186,7 @@ if [ -e /dev/disk/by-partlabel/BaseImage ]; then
     if [ ! -f base_image_copied.txt ]; then
         notify copy base image to ${root_device}
         wipefs -a ${root_device} || exit 1
-        dd if=/dev/disk/by-partlabel/BaseImage of=${root_device} bs=4M conv=sync status=progress || exit 1
+        dd if=/dev/disk/by-partlabel/BaseImage of=${root_device} bs=4M oflag=sync status=progress || exit 1
         notify check the filesystem on root
         btrfs check ${root_device} || exit 1
         notify change the filesystem uuid on root
@@ -504,6 +505,15 @@ fi
 if [ -z "${NON_INTERACTIVE}" ]; then
     notify running tasksel
     chroot ${target}/ tasksel
+fi
+
+if [ ! -z "${NVIDIA_PACKAGE}" ]; then
+  notify installing ${NVIDIA_PACKAGE}
+  # XXX dracut-install: ERROR: installing nvidia-blacklists-nouveau.conf nvidia.conf
+  cat <<EOF > ${target}/etc/dracut.conf.d/10-nvidia.conf || exit 1
+install_items+=" /etc/modprobe.d/nvidia-blacklists-nouveau.conf /etc/modprobe.d/nvidia.conf /etc/modprobe.d/nvidia-options.conf "
+EOF
+  chroot ${target}/ apt-get install -t ${BACKPORTS_VERSION} -y "${NVIDIA_PACKAGE}" linux-headers-amd64 || exit 1
 fi
 
 notify umounting all filesystems
