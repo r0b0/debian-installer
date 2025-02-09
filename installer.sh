@@ -321,12 +321,35 @@ UUID=${btrfs_uuid} /swap btrfs defaults,subvol=@swap,noatime 0 0
 EOF
 fi
 
-notify setup sources.list
-cat <<EOF > ${target}/etc/apt/sources.list || exit 1
-deb http://deb.debian.org/debian ${DEBIAN_VERSION} main contrib non-free non-free-firmware
-deb http://deb.debian.org/debian ${DEBIAN_VERSION}-updates main contrib non-free non-free-firmware
-deb http://security.debian.org/debian-security ${DEBIAN_VERSION}-security main contrib non-free non-free-firmware
-deb http://deb.debian.org/debian ${DEBIAN_VERSION}-backports main contrib non-free non-free-firmware
+notify setup sources list
+rm -f ${target}/etc/apt/sources.list
+mkdir -p ${target}/etc/apt/sources.list.d
+cat <<EOF > ${target}/etc/apt/sources.list.d/debian.sources || exit 1
+Types: deb
+URIs: http://deb.debian.org/debian/
+Suites: ${DEBIAN_VERSION}
+Components: main contrib non-free non-free-firmware
+Signed-By: /usr/share/keyrings/debian-archive-keyring.gpg
+
+Types: deb
+URIs: http://deb.debian.org/debian/
+Suites: ${DEBIAN_VERSION}-updates
+Components: main contrib non-free non-free-firmware
+Signed-By: /usr/share/keyrings/debian-archive-keyring.gpg
+
+Types: deb
+URIs: http://security.debian.org/debian-security/
+Suites: ${DEBIAN_VERSION}-security
+Components: main contrib non-free non-free-firmware
+Signed-By: /usr/share/keyrings/debian-archive-keyring.gpg
+EOF
+
+cat <<EOF > ${target}/etc/apt/sources.list.d/debian-backports.sources || exit 1
+Types: deb
+URIs: http://deb.debian.org/debian/
+Suites: ${DEBIAN_VERSION}-backports
+Components: main contrib non-free non-free-firmware
+Signed-By: /usr/share/keyrings/debian-archive-keyring.gpg
 EOF
 
 if [ "$SHARE_APT_ARCHIVE" = true ] ; then
@@ -421,6 +444,7 @@ fi
 
 notify install kernel and firmware on ${target}
 cat <<EOF > ${target}/tmp/packages.txt || exit 1
+btrfsmaintenance
 locales
 adduser
 passwd

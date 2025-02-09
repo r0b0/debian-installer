@@ -33,7 +33,7 @@ export default {
         TIMEZONE: undefined,
         ENABLE_SWAP: undefined,
         SWAP_SIZE: undefined,
-        NVIDIA_PACKAGE: undefined,
+        NVIDIA_PACKAGE: " ",  // will be changed in install()
       }
     }
   },
@@ -84,11 +84,6 @@ export default {
           }
           this.has_nvidia = response.has_nvidia;
           this.want_nvidia = response.has_nvidia;
-          if(this.want_nvidia) {
-            this.installer["NVIDIA_PACKAGE"] = "nvidia-driver";
-          } else {
-            this.installer["NVIDIA_PACKAGE"] = "";
-          }
 
           for(const [key, value] of Object.entries(this.installer)) {
             if(key in response.environ) {
@@ -354,7 +349,7 @@ export default {
   </main>
 
   <footer>
-    <span>Opinionated Debian Installer TESTING version 20250208a</span>
+    <span>Opinionated Debian Installer TESTING version 20250209a</span>
     <span>Installer &copy;2022-2025 <a href="https://github.com/r0b0/debian-installer">Robert T</a></span>
     <span>Banner &copy;2024 <a href="https://github.com/pccouper/trixie">Elise Couper</a></span>
   </footer>
