@@ -37,7 +37,7 @@ def login():
     has_efi = os.path.exists("/sys/firmware/efi")
     nvidia_detect = subprocess.run("nvidia-detect", capture_output=True, text=True)
     has_nvidia = False
-    if "No NVIDIA GPU detected" not in nvidia_detect.stdout:  # XXX not nice
+    if "No NVIDIA GPU detected" not in nvidia_detect.stdout and "nvidia-driver" in nvidia_detect.stdout:
         has_nvidia = True
 
     return {"hostname": hostname,

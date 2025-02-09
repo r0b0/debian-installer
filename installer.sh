@@ -339,6 +339,9 @@ if [ "$SHARE_APT_ARCHIVE" = true ] ; then
     fi
 fi
 
+notify enable 32bit
+chroot ${target}/ dpkg --add-architecture i386
+
 if grep -qs 'root:\$' ${target}/etc/shadow ; then
     echo root password already set up
 elif [ ! -z "${ROOT_PASSWORD}" ]; then
@@ -513,7 +516,7 @@ if [ ! -z "${NVIDIA_PACKAGE}" ]; then
   cat <<EOF > ${target}/etc/dracut.conf.d/10-nvidia.conf || exit 1
 install_items+=" /etc/modprobe.d/nvidia-blacklists-nouveau.conf /etc/modprobe.d/nvidia.conf /etc/modprobe.d/nvidia-options.conf "
 EOF
-  chroot ${target}/ apt-get install -t ${BACKPORTS_VERSION} -y "${NVIDIA_PACKAGE}" linux-headers-amd64 || exit 1
+  chroot ${target}/ apt-get install -t ${BACKPORTS_VERSION} -y "${NVIDIA_PACKAGE}" nvidia-driver-libs:i386 linux-headers-amd64 || exit 1
 fi
 
 notify umounting all filesystems

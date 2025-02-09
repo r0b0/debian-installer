@@ -44,9 +44,6 @@ export default {
         ret = false;
       }
       for(const [key, value] of Object.entries(this.installer)) {
-        if(key === "NVIDIA_PACKAGE") {
-          continue;  // XXX not nice
-        }
         if(typeof value === 'undefined') {
           ret = false;
           break;
@@ -87,6 +84,11 @@ export default {
           }
           this.has_nvidia = response.has_nvidia;
           this.want_nvidia = response.has_nvidia;
+          if(this.want_nvidia) {
+            this.installer["NVIDIA_PACKAGE"] = "nvidia-driver";
+          } else {
+            this.installer["NVIDIA_PACKAGE"] = "";
+          }
 
           for(const [key, value] of Object.entries(this.installer)) {
             if(key in response.environ) {
@@ -289,8 +291,8 @@ export default {
         <legend>Disk Encryption</legend>
         <Password v-model="installer.LUKS_PASSWORD" :disabled="running" :is-main="true" />
 
-        <input type="checkbox" v-model="installer.ENABLE_TPM" id="ENABLE_TPM" class="inline">
-        <label for="ENABLE_TPM" class="inline">Unlock disk with TPM</label>
+        <input type="checkbox" v-model="installer.ENABLE_TPM" id="ENABLE_TPM" class="inline mt-3">
+        <label for="ENABLE_TPM" class="inline mt-3">Unlock disk with TPM</label>
       </fieldset>
 
       <fieldset>
@@ -327,8 +329,8 @@ export default {
         <label for="SWAP_SIZE">Swap Size (GB)</label>
         <input type="number" id="SWAP_SIZE" v-model="installer.SWAP_SIZE" :disabled="installer.ENABLE_SWAP == 'none' || running">
 
-        <input type="checkbox" v-model="want_nvidia" id="WANT_NVIDIA" class="inline" :disabled="!has_nvidia">
-        <label for="WANT_NVIDIA" class="inline">Install the proprietary NVIDIA Accelerated Linux Graphics Driver</label>
+        <input type="checkbox" v-model="want_nvidia" id="WANT_NVIDIA" class="inline mt-3" :disabled="!has_nvidia || running">
+        <label for="WANT_NVIDIA" class="inline mt-3">Install the proprietary NVIDIA Accelerated Linux Graphics Driver</label>
       </fieldset>
 
       <fieldset>
@@ -338,7 +340,7 @@ export default {
             Install debian on {{ installer.DISK }} <b>OVERWRITING THE WHOLE DRIVE</b>
         </button>
         <br>
-        <button type="button" @click="clear()" class="red">Stop</button>
+        <button type="button" @click="clear()" class="mt-2 red">Stop</button>
       </fieldset>
 
       <fieldset>
@@ -361,7 +363,7 @@ export default {
     <p>
       Debian successfully installed. You can now turn off your computer, remove the installation media and start it again.
     </p>
-    <button class="right-align" @click="$refs.completed_dialog.close()">Close</button>
+    <button class="right-align mt-2" @click="$refs.completed_dialog.close()">Close</button>
   </dialog>
 </template>
 
@@ -411,11 +413,11 @@ label:not(.inline) {
 }
 
 .mt-2 {
-  margin-top: 12pt;
+  margin-top: 0.5em;
 }
 
-button {
-  margin-top: 0.5em;
+.mt-3 {
+  margin-top: 1em;
 }
 
 .right-align {

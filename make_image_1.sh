@@ -117,6 +117,9 @@ deb http://security.debian.org/debian-security ${DEBIAN_VERSION}-security main c
 deb http://deb.debian.org/debian ${DEBIAN_VERSION}-backports main contrib non-free non-free-firmware
 EOF
 
+notify enable 32bit
+chroot ${target}/ dpkg --add-architecture i386
+
 notify install required packages on ${target}
 cat <<EOF > ${target}/tmp/packages.txt
 locales
@@ -193,7 +196,7 @@ fi
 
 notify downloading remaining .deb files for the installer
 chroot ${target}/ apt-get install -y --download-only locales tasksel openssh-server
-chroot ${target}/ apt-get install -t ${BACKPORTS_VERSION} -y --download-only systemd-boot dracut linux-image-amd64 linux-headers-amd64 nvidia-driver
+chroot ${target}/ apt-get install -t ${BACKPORTS_VERSION} -y --download-only systemd-boot dracut linux-image-amd64 linux-headers-amd64 nvidia-driver nvidia-driver-libs:i386
 
 notify cleaning up
 rm -f ${target}/etc/machine-id
