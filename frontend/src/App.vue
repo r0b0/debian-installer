@@ -87,7 +87,10 @@ export default {
 
           for(const [key, value] of Object.entries(this.installer)) {
             if(key in response.environ) {
-              console.debug(`Setting ${key} from backend to ${response.environ[key]}`);
+              if(key === "NVIDIA_PACKAGE" && response.environ[key] === "") {
+                continue; // because empty value would prevent can_start()
+              }
+              console.debug(`Setting '${key}' from backend to '${response.environ[key]}'`);
               this.installer[key] = response.environ[key];
             }
           }
@@ -349,7 +352,7 @@ export default {
   </main>
 
   <footer>
-    <span>Opinionated Debian Installer TESTING version 20250209a</span>
+    <span>Opinionated Debian Installer TESTING version 20250215a</span>
     <span>Installer &copy;2022-2025 <a href="https://github.com/r0b0/debian-installer">Robert T</a></span>
     <span>Banner &copy;2024 <a href="https://github.com/pccouper/trixie">Elise Couper</a></span>
   </footer>

@@ -543,6 +543,9 @@ EOF
   chroot ${target}/ apt-get install -t ${BACKPORTS_VERSION} -y "${NVIDIA_PACKAGE}" nvidia-driver-libs:i386 linux-headers-amd64 || exit 1
 fi
 
+notify cleaning up
+chroot ${target}/ apt-get autoremove -y
+
 notify umounting all filesystems
 if [ "${ENABLE_SWAP}" == "partition" ]; then
     swapoff /dev/mapper/${swap_device}

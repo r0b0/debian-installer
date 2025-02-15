@@ -212,6 +212,7 @@ mkdir -p ${target}/etc/lightdm/lightdm.conf.d
 install_file etc/lightdm/lightdm.conf.d/10-autologin.conf
 
 notify cleaning up
+chroot ${target}/ apt-get autoremove -y
 rm -f ${target}/etc/machine-id
 rm -f ${target}/etc/crypttab
 rm -f ${target}/var/log/*log

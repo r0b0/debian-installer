@@ -223,6 +223,7 @@ chroot ${target}/ apt-get install -y --download-only locales tasksel openssh-ser
 chroot ${target}/ apt-get install -t ${BACKPORTS_VERSION} -y --download-only systemd-boot dracut linux-image-amd64 linux-headers-amd64 nvidia-driver nvidia-driver-libs:i386
 
 notify cleaning up
+chroot ${target}/ apt-get autoremove -y
 rm -f ${target}/etc/machine-id
 rm -f ${target}/etc/crypttab
 rm -f ${target}/var/log/*log
