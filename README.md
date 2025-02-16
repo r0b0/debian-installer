@@ -1,7 +1,7 @@
 # Opinionated Debian Installer
 
 This tool can be used to create a modern installation of Debian. 
-Our opinions of what a modern installation of Debian should look like in 2025 are as follows:
+Our opinions of what a modern installation of Debian should look like in 2025 are:
 
  - Debian 13 (Trixie)
  - Backports and non-free enabled
@@ -19,7 +19,11 @@ Our opinions of what a modern installation of Debian should look like in 2025 ar
 
 ## Downloads
 
-Coming soon.
+| Desktop environment | Download                                                                                                                                                                                                            | SHA-256 Checksum                                                        |
+|---------------------|---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|-------------------------------------------------------------------------|
+| KDE Plasma          | [opinionated-debian-installer-trixie-kde-plasma-20250216a.img (5.1GB)](https://objectstorage.eu-frankfurt-1.oraclecloud.com/n/fr2rf1wke5iq/b/public/o/opinionated-debian-installer-trixie-kde-plasma-20250216a.img) | 170e548e 366e9181 185e37cb 87a0c4a5 f4e81a3a 4e654601 a5a0db49 3d39a513 |
+| Gnome               | coming soon                                                                                                                                                                                                         |                                                                         |
+| Server              | coming soon                                                                                                                                                                                                         |                                                                         |
 
 ## Instructions
 
@@ -31,13 +35,13 @@ Coming soon.
 
 ## Screencast & Screenshot
 
-Video of installation of Debian with KDE Plasma:
-
-[![Watch the video](https://img.youtube.com/vi/sbnKvGMcagI/maxresdefault.jpg)](https://youtu.be/sbnKvGMcagI?si=W9NvZygB8Z7-LCT8&t=92)
-
 Screenshot of the full installer GUI:
 
 ![gui screenshot](readme-files/gui.png)
+
+Video of installation of Debian with KDE Plasma (Bookworm version):
+
+[![Watch the video](https://img.youtube.com/vi/sbnKvGMcagI/maxresdefault.jpg)](https://youtu.be/sbnKvGMcagI?si=W9NvZygB8Z7-LCT8&t=92)
 
 ## Details
 
