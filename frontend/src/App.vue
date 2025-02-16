@@ -44,6 +44,9 @@ export default {
         ret = false;
       }
       for(const [key, value] of Object.entries(this.installer)) {
+        if(key === "SWAP_SIZE" && this.installer["ENABLE_SWAP"] === "none") {
+          continue;
+        }
         if(typeof value === 'undefined') {
           ret = false;
           break;
@@ -89,6 +92,9 @@ export default {
             if(key in response.environ) {
               if(key === "NVIDIA_PACKAGE" && response.environ[key] === "") {
                 continue; // because empty value would prevent can_start()
+              } else if(key === "NVIDIA_PACKAGE" && response.environ[key].length > 0) {
+                this.want_nvidia = true;
+                this.has_nvidia = true;
               }
               console.debug(`Setting '${key}' from backend to '${response.environ[key]}'`);
               this.installer[key] = response.environ[key];
@@ -160,7 +166,9 @@ export default {
     },
     install() {
       this.running = true;
-      if(this.want_nvidia) {
+      if(this.installer["NVIDIA_PACKAGE"] !== " ") {
+        // we received a package name from the back-end, nothing to do here
+      } else if(this.want_nvidia) {
         this.installer["NVIDIA_PACKAGE"] = "nvidia-driver";
       } else {
         this.installer["NVIDIA_PACKAGE"] = "";
@@ -352,7 +360,7 @@ export default {
   </main>
 
   <footer>
-    <span>Opinionated Debian Installer TESTING version 20250215a</span>
+    <span>Opinionated Debian Installer TESTING version 20250216a</span>
     <span>Installer &copy;2022-2025 <a href="https://github.com/r0b0/debian-installer">Robert T</a></span>
     <span>Banner &copy;2024 <a href="https://github.com/pccouper/trixie">Elise Couper</a></span>
   </footer>
