@@ -12,7 +12,7 @@ jobs:
     - name: Set up Go
       uses: actions/setup-go@v5
       with:
-        go-version: '1.23.3'
+        go-version: '1.24'
         cache-dependency-path: frontend-tui/go.sum
 
     - name: Test
@@ -41,7 +41,7 @@ jobs:
     - name: Set up Node
       uses: actions/setup-node@v4
       with:
-        node-version: '18'
+        node-version: '22'
         cache: 'npm'
         cache-dependency-path: 'frontend/package-lock.json'
 

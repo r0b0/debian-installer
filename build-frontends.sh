@@ -1,6 +1,7 @@
 #!/bin/sh
 
 cd frontend
+rm -rf dist
 npm i
 npm run build
 
