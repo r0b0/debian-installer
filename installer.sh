@@ -13,6 +13,7 @@ HOSTNAME=debian13
 ENABLE_SWAP=partition
 SWAP_SIZE=2
 NVIDIA_PACKAGE=
+ENABLE_POPCON=false
 SSH_PUBLIC_KEY=
 AFTER_INSTALLED_CMD=
 fi
@@ -509,6 +510,16 @@ systemctl disable systemd-networkd.socket
 systemctl disable systemd-networkd-wait-online.service
 EOF
 chroot ${target}/ bash /tmp/run2.sh || exit 1
+
+if [ "$ENABLE_POPCON" = true ] ; then
+  notify enabling popularity-contest
+  cat <<EOF > ${target}/tmp/run3.sh || exit 1
+#!/bin/bash
+echo "popularity-contest      popularity-contest/participate  boolean true" | debconf-set-selections
+apt-get install -y popularity-contest
+EOF
+  chroot ${target}/ bash /tmp/run3.sh || exit 1
+fi
 
 if [ ! -z "${SSH_PUBLIC_KEY}" ]; then
     notify adding ssh public key to user and root authorized_keys file

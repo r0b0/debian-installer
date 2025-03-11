@@ -220,7 +220,7 @@ fi
 
 notify downloading remaining .deb files for the installer
 chroot ${target}/ apt-get install -y --download-only locales tasksel openssh-server
-chroot ${target}/ apt-get install -t ${BACKPORTS_VERSION} -y --download-only systemd-boot dracut linux-image-amd64 linux-headers-amd64 nvidia-driver nvidia-driver-libs:i386
+chroot ${target}/ apt-get install -t ${BACKPORTS_VERSION} -y --download-only systemd-boot dracut linux-image-amd64 linux-headers-amd64 nvidia-driver nvidia-driver-libs:i386 popularity-contest
 
 notify cleaning up
 chroot ${target}/ apt-get autoremove -y

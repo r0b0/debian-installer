@@ -1,6 +1,6 @@
 module github.com/r0b0/debian-installer/frontend-tui
 
-go 1.24.0
+go 1.24.1
 
 require (
 	github.com/gdamore/tcell/v2 v2.8.1

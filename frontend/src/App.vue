@@ -34,6 +34,7 @@ export default {
         ENABLE_SWAP: undefined,
         SWAP_SIZE: undefined,
         NVIDIA_PACKAGE: " ",  // will be changed in install()
+        ENABLE_POPCON: undefined,
       }
     }
   },
@@ -277,10 +278,9 @@ export default {
 
   <main>
     <form>
+      <div class="red">{{error_message}}</div>
       <fieldset>
         <legend>Installation Target Device</legend>
-        <div class="red">{{error_message}}</div>
-
         <label for="DISK">Device for Installation</label>
         <select :disabled="block_devices.length==0 || running" id="DISK"  v-model="installer.DISK">
           <option v-for="item in block_devices" :value="item.path" :disabled="!item.available">
@@ -337,6 +337,10 @@ export default {
 
         <input type="checkbox" v-model="want_nvidia" id="WANT_NVIDIA" class="inline mt-3" :disabled="!has_nvidia || running">
         <label for="WANT_NVIDIA" class="inline mt-3">Install the proprietary NVIDIA Accelerated Linux Graphics Driver</label>
+
+        <br>
+        <input type="checkbox" v-model="installer.ENABLE_POPCON" id="ENABLE_POPCON" class="inline mt-3" :disabled="running">
+        <label for="ENABLE_POPCON" class="inline mt-3">Participate in the <a href="https://popcon.debian.org/" target="_blank">debian package usage survey</a></label>
       </fieldset>
 
       <fieldset>
@@ -360,7 +364,7 @@ export default {
   </main>
 
   <footer>
-    <span>Opinionated Debian Installer TESTING version 20250216a</span>
+    <span>Opinionated Debian Installer TESTING version 20250311a</span>
     <span>Installer &copy;2022-2025 <a href="https://github.com/r0b0/debian-installer">Robert T</a></span>
     <span>Banner &copy;2024 <a href="https://github.com/pccouper/trixie">Elise Couper</a></span>
   </footer>
