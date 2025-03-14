@@ -19,11 +19,11 @@ Our opinions of what a modern installation of Debian should look like in 2025 ar
 
 ## Downloads
 
-| Desktop environment | Download                                                                                                                                                                                                            | SHA-256 Checksum                                                        |
-|---------------------|---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|-------------------------------------------------------------------------|
-| KDE Plasma          | [opinionated-debian-installer-trixie-kde-plasma-20250216a.img (5.1GB)](https://objectstorage.eu-frankfurt-1.oraclecloud.com/n/fr2rf1wke5iq/b/public/o/opinionated-debian-installer-trixie-kde-plasma-20250216a.img) | 170e548e 366e9181 185e37cb 87a0c4a5 f4e81a3a 4e654601 a5a0db49 3d39a513 |
-| Gnome               | coming soon                                                                                                                                                                                                         |                                                                         |
-| Server              | coming soon                                                                                                                                                                                                         |                                                                         |
+| Desktop environment | Download                                                                                                                                                               | SHA-256 Checksum                                                        |
+|---------------------|------------------------------------------------------------------------------------------------------------------------------------------------------------------------|-------------------------------------------------------------------------|
+| KDE Plasma          | [opinionated-debian-installer-trixie-kde-plasma-20250314a.img (5.0GB)](https://debian-installer.lamac.cc/opinionated-debian-installer-trixie-kde-plasma-20250314a.img) | 9fa0417c 2770c42e d02c897a c3165920 f485672f a969b6a1 49fe0038 eba3b822 |
+| Gnome               | [opinionated-debian-installer-trixie-gnome-20250314a.img (4.2GB)](https://debian-installer.lamac.cc/opinionated-debian-installer-trixie-gnome-20250314a.img)           | d8c95969 c15d7401 6ece243c 11c724b2 1b139553 ece215bd 6443f6ab 68ae7771 |
+| Server              | coming soon                                                                                                                                                            |                                                                         |
 
 ## Instructions
 
