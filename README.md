@@ -23,7 +23,7 @@ Our opinions of what a modern installation of Debian should look like in 2025 ar
 |---------------------|------------------------------------------------------------------------------------------------------------------------------------------------------------------------|-------------------------------------------------------------------------|
 | KDE Plasma          | [opinionated-debian-installer-trixie-kde-plasma-20250314a.img (5.0GB)](https://debian-installer.lamac.cc/opinionated-debian-installer-trixie-kde-plasma-20250314a.img) | 9fa0417c 2770c42e d02c897a c3165920 f485672f a969b6a1 49fe0038 eba3b822 |
 | Gnome               | [opinionated-debian-installer-trixie-gnome-20250314a.img (4.2GB)](https://debian-installer.lamac.cc/opinionated-debian-installer-trixie-gnome-20250314a.img)           | d8c95969 c15d7401 6ece243c 11c724b2 1b139553 ece215bd 6443f6ab 68ae7771 |
-| Server              | coming soon                                                                                                                                                            |                                                                         |
+| Server              | [opinionated-debian-installer-trixie-server-20250413a.img (2.9GB)](https://debian-installer.lamac.cc/opinionated-debian-installer-trixie-server-20250413a.img)         | 30087ea9 7407b62b c733bd2f bfe195fc 1675a720 18d3e492 d6c787c2 05008a73 |
 
 ## Instructions
 
