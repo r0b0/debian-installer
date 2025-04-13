@@ -3,8 +3,7 @@
 # Kernel command line parameters: rd.overlay.lower, rd.overlay.upper, rd.overlay.work
 
 check() {
-    [[ $hostonly ]] && return 1
-    return 255
+    return 0
 }
 
 depends() {
