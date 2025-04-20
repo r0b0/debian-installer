@@ -6,7 +6,7 @@ function notify {
 function shrink_btrfs_filesystem {
   local filesystem=$1
   notify balancing and shrinking the filesystem ${filesystem}
-  btrfs balance start -dusage=90 ${filesystem}
+  btrfs balance start -dusage=90 -musage=90 ${filesystem}
   true
   while [ $? -eq 0 ]; do
       btrfs filesystem resize -1G ${filesystem}

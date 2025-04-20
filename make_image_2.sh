@@ -160,7 +160,7 @@ install_file usr/lib/dracut/modules.d/90overlay-generic
 mkdir -p ${target}/etc/dracut.conf.d
 cat <<EOF > ${target}/etc/dracut.conf.d/90-odin.conf
 add_dracutmodules+=" systemd overlay-generic "
-omit_dracutmodules+=" lvm dm crypt dmraid mdraid "
+omit_dracutmodules+=" lvm dmraid mdraid "
 kernel_cmdline="${kernel_params}"
 use_fstab="yes"
 add_fstab+=" /etc/fstab "

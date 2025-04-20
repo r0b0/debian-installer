@@ -187,7 +187,7 @@ if [ -e /dev/disk/by-partlabel/BaseImage ]; then
     if [ ! -f base_image_copied.txt ]; then
         notify copy base image to ${root_device}
         wipefs -a ${root_device} || exit 1
-        dd if=/dev/disk/by-partlabel/BaseImage of=${root_device} bs=4M oflag=sync status=progress || exit 1
+        dd if=/dev/disk/by-partlabel/BaseImage of=${root_device} bs=256M oflag=dsync status=progress || exit 1
         notify check the filesystem on root
         btrfs check ${root_device} || exit 1
         notify change the filesystem uuid on root

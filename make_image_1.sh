@@ -219,8 +219,16 @@ else
 fi
 
 notify downloading remaining .deb files for the installer
-chroot ${target}/ apt-get install -y --download-only locales tasksel openssh-server
-chroot ${target}/ apt-get install -t ${BACKPORTS_VERSION} -y --download-only systemd-boot dracut linux-image-amd64 linux-headers-amd64 nvidia-driver nvidia-driver-libs:i386 popularity-contest
+cat <<EOF > ${target}/tmp/run3.sh
+#!/bin/bash
+export DEBIAN_FRONTEND=noninteractive
+apt-get install -y --download-only locales tasksel openssh-server
+apt-get install -t ${BACKPORTS_VERSION} -y --download-only systemd-boot dracut linux-image-amd64 linux-headers-amd64 popularity-contest
+if (dpkg --get-selections | grep -w install |grep -qs "task.*desktop"); then
+  apt-get install -t ${BACKPORTS_VERSION} -y --download-only nvidia-driver nvidia-driver-libs:i386
+fi
+EOF
+chroot ${target}/ bash /tmp/run3.sh
 
 notify cleaning up
 chroot ${target}/ apt-get autoremove -y

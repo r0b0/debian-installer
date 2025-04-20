@@ -21,14 +21,14 @@ Our opinions of what a modern installation of Debian should look like in 2025 ar
 
 | Desktop environment | Download                                                                                                                                                               | SHA-256 Checksum                                                        |
 |---------------------|------------------------------------------------------------------------------------------------------------------------------------------------------------------------|-------------------------------------------------------------------------|
-| KDE Plasma          | [opinionated-debian-installer-trixie-kde-plasma-20250314a.img (5.0GB)](https://debian-installer.lamac.cc/opinionated-debian-installer-trixie-kde-plasma-20250314a.img) | 9fa0417c 2770c42e d02c897a c3165920 f485672f a969b6a1 49fe0038 eba3b822 |
+| KDE Plasma          | [opinionated-debian-installer-trixie-kde-plasma-20250420a.img (5.0GB)](https://debian-installer.lamac.cc/opinionated-debian-installer-trixie-kde-plasma-20250420a.img) | b56a0506 8e9f49ec 83345924 d288917b 0da0eb9f 93c4c518 aa258b05 592df2ae |
 | Gnome               | [opinionated-debian-installer-trixie-gnome-20250314a.img (4.2GB)](https://debian-installer.lamac.cc/opinionated-debian-installer-trixie-gnome-20250314a.img)           | d8c95969 c15d7401 6ece243c 11c724b2 1b139553 ece215bd 6443f6ab 68ae7771 |
 | Server              | [opinionated-debian-installer-trixie-server-20250413a.img (2.9GB)](https://debian-installer.lamac.cc/opinionated-debian-installer-trixie-server-20250413a.img)         | 30087ea9 7407b62b c733bd2f bfe195fc 1675a720 18d3e492 d6c787c2 05008a73 |
 
 ## Instructions
 
 1. Download one of the live image files from the table above
-2. Write the image file to a USB flash drive. **Do not use ventoy** or similar "clever" tools - they are not compatible with these images. If you need a GUI, use [etcher](https://github.com/balena-io/etcher/releases) or [win32DiskImager](https://sourceforge.net/projects/win32diskimager/files/Archive/) or just use dd - `dd if=opinionated-debian-installer*.img of=/dev/sdX bs=8MB status=progress oflag=sync` where sdX is your USB flash drive 
+2. Write the image file to a USB flash drive. **Do not use ventoy** or similar "clever" tools - they are not compatible with these images. If you need a GUI, use [etcher](https://github.com/balena-io/etcher/releases) or [win32DiskImager](https://sourceforge.net/projects/win32diskimager/files/Archive/) or just use dd - `dd if=opinionated-debian-installer*.img of=/dev/sdX bs=256M oflag=dsync status=progress` where sdX is your USB flash drive 
 3. Boot from the USB flash drive
 4. Start the installer icon from the desktop/dash, fill in the form in the browser and press the big _Install_ button
 5. Reboot and enjoy
