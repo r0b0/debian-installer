@@ -378,6 +378,7 @@ export default {
 </template>
 
 <style>
+@import "./assets/classless.css";
 @import './assets/base.css';
 
 #app {
@@ -418,8 +419,8 @@ textarea {
   height: 20em;
 }
 
-label:not(.inline) {
-  display: block;
+label.inline {
+  display: inline;
 }
 
 .mt-2 {
