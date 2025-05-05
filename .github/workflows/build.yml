@@ -4,7 +4,7 @@ on:  [push, pull_request]
 
 jobs:
 
-  build-tui:
+  build-backend-tui:
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v4
@@ -25,13 +25,13 @@ jobs:
         cd frontend-tui
         export GOARCH=amd64
         export CGO_ENABLED=0
-        go build -v -ldflags="-s -w" -o opinionated-installer-tui
+        go build -v -ldflags="-s -w" -o opinionated-installer
 
     - name: 'Upload Artifact'
       uses: actions/upload-artifact@v4
       with:
-        name: tui-frontend-binary
-        path: frontend-tui/opinionated-installer-tui
+        name: tui-and-backend-binary
+        path: frontend-tui/opinionated-installer
 
   build-web-gui:
     runs-on: ubuntu-latest

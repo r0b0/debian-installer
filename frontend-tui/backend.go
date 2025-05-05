@@ -3,21 +3,22 @@ package main
 import (
 	"encoding/json"
 	"errors"
-	"fmt"
 	"io"
 	"log/slog"
 	"net/http"
 	"os"
 	"os/exec"
+	"slices"
+	"strings"
 
 	"golang.org/x/net/websocket"
 )
 
 type BackendContext struct {
 	runningCmd        *exec.Cmd
-	runningParameters []string
+	runningParameters map[string]string
 	cmdOutput         string
-	outputReaders     []io.Reader
+	outputWriters     []io.WriteCloser
 }
 
 func HandleCors(pattern string, next func(w http.ResponseWriter, r *http.Request)) {
@@ -39,24 +40,32 @@ func writeJson(w http.ResponseWriter, data any) error {
 	return err
 }
 
-func httpError(w http.ResponseWriter, code int, message string, args ...any) {
-	slog.Error(message, args)
-	http.Error(w, message, code)
+func runAndGiveStdout(command ...string) ([]byte, error) {
+	path, err := exec.LookPath(command[0])
+	if err != nil {
+		return nil, err
+	}
+	out, err := exec.Command(path, command[1:]...).Output()
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
 }
 
 func (c *BackendContext) Login(w http.ResponseWriter, r *http.Request) {
 	type login struct {
-		Hostname  string   `json:"hostname"`
-		HasEfi    bool     `json:"has_efi"`
-		HasNvidia bool     `json:"has_nvidia"`
-		Running   bool     `json:"running"`
-		Environ   []string `json:"environ"`
+		Hostname  string            `json:"hostname"`
+		HasEfi    bool              `json:"has_efi"`
+		HasNvidia bool              `json:"has_nvidia"`
+		Running   bool              `json:"running"`
+		Environ   map[string]string `json:"environ"`
 	}
 	data := login{}
 	var err error
 	data.Hostname, err = os.Hostname()
 	if err != nil {
-		httpError(w, 500, "failed to detect hostname", "error", err)
+		slog.Error("failed to detect hostname", "error", err)
+		http.Error(w, "failed to detect hostname", 500)
 		return
 	}
 	_, err = os.Stat("/sys/firmware/efi")
@@ -65,27 +74,101 @@ func (c *BackendContext) Login(w http.ResponseWriter, r *http.Request) {
 	} else if os.IsNotExist(err) {
 		data.HasEfi = false
 	} else {
-		httpError(w, 500, "failed to detect efi", "error", err)
+		slog.Error("failed to detect efi", "error", err)
+		http.Error(w, "failed to detect efi", 500)
 		return
 	}
-	data.HasNvidia = false // TODO
-	data.Running = c.runningCmd.Process != nil
+	data.HasNvidia = detectNvidia()
+	data.Running = c.runningCmd != nil && c.runningCmd.Process != nil
 	data.Environ = c.runningParameters
 	err = writeJson(w, data)
 	if err != nil {
-		httpError(w, 500, "failed to write data", "error", err)
+		slog.Error("failed to write data", "error", err)
+		http.Error(w, "failed to write data", 500)
 		return
 	}
 }
 
+func detectNvidia() bool {
+	out, err := runAndGiveStdout("nvidia-detect")
+	if err != nil {
+		slog.Warn("failed to run nvidia-detect, assuming no nvidia", "error", err)
+		return false
+	}
+	outString := string(out)
+	if strings.Contains(outString, "No NVIDIA GPU detected") {
+		return false
+	}
+	if strings.Contains(outString, "nvidia-driver") {
+		return true
+	}
+	return false
+}
+
 func (c *BackendContext) GetBlockDevices(w http.ResponseWriter, r *http.Request) {
-	// TODO
-	http.Error(w, "not implemented", 501)
+	out, err := runAndGiveStdout("lsblk", "-OJ")
+	if err != nil {
+		slog.Error("failed to execute lsblk", "error", err)
+		http.Error(w, "failed to execute lsblk", 500)
+		return
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.Write(out)
 }
 
 func (c *BackendContext) Install(w http.ResponseWriter, r *http.Request) {
-	// TODO
-	http.Error(w, "not implemented", 501)
+	if c.runningCmd != nil {
+		slog.Error("already running")
+		http.Error(w, "already running", 409)
+		return
+	}
+	err := r.ParseMultipartForm(1024 * 1024)
+	if err != nil {
+		slog.Error("failed to parse form", "error", err)
+		http.Error(w, "failed to parse form", 400)
+		return
+	}
+	// slog.Debug("install", "form", r.Form, "postform", r.PostForm)
+	for k, v := range r.Form {
+		// slog.Debug("form value", "key", k, "value", v)
+		c.runningParameters[k] = v[0]
+	}
+	c.doRunInstall()
+}
+
+type wsWriter struct {
+	app *BackendContext
+}
+
+func (w wsWriter) Write(p []byte) (int, error) {
+	slog.Debug("writing a message to all web sockets", "data", p)
+	toRemove := make([]io.WriteCloser, 0)
+	for i, ws := range w.app.outputWriters {
+		_, err := ws.Write(p)
+		if err != nil {
+			slog.Warn("failed to write to websocket, closing", "socket_nr", i, "error", err)
+			toRemove = append(toRemove, ws)
+		}
+	}
+	for _, ws := range toRemove {
+		slog.Debug("deleting", "socket", ws)
+		w.app.outputWriters = slices.DeleteFunc(w.app.outputWriters, func(closer io.WriteCloser) bool {
+			return closer == ws
+		})
+
+	}
+	return len(p), nil
+}
+
+func (c *BackendContext) doRunInstall() {
+	c.runningCmd = exec.Command(os.Getenv("INSTALLER_SCRIPT"))
+	writer := wsWriter{c}
+	c.runningCmd.Stderr = writer
+	c.runningCmd.Stdout = writer
+	err := c.runningCmd.Start()
+	if err != nil {
+		slog.Error("failed to start the installer script", "error", err)
+	}
 }
 
 func (c *BackendContext) Clear(w http.ResponseWriter, r *http.Request) {
@@ -104,15 +187,23 @@ func (c *BackendContext) DownloadLog(w http.ResponseWriter, r *http.Request) {
 }
 
 func (c *BackendContext) GetProcessOutput(ws *websocket.Conn) {
-	fmt.Fprintf(ws, "not implemented")
+	c.outputWriters = append(c.outputWriters, ws)
+	// TODO close this when done
+	n := make(chan int)
+	_ = <-n
 }
 
 func Backend(listenAddr *string) {
+	slog.SetLogLoggerLevel(slog.LevelDebug)
 	app := BackendContext{
-		runningCmd:        exec.Command(os.Getenv("INSTALLER_SCRIPT")),
-		runningParameters: os.Environ(),
+		runningCmd:        nil,
+		runningParameters: map[string]string{"NON_INTERACTIVE": "yes"},
 		cmdOutput:         "",
-		outputReaders:     make([]io.Reader, 0),
+		outputWriters:     make([]io.WriteCloser, 0),
+	}
+	for _, s := range os.Environ() {
+		keyValue := strings.Split(s, "=")
+		app.runningParameters[keyValue[0]] = keyValue[1]
 	}
 	HandleCors("/login", app.Login)
 	HandleCors("/block_devices", app.GetBlockDevices)
