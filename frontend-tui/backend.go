@@ -3,12 +3,10 @@ package main
 import (
 	"encoding/json"
 	"errors"
-	"io"
 	"log/slog"
 	"net/http"
 	"os"
 	"os/exec"
-	"slices"
 	"strings"
 
 	"golang.org/x/net/websocket"
@@ -18,7 +16,8 @@ type BackendContext struct {
 	runningCmd        *exec.Cmd
 	runningParameters map[string]string
 	cmdOutput         string
-	outputWriters     []io.WriteCloser
+	websockets        map[string]*websocket.Conn
+	wsHandlers        map[string]chan string
 }
 
 func HandleCors(pattern string, next func(w http.ResponseWriter, r *http.Request)) {
@@ -136,35 +135,26 @@ func (c *BackendContext) Install(w http.ResponseWriter, r *http.Request) {
 	c.doRunInstall()
 }
 
-type wsWriter struct {
-	app *BackendContext
-}
-
-func (w wsWriter) Write(p []byte) (int, error) {
+func (c *BackendContext) Write(p []byte) (int, error) {
 	slog.Debug("writing a message to all web sockets", "data", p)
-	toRemove := make([]io.WriteCloser, 0)
-	for i, ws := range w.app.outputWriters {
+
+	for name, ws := range c.websockets {
 		_, err := ws.Write(p)
 		if err != nil {
-			slog.Warn("failed to write to websocket, closing", "socket_nr", i, "error", err)
-			toRemove = append(toRemove, ws)
+			slog.Warn("failed to write to websocket, closing", "socket_addr", name, "error", err)
+			done := c.wsHandlers[name]
+			done <- name
+			delete(c.websockets, name)
+			delete(c.wsHandlers, name)
 		}
-	}
-	for _, ws := range toRemove {
-		slog.Debug("deleting", "socket", ws)
-		w.app.outputWriters = slices.DeleteFunc(w.app.outputWriters, func(closer io.WriteCloser) bool {
-			return closer == ws
-		})
-
 	}
 	return len(p), nil
 }
 
 func (c *BackendContext) doRunInstall() {
 	c.runningCmd = exec.Command(os.Getenv("INSTALLER_SCRIPT"))
-	writer := wsWriter{c}
-	c.runningCmd.Stderr = writer
-	c.runningCmd.Stdout = writer
+	c.runningCmd.Stderr = c
+	c.runningCmd.Stdout = c
 	err := c.runningCmd.Start()
 	if err != nil {
 		slog.Error("failed to start the installer script", "error", err)
@@ -187,10 +177,17 @@ func (c *BackendContext) DownloadLog(w http.ResponseWriter, r *http.Request) {
 }
 
 func (c *BackendContext) GetProcessOutput(ws *websocket.Conn) {
-	c.outputWriters = append(c.outputWriters, ws)
-	// TODO close this when done
-	n := make(chan int)
-	_ = <-n
+	done := c.addWebsocket(ws)
+	name := <-done
+	slog.Debug("closing websocket connection", "name", name)
+}
+
+func (c *BackendContext) addWebsocket(ws *websocket.Conn) chan string {
+	name := ws.RemoteAddr().String()
+	c.websockets[name] = ws
+	n := make(chan string)
+	c.wsHandlers[name] = n
+	return n
 }
 
 func Backend(listenAddr *string) {
@@ -199,7 +196,8 @@ func Backend(listenAddr *string) {
 		runningCmd:        nil,
 		runningParameters: map[string]string{"NON_INTERACTIVE": "yes"},
 		cmdOutput:         "",
-		outputWriters:     make([]io.WriteCloser, 0),
+		websockets:        make(map[string]*websocket.Conn),
+		wsHandlers:        make(map[string]chan string),
 	}
 	for _, s := range os.Environ() {
 		keyValue := strings.Split(s, "=")
