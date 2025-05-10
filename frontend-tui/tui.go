@@ -1,12 +1,12 @@
 package main
 
 import (
-    "fmt"
-    "github.com/gdamore/tcell/v2"
-    "github.com/rivo/tview"
-    "io"
-    "net/url"
-    "strconv"
+	"fmt"
+	"github.com/gdamore/tcell/v2"
+	"github.com/rivo/tview"
+	"io"
+	"net/url"
+	"strconv"
 )
 
 func LOG(l io.Writer, format string, args ...any) {

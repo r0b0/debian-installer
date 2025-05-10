@@ -12,7 +12,8 @@ func main() {
 	tuiBaseUrlString := tuiCmd.String("baseUrl", "http://localhost:5000", "base URL of the web service")
 
 	backendCmd := flag.NewFlagSet("backend", flag.ExitOnError)
-	backendAddr := backendCmd.String("addr", "localhost:5000", "listen address for the web server")
+	backendPort := backendCmd.Int("listenPort", 5000, "listen tcp port for the web server")
+	backendStatic := backendCmd.String("staticHtmlFolder", "/var/www/html/opinionated-debian-installer/", "folder with static html content")
 
 	if len(os.Args) < 2 {
 		fmt.Println("expected 'tui' or 'backend' subcommands")
@@ -30,7 +31,12 @@ func main() {
 		return
 
 	case "backend":
-		Backend(backendAddr)
+		err := backendCmd.Parse(os.Args[2:])
+		if errors.Is(err, flag.ErrHelp) {
+			flag.Usage()
+			os.Exit(0)
+		}
+		Backend(backendPort, backendStatic)
 		return
 
 	default:
