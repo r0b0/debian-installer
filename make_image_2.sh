@@ -171,17 +171,15 @@ EOF
 
 notify install required packages on ${target}
 mkdir -p ${target}/etc/systemd/system
-install_file etc/systemd/system/lighttpd.service
 cat <<EOF > ${target}/tmp/run1.sh
 #!/bin/bash
 export DEBIAN_FRONTEND=noninteractive
 apt-get update -y
 apt-get upgrade -y
-apt-get install -y  debootstrap uuid-runtime lighttpd python3-pip python3-venv curl
-apt-get install -y -t ${BACKPORTS_VERSION} systemd-boot systemd-repart libsystemd-dev dracut cryptsetup python3-systemd nvidia-detect
+apt-get install -y  debootstrap uuid-runtime curl
+apt-get install -y -t ${BACKPORTS_VERSION} systemd-boot systemd-repart libsystemd-dev dracut cryptsetup nvidia-detect
 apt-get purge initramfs-tools initramfs-tools-core -y
 bootctl install
-systemctl enable lighttpd
 systemctl enable NetworkManager.service
 systemctl disable systemd-networkd.service  # seems to fight with NetworkManager
 systemctl disable systemd-networkd.socket
@@ -189,9 +187,6 @@ systemctl disable systemd-networkd-wait-online.service
 systemctl mask systemd-networkd-wait-online.service
 systemctl disable apt-daily-upgrade.timer
 systemctl disable apt-daily.timer
-python3 -m venv /opt/installer-venv
-source /opt/installer-venv/bin/activate
-pip install flask flask-sock flask-cors systemd-python
 EOF
 chroot ${target}/ bash /tmp/run1.sh
 
@@ -226,7 +221,7 @@ cp -r ${SCRIPT_DIR}/frontend/dist/* ${SCRIPT_DIR}/installer-files/var/www/html/o
 notify copying the opinionated debian installer to ${target}
 cp ${SCRIPT_DIR}/installer.sh ${target}/
 chmod +x ${target}/installer.sh
-install_file backend.py
+mkdir -p ${target}/var/www/html
 install_file var/www/html/opinionated-debian-installer
 install_file etc/systemd/system/installer_backend.service
 install_file etc/systemd/system/link_volatile_root.service
@@ -237,8 +232,8 @@ chroot ${target}/ systemctl enable link_volatile_root
 chroot ${target}/ systemctl enable grow_overlay_top_filesystem.service
 
 notify installing tui frontend
-cp ${SCRIPT_DIR}/frontend-tui/opinionated-installer-tui ${target}/sbin/opinionated-installer-tui
-chmod +x ${target}/sbin/opinionated-installer-tui
+cp ${SCRIPT_DIR}/frontend-tui/opinionated-installer ${target}/sbin/opinionated-installer
+chmod +x ${target}/sbin/opinionated-installer
 install_file etc/systemd/system/installer_tui.service
 cat <<EOF > ${target}/tmp/run1.sh
 if systemctl is-enabled display-manager.service ; then

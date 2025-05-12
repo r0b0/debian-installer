@@ -26,6 +26,7 @@ type BackendContext struct {
 }
 
 func HandleCors(pattern string, next func(w http.ResponseWriter, r *http.Request)) {
+	// TODO no need for CORS now
 	http.HandleFunc(pattern, func(writer http.ResponseWriter, request *http.Request) {
 		writer.Header().Set("Access-Control-Allow-Origin", "*")
 		writer.Header().Set("Access-Control-Allow-Methods", "GET, POST, OPTIONS, PUT, DELETE")
@@ -169,6 +170,9 @@ func (c *BackendContext) doRunInstall() {
 	c.runningCmd = exec.CommandContext(c.ctx, os.Getenv("INSTALLER_SCRIPT"))
 	c.runningCmd.Stderr = c
 	c.runningCmd.Stdout = c
+	for k, v := range c.runningParameters {
+		c.runningCmd.Env = append(c.runningCmd.Env, fmt.Sprintf("%s=%s", k, v))
+	}
 	err := c.runningCmd.Start()
 	if err != nil {
 		slog.Error("failed to start the installer script", "error", err)
@@ -306,8 +310,13 @@ func Backend(listenPort *int, staticPath *string) {
 		app.doRunInstall()
 	}
 
+	err := SystemdNotifyReady()
+	if err != nil {
+		slog.Error("failed to notify systemd", "error", err)
+	}
+
 	slog.Info("Starting backend http server", "backendIp", backendIp, "port", *listenPort)
-	err := http.ListenAndServe(fmt.Sprintf("%s:%d", backendIp, *listenPort), nil)
+	err = http.ListenAndServe(fmt.Sprintf("%s:%d", backendIp, *listenPort), nil)
 	if errors.Is(err, http.ErrServerClosed) {
 		slog.Info("Server closed")
 	} else {

@@ -77,7 +77,7 @@ You have several options to access the installer.
 Assuming the IP address of the installed machine is 192.168.1.29 and you can reach it from your PC:
 
 * Use the web interface in a browser on a PC - open `http://192.168.1.29/opinionated-debian-installer/`
-* Use the text mode interface - start `opinionated-installer-tui -baseUrl http://192.168.1.29:5000`
+* Use the text mode interface - start `opinionated-installer tui -baseUrl http://192.168.1.29:5000`
 * Use curl - again, see the [installer.ini](installer-files/boot/efi/installer.ini) file for list of all options for the form data in -F parameters:
 
       curl -v -F "DISK=/dev/vda" -F "USER_PASSWORD=hunter2" \
@@ -155,20 +155,20 @@ Run the following commands to build it:
     cd frontend
     npm run build
 
-### Building the Text-User-Interface Front-end
+### Building the HTTP Backend and the Text-User-Interface Frontend
 
-The TUI front-end is a [go](https://go.dev/) application.
+The HTTP backend and TUI frontend is a [go](https://go.dev/) application.
 Run the following commands to build it:
 
     cd frontend-tui
-    go build -o opinionated-installer-tui
+    go build -o opinionated-installer
 
 ### Configuration Flow
 
 ```mermaid
 flowchart LR
     A[installer.ini] -->|EnvironmentFile| B(installer_backend.service)
-    B -->|ExecStart| C[backend.py]
+    B -->|ExecStart| C[backend]
     D(Web Frontend) --->|HTTP POST| C
     E(TUI Frontend) --->|HTTP POST| C
     G(curl) --->|HTTP POST| C
@@ -179,7 +179,7 @@ flowchart LR
 
 ```mermaid
 flowchart RL
-    C[backend.py] -->|stdout| B(installer_backend.service)
+    C[backend] -->|stdout| B(installer_backend.service)
     C --->|websocket| D(Web Frontend)
     C --->|websocket| E(TUI Frontend)
     C --->|HTTP GET| G(curl)

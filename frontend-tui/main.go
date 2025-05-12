@@ -4,6 +4,7 @@ import (
 	"errors"
 	"flag"
 	"fmt"
+	"net"
 	"os"
 )
 
@@ -43,4 +44,25 @@ func main() {
 		flag.Usage()
 		os.Exit(3)
 	}
+}
+
+func SystemdNotifyReady() error {
+	socketName := os.Getenv("NOTIFY_SOCKET")
+	if socketName == "" {
+		return nil
+	}
+	systemdSocket := &net.UnixAddr{
+		Name: socketName,
+		Net:  "unixgram",
+	}
+	message := "READY=1"
+	conn, err := net.DialUnix(systemdSocket.Net, nil, systemdSocket)
+	if err != nil {
+		return err
+	}
+	defer conn.Close()
+	if _, err = conn.Write([]byte(message)); err != nil {
+		return err
+	}
+	return nil
 }

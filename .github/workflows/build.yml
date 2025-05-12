@@ -1,10 +1,10 @@
-name: Unit test and build
+name: Unit test and build compiled components
 
 on:  [push, pull_request]
 
 jobs:
 
-  build-backend-tui:
+  build-backend:
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v4
@@ -12,7 +12,7 @@ jobs:
     - name: Set up Go
       uses: actions/setup-go@v5
       with:
-        go-version: '1.24.1'
+        go-version: '1.24.3'
         cache-dependency-path: frontend-tui/go.sum
 
     - name: Test
@@ -30,7 +30,7 @@ jobs:
     - name: 'Upload Artifact'
       uses: actions/upload-artifact@v4
       with:
-        name: tui-and-backend-binary
+        name: opinionated-installer
         path: frontend-tui/opinionated-installer
 
   build-web-gui:

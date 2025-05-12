@@ -117,6 +117,8 @@ func Tui(baseUrlString *string) {
 		SetTitleColor(greenColour).
 		SetTitleAlign(tview.AlignCenter)
 
+	SystemdNotifyReady()
+
 	if err := app.SetRoot(grid, true).EnableMouse(true).SetFocus(grid).Run(); err != nil {
 		panic(err)
 	}
