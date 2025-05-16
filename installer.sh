@@ -151,11 +151,15 @@ if [ ! -f $KEYFILE ]; then
     dd if=/dev/random of=${KEYFILE} bs=512 count=1 || exit 1
     notify "remove any old luks on ${root_partition} (root)"
     cryptsetup erase --batch-mode ${root_partition}
+    wait_for_file ${root_partition}
     wipefs -a ${root_partition} || exit 1
+    wait_for_file ${root_partition}
     if [ -e ${swap_partition} ]; then
         notify "remove any old luks on ${swap_partition} (swap)"
         cryptsetup erase --batch-mode ${swap_partition}
+        wait_for_file ${swap_partition}
         wipefs -a ${swap_partition} || exit 1
+        wait_for_file ${swap_partition}
     fi
 fi
 
