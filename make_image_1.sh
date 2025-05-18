@@ -33,32 +33,35 @@ efi_uuid=$(cat efi-part.uuid)
 base_image_uuid=$(cat base-image-part.uuid)
 top_uuid=$(cat top-part.uuid)
 
-if [ ! -f partitions_created.txt ]; then
-# TODO mark the BaseImage partition as read-only (bit 60 - 0x1000000000000000)
-notify create 2 partitions on ${DISK}
-sfdisk $DISK <<EOF
-label: gpt
-unit: sectors
-sector-size: 512
-
-${DISK}1: start=2048, size=409600, type=uefi, name="EFI system partition", uuid=${efi_uuid}
-${DISK}2: start=411648, size=409600, type=linux, name="BaseImage", uuid=${base_image_uuid}
+notify setting up repart
+rm -rf repart.d
+mkdir -p repart.d
+cat <<EOF > repart.d/01_efi.conf || exit 1
+[Partition]
+Type=esp
+Label=EFI system partition
+UUID=${efi_uuid}
+SizeMinBytes=200M
+SizeMaxBytes=200M
+Format=vfat
+Encrypt=off
+EOF
+cat <<EOF > repart.d/02_baseImage.conf || exit 1
+[Partition]
+Type=linux-generic
+Label=BaseImage
+UUID=${base_image_uuid}
+SizeMinBytes=200M
+Format=btrfs
+# Subvolumes=@ @swap @home # not available in bookworm
+# MountPoint=/mnt/btrfs1:${FSFLAGS},subvolid=5 # not available in bookworm
+Encrypt=off
 EOF
 
-notify resize the second partition on ${DISK} to fill available space
-echo ", +" | sfdisk -N 2 $DISK
-
-sfdisk -d $DISK > partitions_created.txt
-fi
-
-if [ ! -f btrfs_created.txt ]; then
-    notify create root filesystem on ${root_device}
-    mkfs.btrfs -f ${root_device} | tee btrfs_created.txt
-fi
-if [ ! -f vfat_created.txt ]; then
-    notify create esp filesystem on ${DISK}1
-    mkfs.vfat ${DISK}1 | tee vfat_created.txt
-fi
+notify wipefs and repart
+wipefs --all ${DISK} || exit 1
+systemd-repart --empty=allow --no-pager --definitions=repart.d --dry-run=no ${DISK} || exit 1
+notify executed repart
 
 if mountpoint -q "/mnt/btrfs1" ; then
     echo top-level subvolume already mounted on /mnt/btrfs1
