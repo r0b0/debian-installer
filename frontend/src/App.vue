@@ -251,7 +251,7 @@ export default {
   <img alt="banner" class="logo" src="@/assets/Ceratopsian_installer.svg" />
 
   <header>
-    <h1>Opinionated Debian Installer - TESTING</h1>
+    <h1>Opinionated Debian Installer</h1>
     <p>
       This is an <strong>unofficial</strong> installer for the Debian GNU/Linux operating system.
       For more information, read the <a href="https://github.com/r0b0/debian-installer">project page</a>.
@@ -364,7 +364,7 @@ export default {
   </main>
 
   <footer>
-    <span>Opinionated Debian Installer TESTING version 20250420a</span>
+    <span>Opinionated Debian Installer version 20250523a</span>
     <span>Installer &copy;2022-2025 <a href="https://github.com/r0b0/debian-installer">Robert T</a></span>
     <span>Banner &copy;2024 <a href="https://github.com/pccouper/trixie">Elise Couper</a></span>
   </footer>
