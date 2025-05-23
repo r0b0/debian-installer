@@ -21,7 +21,7 @@ func (c *BackendContext) Login(w http.ResponseWriter, _ *http.Request) {
 	data.Hostname, err = os.Hostname()
 	if err != nil {
 		slog.Error("failed to detect hostname", "error", err)
-		http.Error(w, "failed to detect hostname", 500)
+		http.Error(w, "failed to detect hostname", http.StatusInternalServerError)
 		return
 	}
 	_, err = os.Stat("/sys/firmware/efi")
@@ -31,7 +31,7 @@ func (c *BackendContext) Login(w http.ResponseWriter, _ *http.Request) {
 		data.HasEfi = false
 	} else {
 		slog.Error("failed to detect efi", "error", err)
-		http.Error(w, "failed to detect efi", 500)
+		http.Error(w, "failed to detect efi", http.StatusInternalServerError)
 		return
 	}
 	data.HasNvidia = detectNvidia()
@@ -40,7 +40,7 @@ func (c *BackendContext) Login(w http.ResponseWriter, _ *http.Request) {
 	err = writeJson(w, data)
 	if err != nil {
 		slog.Error("failed to write data", "error", err)
-		http.Error(w, "failed to write data", 500)
+		http.Error(w, "failed to write data", http.StatusInternalServerError)
 		return
 	}
 }
@@ -65,7 +65,7 @@ func (c *BackendContext) GetBlockDevices(w http.ResponseWriter, _ *http.Request)
 	out, err := runAndGiveStdout("lsblk", "-OJ")
 	if err != nil {
 		slog.Error("failed to execute lsblk", "error", err)
-		http.Error(w, "failed to execute lsblk", 500)
+		http.Error(w, "failed to execute lsblk", http.StatusInternalServerError)
 		return
 	}
 	w.Header().Set("Content-Type", "application/json")
@@ -79,13 +79,23 @@ func (c *BackendContext) GetBlockDevices(w http.ResponseWriter, _ *http.Request)
 func (c *BackendContext) Install(w http.ResponseWriter, r *http.Request) {
 	if c.runningCmd != nil {
 		slog.Error("already running")
-		http.Error(w, "already running", 409)
+		http.Error(w, "already running", http.StatusConflict)
 		return
 	}
-	err := r.ParseMultipartForm(1024 * 1024)
+	var err error
+	switch r.Header.Get("Content-Type") {
+	case "application/x-www-form-urlencoded":
+		err = r.ParseForm()
+	case "multipart/form-data":
+		err = r.ParseMultipartForm(1024 * 1024)
+	default:
+		slog.Error("unknown content type", "content_type", r.Header.Get("Content-Type"))
+		http.Error(w, "failed to parse form", http.StatusBadRequest)
+		return
+	}
 	if err != nil {
 		slog.Error("failed to parse form", "error", err)
-		http.Error(w, "failed to parse form", 400)
+		http.Error(w, "failed to parse form", http.StatusBadRequest)
 		return
 	}
 	slog.Debug("Install button pressed")
@@ -110,7 +120,7 @@ func (c *BackendContext) ProcessStatus(w http.ResponseWriter, _ *http.Request) {
 		Command:    "",
 	}
 	if c.runningCmd == nil || c.runningCmd.Process == nil {
-		http.Error(w, "no running process", 404)
+		http.Error(w, "no running process", http.StatusNotFound)
 		return
 	}
 	if c.runningCmd.ProcessState != nil {
@@ -122,7 +132,7 @@ func (c *BackendContext) ProcessStatus(w http.ResponseWriter, _ *http.Request) {
 	err := writeJson(w, s)
 	if err != nil {
 		slog.Error("failed to write data", "error", err)
-		http.Error(w, "failed to write data", 500)
+		http.Error(w, "failed to write data", http.StatusInternalServerError)
 		return
 	}
 }
@@ -150,6 +160,6 @@ func (c *BackendContext) Clear(w http.ResponseWriter, _ *http.Request) {
 	err := c.runningCmd.Cancel()
 	if err != nil {
 		slog.Error("failed to stop the process", "error", err)
-		http.Error(w, "failed to stop the process", 500)
+		http.Error(w, "failed to stop the process", http.StatusInternalServerError)
 	}
 }
