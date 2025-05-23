@@ -22,7 +22,7 @@ Our opinions of what a modern installation of Debian should look like in 2025 ar
 | Desktop environment | Download                                                                                                                                                               | SHA-256 Checksum                                                        |
 |---------------------|------------------------------------------------------------------------------------------------------------------------------------------------------------------------|-------------------------------------------------------------------------|
 | KDE Plasma          | [opinionated-debian-installer-trixie-kde-plasma-20250522a.img (5.5GB)](https://debian-installer.lamac.cc/opinionated-debian-installer-trixie-kde-plasma-20250522a.img) | b3c0c1ac 363ad20a 535442f8 a6544805 b6d7b3a7 a0ecff0c 4a3c1af1 701cb015 |
-| Gnome               | [opinionated-debian-installer-trixie-gnome-20250314a.img (4.2GB)](https://debian-installer.lamac.cc/opinionated-debian-installer-trixie-gnome-20250314a.img)           | d8c95969 c15d7401 6ece243c 11c724b2 1b139553 ece215bd 6443f6ab 68ae7771 |
+| Gnome               | [opinionated-debian-installer-trixie-gnome-20250523a.img (4.0GB)](https://debian-installer.lamac.cc/opinionated-debian-installer-trixie-gnome-20250523a.img)           | 83405055 e9849483 e3b78039 65375843 12729761 e6a6d436 b827d5f5 a0b66242 |
 | Server              | [opinionated-debian-installer-trixie-server-20250413a.img (2.9GB)](https://debian-installer.lamac.cc/opinionated-debian-installer-trixie-server-20250413a.img)         | 30087ea9 7407b62b c733bd2f bfe195fc 1675a720 18d3e492 d6c787c2 05008a73 |
 
 ## Instructions
