@@ -234,7 +234,7 @@ if mountpoint -q "${top_level_mount}" ; then
 else
     notify mount top-level subvolume on ${top_level_mount} and resize to fit the whole partition
     mkdir -p ${top_level_mount} || exit 1
-    mount ${root_device} ${top_level_mount} -o rw,${FSFLAGS},subvolid=5 || exit 1
+    mount ${root_device} ${top_level_mount} -o rw,${FSFLAGS},subvolid=5,skip_balance || exit 1
     btrfs filesystem resize max ${top_level_mount} || exit 1
 fi
 
