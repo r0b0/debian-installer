@@ -13,16 +13,16 @@ jobs:
       uses: actions/setup-go@v5
       with:
         go-version: '1.24.3'
-        cache-dependency-path: frontend-tui/go.sum
+        cache-dependency-path: backend/go.sum
 
     - name: Test
       run: |
-        cd frontend-tui
+        cd backend
         go test -v
         
     - name: Build
       run: |
-        cd frontend-tui
+        cd backend
         export GOARCH=amd64
         export CGO_ENABLED=0
         go build -v -ldflags="-s -w" -o opinionated-installer
@@ -31,7 +31,7 @@ jobs:
       uses: actions/upload-artifact@v4
       with:
         name: opinionated-installer
-        path: frontend-tui/opinionated-installer
+        path: backend/opinionated-installer
 
   build-web-gui:
     runs-on: ubuntu-latest

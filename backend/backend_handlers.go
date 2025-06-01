@@ -83,10 +83,11 @@ func (c *BackendContext) Install(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	var err error
-	switch r.Header.Get("Content-Type") {
-	case "application/x-www-form-urlencoded":
+	contentType := r.Header.Get("Content-Type")
+	switch {
+	case strings.HasPrefix(contentType, "application/x-www-form-urlencoded"):
 		err = r.ParseForm()
-	case "multipart/form-data":
+	case strings.HasPrefix(contentType, "multipart/form-data"):
 		err = r.ParseMultipartForm(1024 * 1024)
 	default:
 		slog.Error("unknown content type", "content_type", r.Header.Get("Content-Type"))

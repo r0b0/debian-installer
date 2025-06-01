@@ -500,7 +500,6 @@ lvm2
 mdadm
 plymouth-themes
 polkitd
-python3
 tpm2-tools
 tpm-udev
 EOF

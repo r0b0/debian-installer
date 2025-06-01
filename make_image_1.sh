@@ -195,7 +195,6 @@ lvm2
 mdadm
 plymouth-themes
 polkitd
-python3
 tpm2-tools
 tpm-udev
 EOF
@@ -223,9 +222,9 @@ cat <<EOF > ${target}/tmp/run3.sh
 #!/bin/bash
 export DEBIAN_FRONTEND=noninteractive
 apt-get install -y --download-only locales tasksel openssh-server
-apt-get install -t ${BACKPORTS_VERSION} -y --download-only systemd-boot dracut linux-image-amd64 linux-headers-amd64 popularity-contest
+apt-get install -t ${BACKPORTS_VERSION} -y --download-only systemd-boot dracut linux-image-amd64 popularity-contest
 if (dpkg --get-selections | grep -w install |grep -qs "task.*desktop"); then
-  apt-get install -t ${BACKPORTS_VERSION} -y --download-only nvidia-driver nvidia-driver-libs:i386
+  apt-get install -t ${BACKPORTS_VERSION} -y --download-only linux-headers-amd64 nvidia-driver nvidia-driver-libs:i386
 fi
 EOF
 chroot ${target}/ bash /tmp/run3.sh
@@ -237,11 +236,11 @@ rm -f ${target}/etc/crypttab
 rm -f ${target}/var/log/*log
 rm -f ${target}/var/log/apt/*log
 
-shrink_btrfs_filesystem ${target}
+# shrink_btrfs_filesystem ${target}  # XXX ERROR: error during balancing '/target': No space left on device
 
 echo umounting all filesystems
 read -p "Enter to continue"
 umount -R ${target}
 umount -R /mnt/btrfs1
 
-echo "NOW REBOOT AND CONTINUE WITH PART 2"
+echo "NOW POWER OFF, ADD 500MB AND CONTINUE WITH PART 2"

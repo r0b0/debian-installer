@@ -28,8 +28,8 @@ function install_file() {
   cp -r "${SCRIPT_DIR}/installer-files/$1" "${target}/$1"
 }
 
-DEVICE_SLACK=$(cat device_slack.txt)
-shrink_partition ${DEVICE_SLACK} ${DISK} 2
+# DEVICE_SLACK=$(cat device_slack.txt)
+# shrink_partition ${DEVICE_SLACK} ${DISK} 2
 
 if [ ! -f top_partition_created.txt ]; then
     notify creating the overlay top partition
@@ -232,7 +232,7 @@ chroot ${target}/ systemctl enable link_volatile_root
 chroot ${target}/ systemctl enable grow_overlay_top_filesystem.service
 
 notify installing tui frontend
-cp ${SCRIPT_DIR}/frontend-tui/opinionated-installer ${target}/sbin/opinionated-installer
+cp ${SCRIPT_DIR}/backend/opinionated-installer ${target}/sbin/opinionated-installer
 chmod +x ${target}/sbin/opinionated-installer
 install_file etc/systemd/system/installer_tui.service
 cat <<EOF > ${target}/tmp/run1.sh

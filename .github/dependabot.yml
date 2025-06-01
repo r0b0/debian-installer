@@ -10,6 +10,6 @@ updates:
     schedule:
       interval: "weekly"
   - package-ecosystem: gomod
-    directory: "/frontend-tui"
+    directory: "/backend"
     schedule:
       interval: "weekly"
