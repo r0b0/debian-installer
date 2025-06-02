@@ -1,0 +1,19 @@
+# plasma6 welcome center customization
+# https://invent.kde.org/plasma/plasma-welcome#for-live-distributions
+
+[Desktop Entry]
+# Required since this is a Desktop file; ignored
+Type=Application
+
+# Required; becomes the first paragraph on the Welcome page
+Name=Opinionated Debian Installer
+
+# Optional; replaces the default image on the Welcome page
+# can be an icon name or an absolute path to an image on disk beginning with file:/
+Icon=file://usr/share/pixmaps/Ceratopsian_installer.svg
+
+# Optional; replaces the default image caption on the Welcome page
+Comment=This is an unofficial installer for the Debian GNU/Linux operating system.
+
+# Optional; replaces the default URL opened when clicking on the Welcome page's image or icon
+URL=https://github.com/r0b0/debian-installer

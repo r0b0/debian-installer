@@ -1,0 +1,6 @@
+# plasma6 welcome center customization
+# https://invent.kde.org/plasma/plasma-welcome#for-live-distributions
+
+[General]
+LiveEnvironment=true
+LiveInstaller=installer

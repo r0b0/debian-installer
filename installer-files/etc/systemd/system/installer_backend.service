@@ -5,7 +5,7 @@ After=network.target
 [Service]
 Environment=INSTALLER_SCRIPT=/installer.sh
 EnvironmentFile=-/boot/efi/installer.ini
-ExecStart=/usr/bin/flask --app /backend.py run --host ${BACK_END_IP_ADDRESS}
+ExecStart=/sbin/opinionated-installer backend
 RuntimeDirectory=installer
 WorkingDirectory=/run/installer
 Type=notify

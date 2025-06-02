@@ -1,7 +1,6 @@
 package main
 
 import (
-	"flag"
 	"fmt"
 	"github.com/gdamore/tcell/v2"
 	"github.com/rivo/tview"
@@ -14,9 +13,7 @@ func LOG(l io.Writer, format string, args ...any) {
 	_, _ = l.Write([]byte(fmt.Sprintf(format+"\n", args...)))
 }
 
-func main() {
-	baseUrlString := flag.String("baseUrl", "http://localhost:5000", "base URL of the web service")
-	flag.Parse()
+func Tui(baseUrlString *string) {
 	baseUrl, err := url.Parse(*baseUrlString)
 	if err != nil {
 		panic(fmt.Sprintf("Invalid base url: %s", *baseUrlString))
@@ -32,7 +29,7 @@ func main() {
 		panic(fmt.Sprintf("Failed to get configuration from back-end: %v", err))
 	}
 
-	greenColour := tcell.NewRGBColor(0x08, 0x69, 0x6b)
+	greenColour := tcell.NewRGBColor(0x51, 0xa1, 0xd0)
 
 	app := tview.NewApplication()
 	logView := tview.NewTextView().
@@ -62,6 +59,13 @@ func main() {
 		AddPasswordField("Disk Encryption Passphrase", m.LuksPassword, 0, '*', func(text string) {
 			m.LuksPassword = text
 		}). // TODO second time
+		AddCheckbox("Unlock with TPM", m.EnableTpm == "true", func(checked bool) {
+			if checked {
+				m.EnableTpm = "true"
+			} else {
+				m.EnableTpm = "false"
+			}
+		}).
 		AddPasswordField("Root Password", m.RootPassword, 0, '*', func(text string) {
 			m.RootPassword = text
 		}).
@@ -105,13 +109,15 @@ func main() {
 	processOutput(baseUrl, logView)
 
 	grid := tview.NewGrid().
-		SetRows(23, 0).
+		SetRows(25, 0).
 		AddItem(form, 0, 0, 1, 1, 0, 0, true).
 		AddItem(logView, 1, 0, 1, 1, 0, 0, false)
 	grid.SetBorder(true).
 		SetTitle("Opinionated Debian Installer").
 		SetTitleColor(greenColour).
 		SetTitleAlign(tview.AlignCenter)
+
+	SystemdNotifyReady()
 
 	if err := app.SetRoot(grid, true).EnableMouse(true).SetFocus(grid).Run(); err != nil {
 		panic(err)

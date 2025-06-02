@@ -4,8 +4,9 @@
 DISK=/dev/vdb
 USERNAME=live
 
-DEBIAN_VERSION=bookworm
-FSFLAGS="compress=zstd:9"
+DEBIAN_VERSION=trixie
+BACKPORTS_VERSION=${DEBIAN_VERSION}  # TODO append "-backports" when available
+FSFLAGS="compress=zstd:19"
 
 target=/target
 root_device=${DISK}2
@@ -27,8 +28,8 @@ function install_file() {
   cp -r "${SCRIPT_DIR}/installer-files/$1" "${target}/$1"
 }
 
-DEVICE_SLACK=$(cat device_slack.txt)
-shrink_partition ${DEVICE_SLACK} ${DISK} 2
+# DEVICE_SLACK=$(cat device_slack.txt)
+# shrink_partition ${DEVICE_SLACK} ${DISK} 2
 
 if [ ! -f top_partition_created.txt ]; then
     notify creating the overlay top partition
@@ -44,7 +45,7 @@ if [ ! -f fs_top_created.txt ]; then
     touch fs_top_created.txt
 fi
 
-if grep -qs "${overlay_low_mount}" /proc/mounts ; then
+if mountpoint -q "${overlay_low_mount}" ; then
     echo base image already mounted on ${overlay_low_mount}
 else
     notify mount base image read only on ${overlay_low_mount}
@@ -52,7 +53,7 @@ else
     mount ${root_device} ${overlay_low_mount} -o ${FSFLAGS},ro,subvol=@
 fi
 
-if grep -qs "${overlay_top_mount}" /proc/mounts ; then
+if mountpoint -q "${overlay_top_mount}" ; then
     echo overlay top already mounted on ${overlay_top_mount}
 else
     notify mount overlay top on ${overlay_top_mount}
@@ -62,7 +63,7 @@ else
     mkdir -p ${overlay_top_mount}/work
 fi
 
-if grep -qs "overlay /target" /proc/mounts ; then
+if mountpoint -q "/target" ; then
     echo overlay already mounted on /target
 else
     notify mount overlay on /target
@@ -70,14 +71,14 @@ else
 fi
 
 mkdir -p ${target}/var/cache/apt/archives
-if grep -qs "${target}/var/cache/apt/archives" /proc/mounts ; then
+if mountpoint -q "${target}/var/cache/apt/archives" ; then
     echo apt cache directory already bind mounted on target
 else
     notify bind mounting apt cache directory to target
     mount /var/cache/apt/archives ${target}/var/cache/apt/archives -o bind
 fi
 
-if grep -qs "${target}/proc" /proc/mounts ; then
+if mountpoint -q "${target}/proc" ; then
     echo bind mounts already set up on ${target}
 else
     notify bind mount dev, proc, sys, run, var/tmp on ${target}
@@ -88,7 +89,7 @@ else
     mount --make-rslave --rbind /var/tmp ${target}/var/tmp
 fi
 
-if grep -qs "${DISK}1 " /proc/mounts ; then
+if mountpoint -q "${target}/boot/efi" ; then
     echo efi esp partition ${DISK}1 already mounted on ${target}/boot/efi
 else
     notify mount efi esp partition ${DISK}1 on ${target}/boot/efi
@@ -133,6 +134,13 @@ install_file usr/share/applications/installer.desktop
 # kde - place the icon on the desktop
 mkdir -p ${target}/home/live/Desktop
 install_file home/live/Desktop/installer.desktop
+# kde - customize the welcome center
+mkdir -p ${target}/home/live/.config
+install_file home/live/.config/plasma-welcomerc
+mkdir -p ${target}/usr/share/pixmaps
+install_file usr/share/pixmaps/Ceratopsian_installer.svg
+mkdir -p ${target}/usr/share/plasma/plasma-welcome
+install_file usr/share/plasma/plasma-welcome/intro-customization.desktop
 # gnome - place the icon to the 'dash'
 if [ -f ${target}/usr/bin/dconf ]; then
   mkdir -p ${target}/etc/dconf/profile
@@ -152,7 +160,7 @@ install_file usr/lib/dracut/modules.d/90overlay-generic
 mkdir -p ${target}/etc/dracut.conf.d
 cat <<EOF > ${target}/etc/dracut.conf.d/90-odin.conf
 add_dracutmodules+=" systemd overlay-generic "
-omit_dracutmodules+=" lvm dm crypt dmraid mdraid "
+omit_dracutmodules+=" lvm dmraid mdraid "
 kernel_cmdline="${kernel_params}"
 use_fstab="yes"
 add_fstab+=" /etc/fstab "
@@ -163,16 +171,15 @@ EOF
 
 notify install required packages on ${target}
 mkdir -p ${target}/etc/systemd/system
-install_file etc/systemd/system/lighttpd.service
 cat <<EOF > ${target}/tmp/run1.sh
 #!/bin/bash
 export DEBIAN_FRONTEND=noninteractive
 apt-get update -y
 apt-get upgrade -y
-apt-get install systemd-boot dracut cryptsetup debootstrap uuid-runtime lighttpd python3-pip python3-systemd python3-flask python3-flask-cors python3-h11 python3-wsproto curl -y
+apt-get install -y  debootstrap uuid-runtime curl
+apt-get install -y -t ${BACKPORTS_VERSION} systemd-boot systemd-repart libsystemd-dev dracut cryptsetup nvidia-detect
 apt-get purge initramfs-tools initramfs-tools-core -y
 bootctl install
-systemctl enable lighttpd
 systemctl enable NetworkManager.service
 systemctl disable systemd-networkd.service  # seems to fight with NetworkManager
 systemctl disable systemd-networkd.socket
@@ -180,17 +187,16 @@ systemctl disable systemd-networkd-wait-online.service
 systemctl mask systemd-networkd-wait-online.service
 systemctl disable apt-daily-upgrade.timer
 systemctl disable apt-daily.timer
-pip install flask-sock --break-system-packages
 EOF
-chroot ${target}/ sh /tmp/run1.sh
+chroot ${target}/ bash /tmp/run1.sh
 
 notify install kernel on ${target}
 cat <<EOF > ${target}/tmp/run1.sh
 #!/bin/bash
 export DEBIAN_FRONTEND=noninteractive
-apt-get install linux-image-amd64 -y
+apt-get -t ${BACKPORTS_VERSION} install linux-image-amd64 -y
 EOF
-chroot ${target}/ sh /tmp/run1.sh
+chroot ${target}/ bash /tmp/run1.sh
 
 echo configuring autologin
 mkdir -p ${target}/etc/sddm.conf.d/
@@ -201,6 +207,7 @@ mkdir -p ${target}/etc/lightdm/lightdm.conf.d
 install_file etc/lightdm/lightdm.conf.d/10-autologin.conf
 
 notify cleaning up
+chroot ${target}/ apt-get autoremove -y
 rm -f ${target}/etc/machine-id
 rm -f ${target}/etc/crypttab
 rm -f ${target}/var/log/*log
@@ -214,7 +221,7 @@ cp -r ${SCRIPT_DIR}/frontend/dist/* ${SCRIPT_DIR}/installer-files/var/www/html/o
 notify copying the opinionated debian installer to ${target}
 cp ${SCRIPT_DIR}/installer.sh ${target}/
 chmod +x ${target}/installer.sh
-install_file backend.py
+mkdir -p ${target}/var/www/html
 install_file var/www/html/opinionated-debian-installer
 install_file etc/systemd/system/installer_backend.service
 install_file etc/systemd/system/link_volatile_root.service
@@ -225,8 +232,8 @@ chroot ${target}/ systemctl enable link_volatile_root
 chroot ${target}/ systemctl enable grow_overlay_top_filesystem.service
 
 notify installing tui frontend
-cp ${SCRIPT_DIR}/frontend-tui/opinionated-installer-tui ${target}/sbin/opinionated-installer-tui
-chmod +x ${target}/sbin/opinionated-installer-tui
+cp ${SCRIPT_DIR}/backend/opinionated-installer ${target}/sbin/opinionated-installer
+chmod +x ${target}/sbin/opinionated-installer
 install_file etc/systemd/system/installer_tui.service
 cat <<EOF > ${target}/tmp/run1.sh
 if systemctl is-enabled display-manager.service ; then

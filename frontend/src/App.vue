@@ -1,7 +1,7 @@
 <script>
 import Password from "./components/Password.vue";
 import timezonesTxt from './assets/timezones.txt?raw';
-import {nextTick} from "vue";
+import {nextTick, provide, ref} from "vue";
 
 export default {
   components: {Password},
@@ -12,6 +12,8 @@ export default {
       block_devices: [],
       install_to_device_process_key: "",
       install_to_device_status: "",
+      has_nvidia: false,
+      want_nvidia: false,
       overall_status: "",
       running: false,
       finished: false,
@@ -26,10 +28,13 @@ export default {
         USER_PASSWORD: undefined,
         ROOT_PASSWORD: undefined,
         LUKS_PASSWORD: undefined,
+        ENABLE_TPM: undefined,
         HOSTNAME: undefined,
         TIMEZONE: undefined,
         ENABLE_SWAP: undefined,
         SWAP_SIZE: undefined,
+        NVIDIA_PACKAGE: " ",  // will be changed in install()
+        ENABLE_POPCON: undefined,
       }
     }
   },
@@ -40,6 +45,9 @@ export default {
         ret = false;
       }
       for(const [key, value] of Object.entries(this.installer)) {
+        if(key === "SWAP_SIZE" && this.installer["ENABLE_SWAP"] === "none") {
+          continue;
+        }
         if(typeof value === 'undefined') {
           ret = false;
           break;
@@ -54,6 +62,10 @@ export default {
     hostname() {
       return window.location.hostname;
     }
+  },
+  setup() {
+    provide('singlePasswordActive', ref(false));
+    provide('singlePasswordValue', ref(""));
   },
   mounted() {
     this.get_available_timezones();
@@ -74,10 +86,18 @@ export default {
           } else {
             this.running = false;
           }
+          this.has_nvidia = response.has_nvidia;
+          this.want_nvidia = response.has_nvidia;
 
           for(const [key, value] of Object.entries(this.installer)) {
             if(key in response.environ) {
-              console.debug(`Setting ${key} from backend to ${response.environ[key]}`);
+              if(key === "NVIDIA_PACKAGE" && response.environ[key] === "") {
+                continue; // because empty value would prevent can_start()
+              } else if(key === "NVIDIA_PACKAGE" && response.environ[key].length > 0) {
+                this.want_nvidia = true;
+                this.has_nvidia = true;
+              }
+              console.debug(`Setting '${key}' from backend to '${response.environ[key]}'`);
               this.installer[key] = response.environ[key];
             }
           }
@@ -119,7 +139,7 @@ export default {
                 device.available = true;
               }
             }
-          });
+          }); // TODO check errors
     },
     get_available_timezones() {
       for(const line of timezonesTxt.split("\n")) {
@@ -142,11 +162,18 @@ export default {
       }
       this.output_reader_connection.onclose = (event) => {
         console.log("Websocket connection closed");
-        this.check_process_status()
+        this.check_process_status();
       }
     },
     install() {
       this.running = true;
+      if(this.installer["NVIDIA_PACKAGE"] !== " ") {
+        // we received a package name from the back-end, nothing to do here
+      } else if(this.want_nvidia) {
+        this.installer["NVIDIA_PACKAGE"] = "nvidia-driver";
+      } else {
+        this.installer["NVIDIA_PACKAGE"] = "";
+      }
       let data = new FormData();
       for(const [key, value] of Object.entries(this.installer)) {
         data.append(key, value);
@@ -166,6 +193,7 @@ export default {
         })
         .catch(error => {
             this.running = false;
+            // TODO set this.error_message
             throw Error(error);
         });
     },
@@ -179,11 +207,12 @@ export default {
               this.finished = true;
               if (response.return_code == 0) {
                 this.overall_status = "green";
+                this.$refs.completed_dialog.showModal();
               } else {
                 this.overall_status = "red";
               }
             }
-          });
+          }); // TODO error checking
     },
     clear() {
       this.fetch_from_backend("/clear")
@@ -195,6 +224,7 @@ export default {
             this.running = false;
           })
           .catch(error => {
+            // TODO set this.error_message
             throw Error(error);
           });
     },
@@ -210,6 +240,7 @@ export default {
           })
           .catch(error => {
             // console.error(error);
+            // TODO set this.error_message
             throw Error(error);
           });
     },
@@ -217,7 +248,7 @@ export default {
 }
 </script>
 <template>
-  <img alt="banner" class="logo" src="@/assets/Emerald_installer.svg" />
+  <img alt="banner" class="logo" src="@/assets/Ceratopsian_installer.svg" />
 
   <header>
     <h1>Opinionated Debian Installer</h1>
@@ -247,10 +278,9 @@ export default {
 
   <main>
     <form>
+      <div class="red">{{error_message}}</div>
       <fieldset>
         <legend>Installation Target Device</legend>
-        <div class="red">{{error_message}}</div>
-
         <label for="DISK">Device for Installation</label>
         <select :disabled="block_devices.length==0 || running" id="DISK"  v-model="installer.DISK">
           <option v-for="item in block_devices" :value="item.path" :disabled="!item.available">
@@ -259,13 +289,16 @@ export default {
         </select>
         <label for="DEBIAN_VERSION">Debian Version</label>
         <select id="DEBIAN_VERSION">
-          <option value="bookworm" selected>Debian 12 Bookworm</option>
+          <option value="trixie" selected>Debian 13 Trixie</option>
         </select>
       </fieldset>
 
       <fieldset>
-        <legend>Disk Encryption Passphrase</legend>
-        <Password v-model="installer.LUKS_PASSWORD" :disabled="running" />
+        <legend>Disk Encryption</legend>
+        <Password v-model="installer.LUKS_PASSWORD" :disabled="running" :is-main="true" />
+
+        <input type="checkbox" v-model="installer.ENABLE_TPM" id="ENABLE_TPM" class="inline mt-3">
+        <label for="ENABLE_TPM" class="inline mt-3">Unlock disk with TPM</label>
       </fieldset>
 
       <fieldset>
@@ -301,6 +334,13 @@ export default {
 
         <label for="SWAP_SIZE">Swap Size (GB)</label>
         <input type="number" id="SWAP_SIZE" v-model="installer.SWAP_SIZE" :disabled="installer.ENABLE_SWAP == 'none' || running">
+
+        <input type="checkbox" v-model="want_nvidia" id="WANT_NVIDIA" class="inline mt-3" :disabled="!has_nvidia || running">
+        <label for="WANT_NVIDIA" class="inline mt-3">Install the proprietary NVIDIA Accelerated Linux Graphics Driver</label>
+
+        <br>
+        <input type="checkbox" v-model="installer.ENABLE_POPCON" id="ENABLE_POPCON" class="inline mt-3" :disabled="running">
+        <label for="ENABLE_POPCON" class="inline mt-3">Participate in the <a href="https://popcon.debian.org/" target="_blank">debian package usage survey</a></label>
       </fieldset>
 
       <fieldset>
@@ -310,7 +350,7 @@ export default {
             Install debian on {{ installer.DISK }} <b>OVERWRITING THE WHOLE DRIVE</b>
         </button>
         <br>
-        <button type="button" @click="clear()" class="red">Stop</button>
+        <button type="button" @click="clear()" class="mt-2 red">Stop</button>
       </fieldset>
 
       <fieldset>
@@ -324,10 +364,17 @@ export default {
   </main>
 
   <footer>
-    <span>Opinionated Debian Installer version 20250223a</span>
+    <span>Opinionated Debian Installer version 20250601a</span>
     <span>Installer &copy;2022-2025 <a href="https://github.com/r0b0/debian-installer">Robert T</a></span>
-    <span>Banner &copy;2022 <a href="https://github.com/julietteTaka/Emerald">Juliette Taka</a></span>
+    <span>Banner &copy;2024 <a href="https://github.com/pccouper/trixie">Elise Couper</a></span>
   </footer>
+
+  <dialog ref="completed_dialog">
+    <p>
+      Debian successfully installed. You can now turn off your computer, remove the installation media and start it again.
+    </p>
+    <button class="right-align mt-2" @click="$refs.completed_dialog.close()">Close</button>
+  </dialog>
 </template>
 
 <style>
@@ -355,7 +402,7 @@ header {
 a,
 .green {
   text-decoration: none;
-  color: #08696b;
+  color: #26475b;
   transition: 0.4s;
 }
 
@@ -376,11 +423,15 @@ label:not(.inline) {
 }
 
 .mt-2 {
-  margin-top: 12pt;
+  margin-top: 0.5em;
 }
 
-button {
-  margin-top: 0.5em;
+.mt-3 {
+  margin-top: 1em;
+}
+
+.right-align {
+  float: right;
 }
 
 @media (hover: hover) {

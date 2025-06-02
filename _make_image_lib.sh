@@ -6,7 +6,7 @@ function notify {
 function shrink_btrfs_filesystem {
   local filesystem=$1
   notify balancing and shrinking the filesystem ${filesystem}
-  btrfs balance start -dusage=90 ${filesystem}
+  btrfs balance start -dusage=90 -musage=90 ${filesystem} || exit 1
   true
   while [ $? -eq 0 ]; do
       btrfs filesystem resize -1G ${filesystem}
@@ -33,7 +33,7 @@ function shrink_partition {
     notify shrinking partition ${disk}${partition_nr} by ${slack}
     echo ", -${slack}" | sfdisk ${disk} -N ${partition_nr}
     notify checking the filesystem after partition shrink
-    btrfs check "${disk}${partition_nr}"
+    btrfs check "${disk}${partition_nr}"  || exit 1
     touch "partition_${partition_nr}_shrunk.txt"
   fi
 }

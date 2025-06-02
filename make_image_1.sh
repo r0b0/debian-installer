@@ -3,8 +3,9 @@
 # edit this:
 DISK=/dev/vdb
 
-DEBIAN_VERSION=bookworm
-FSFLAGS="compress=zstd:9"
+DEBIAN_VERSION=trixie
+BACKPORTS_VERSION=${DEBIAN_VERSION}  # TODO append "-backports" when available
+FSFLAGS="compress=zstd:19"
 
 target=/target
 root_device=${DISK}2
@@ -59,7 +60,7 @@ if [ ! -f vfat_created.txt ]; then
     mkfs.vfat ${DISK}1 | tee vfat_created.txt
 fi
 
-if grep -qs "/mnt/btrfs1" /proc/mounts ; then
+if mountpoint -q "/mnt/btrfs1" ; then
     echo top-level subvolume already mounted on /mnt/btrfs1
 else
     notify mount top-level subvolume on /mnt/btrfs1
@@ -74,7 +75,7 @@ if [ ! -e /mnt/btrfs1/@ ]; then
     btrfs subvolume create /mnt/btrfs1/@swap
 fi
 
-if grep -qs "${target}" /proc/mounts ; then
+if mountpoint -q "${target}" ; then
     echo root subvolume already mounted on ${target}
 else
     notify mount root and home subvolume on ${target}
@@ -85,7 +86,7 @@ else
 fi
 
 mkdir -p ${target}/var/cache/apt/archives
-if grep -qs "${target}/var/cache/apt/archives" /proc/mounts ; then
+if mountpoint -q "${target}/var/cache/apt/archives" ; then
     echo apt cache directory already bind mounted on target
 else
     notify bind mounting apt cache directory to target
@@ -97,7 +98,7 @@ if [ ! -f ${target}/etc/debian_version ]; then
     debootstrap ${DEBIAN_VERSION} ${target} http://deb.debian.org/debian
 fi
 
-if grep -qs "${target}/proc" /proc/mounts ; then
+if mountpoint -q "${target}/proc" ; then
     echo bind mounts already set up on ${target}
 else
     notify bind mount dev, proc, sys, run, var/tmp on ${target}
@@ -108,30 +109,64 @@ else
     mount --make-rslave --rbind /var/tmp ${target}/var/tmp
 fi
 
-notify setup sources.list
-cat <<EOF > ${target}/etc/apt/sources.list
-deb http://deb.debian.org/debian ${DEBIAN_VERSION} main contrib non-free non-free-firmware
-deb http://deb.debian.org/debian ${DEBIAN_VERSION}-updates main contrib non-free non-free-firmware
-deb http://security.debian.org/debian-security ${DEBIAN_VERSION}-security main contrib non-free non-free-firmware
-deb http://deb.debian.org/debian ${DEBIAN_VERSION}-backports main contrib non-free non-free-firmware
+notify setup sources list
+rm -f ${target}/etc/apt/sources.list
+mkdir -p ${target}/etc/apt/sources.list.d
+cat <<EOF > ${target}/etc/apt/sources.list.d/debian.sources || exit 1
+Types: deb
+URIs: http://deb.debian.org/debian/
+Suites: ${DEBIAN_VERSION}
+Components: main contrib non-free non-free-firmware
+Signed-By: /usr/share/keyrings/debian-archive-keyring.gpg
+
+Types: deb
+URIs: http://deb.debian.org/debian/
+Suites: ${DEBIAN_VERSION}-updates
+Components: main contrib non-free non-free-firmware
+Signed-By: /usr/share/keyrings/debian-archive-keyring.gpg
+
+Types: deb
+URIs: http://security.debian.org/debian-security/
+Suites: ${DEBIAN_VERSION}-security
+Components: main contrib non-free non-free-firmware
+Signed-By: /usr/share/keyrings/debian-archive-keyring.gpg
 EOF
 
-notify enable ${DEBIAN_VERSION}-backports
-mkdir -p ${target}/etc/apt/preferences.d
-cp "${SCRIPT_DIR}/installer-files/etc/apt/preferences.d/99backports-temp" "${target}/etc/apt/preferences.d/"
+cat <<EOF > ${target}/etc/apt/sources.list.d/debian-backports.sources || exit 1
+Types: deb
+URIs: http://deb.debian.org/debian/
+Suites: ${DEBIAN_VERSION}-backports
+Components: main contrib non-free non-free-firmware
+Signed-By: /usr/share/keyrings/debian-archive-keyring.gpg
+EOF
+
+notify enable 32bit
+chroot ${target}/ dpkg --add-architecture i386
 
 notify install required packages on ${target}
 cat <<EOF > ${target}/tmp/packages.txt
+btrfsmaintenance
 locales
 adduser
 passwd
 sudo
-systemd
-btrfs-progs
-dosfstools
 tasksel
 network-manager
+binutils
+console-setup
+exim4-daemon-light
+kpartx
+pigz
+pkg-config
+EOF
+cat <<EOF > ${target}/tmp/packages_backports.txt
+systemd
+systemd-cryptsetup
+systemd-timesyncd
+btrfs-progs
+dosfstools
 firmware-linux
+atmel-firmware
 bluez-firmware
 dahdi-firmware-nonfree
 firmware-amd-graphics
@@ -140,7 +175,9 @@ firmware-atheros
 firmware-bnx2
 firmware-bnx2x
 firmware-brcm80211
+firmware-carl9170
 firmware-cavium
+firmware-intel-misc
 firmware-intel-sound
 firmware-iwlwifi
 firmware-libertas
@@ -148,28 +185,16 @@ firmware-misc-nonfree
 firmware-myricom
 firmware-netronome
 firmware-netxen
-firmware-qcom-media
 firmware-qcom-soc
 firmware-qlogic
 firmware-realtek
-firmware-samsung
-firmware-siano
 firmware-ti-connectivity
-firmware-tomu
 firmware-zd1211
-hdmi2usb-fx2-firmware
-midisport-firmware
-sigrok-firmware-fx2lafw
-binutils
-console-setup
 cryptsetup
-dmraid
-exim4-daemon-light
-kpartx
 lvm2
 mdadm
-pigz
-pkg-config
+plymouth-themes
+polkitd
 tpm2-tools
 tpm-udev
 EOF
@@ -178,13 +203,14 @@ cat <<EOF > ${target}/tmp/run2.sh
 export DEBIAN_FRONTEND=noninteractive
 apt-get update
 xargs apt-get install -y < /tmp/packages.txt
+xargs apt-get install -t ${BACKPORTS_VERSION} -y < /tmp/packages_backports.txt
 EOF
 chroot ${target}/ bash /tmp/run2.sh
 
 notify running tasksel
 chroot ${target}/ tasksel
 
-if grep -qs "${target}/var/cache/apt/archives" /proc/mounts ; then
+if mountpoint -q "${target}/var/cache/apt/archives" ; then
     notify unmounting apt cache directory from target
     umount ${target}/var/cache/apt/archives
 else
@@ -192,19 +218,32 @@ else
 fi
 
 notify downloading remaining .deb files for the installer
-chroot ${target}/ apt-get install -y --download-only locales systemd systemd-boot dracut btrfs-progs tasksel network-manager cryptsetup tpm2-tools linux-image-amd64 openssh-server
+cat <<EOF > ${target}/tmp/run3.sh
+#!/bin/bash
+export DEBIAN_FRONTEND=noninteractive
+apt-get install -y --download-only locales tasksel openssh-server
+apt-get install -t ${BACKPORTS_VERSION} -y --download-only systemd-boot dracut linux-image-amd64 popularity-contest
+if (dpkg --get-selections | grep -w install |grep -qs "task.*desktop"); then
+  apt-get install -t ${BACKPORTS_VERSION} -y --download-only linux-headers-amd64 nvidia-driver nvidia-driver-libs:i386
+fi
+EOF
+chroot ${target}/ bash /tmp/run3.sh
 
 notify cleaning up
+chroot ${target}/ apt-get autoremove -y
 rm -f ${target}/etc/machine-id
 rm -f ${target}/etc/crypttab
 rm -f ${target}/var/log/*log
 rm -f ${target}/var/log/apt/*log
 
-shrink_btrfs_filesystem ${target}
+# shrink_btrfs_filesystem ${target}  # XXX ERROR: error during balancing '/target': No space left on device
 
-echo umounting all filesystems
-read -p "Enter to continue"
+echo "Disk usage on ${target}"
+df -h ${target}
+btrfs fi df ${target}
+
+notify umounting all filesystems
 umount -R ${target}
 umount -R /mnt/btrfs1
 
-echo "NOW REBOOT AND CONTINUE WITH PART 2"
+echo "NOW POWER OFF, ADD 500MB AND CONTINUE WITH PART 2"
