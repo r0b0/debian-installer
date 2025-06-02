@@ -238,8 +238,11 @@ rm -f ${target}/var/log/apt/*log
 
 # shrink_btrfs_filesystem ${target}  # XXX ERROR: error during balancing '/target': No space left on device
 
-echo umounting all filesystems
-read -p "Enter to continue"
+echo "Disk usage on ${target}"
+df -h ${target}
+btrfs fi df ${target}
+
+notify umounting all filesystems
 umount -R ${target}
 umount -R /mnt/btrfs1
 
