@@ -1,0 +1,22 @@
+{
+    "configurations": [
+        {
+            "type": "go",
+            "name": "Run TUI",
+            "goExecPath": "/opt/go/bin/go",
+            "buildParams": ["$PROJECT_DIR$"],
+            "runParams": ["tui"]
+        },
+        {
+            "type": "go",
+            "name": "Run backend",
+            "goExecPath": "/opt/go/bin/go",
+            "buildParams": ["$PROJECT_DIR$"],
+            "runParams": ["backend", "--staticHtmlFolder", "$USER_HOME$/opinionated-debian-installer/frontend/dist"],
+            "environment": {
+                "INSTALLER_SCRIPT": "$USER_HOME$/opinionated-debian-installer/dummy.sh",
+                "BACK_END_IP_ADDRESS": "127.0.0.1"
+            }
+        },
+    ]
+}
