@@ -28,6 +28,7 @@ export default {
         USER_PASSWORD: undefined,
         ROOT_PASSWORD: undefined,
         LUKS_PASSWORD: undefined,
+        DISABLE_LUKS: undefined,
         ENABLE_TPM: undefined,
         HOSTNAME: undefined,
         TIMEZONE: undefined,
@@ -295,7 +296,10 @@ export default {
 
       <fieldset>
         <legend>Disk Encryption</legend>
-        <Password v-model="installer.LUKS_PASSWORD" :disabled="running" :is-main="true" />
+        <input type="checkbox" v-model="installer.DISABLE_LUKS" id="DISABLE_LUKS" class="inline">
+        <label for="DISABLE_LUKS" class="inline">Device already encrypted</label>
+
+        <Password v-model="installer.LUKS_PASSWORD" :disabled="running" :is-main="true"/>
 
         <input type="checkbox" v-model="installer.ENABLE_TPM" id="ENABLE_TPM" class="inline mt-3">
         <label for="ENABLE_TPM" class="inline mt-3">Unlock disk with TPM</label>
