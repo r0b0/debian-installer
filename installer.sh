@@ -394,6 +394,12 @@ if [ ! -z "${USERNAME}" ]; then
     fi
 fi
 
+if [ ! -z "${NVIDIA_PACKAGE}" ]; then
+  # TODO the debian page says to do this instead:
+  # echo "options nvidia-drm modeset=1" >> /etc/modprobe.d/nvidia-options.conf
+  kernel_params="${kernel_params} nvidia-drm.modeset=1"
+fi
+
 notify configuring dracut and kernel command line
 mkdir -p ${target}/etc/dracut.conf.d
 cat <<EOF > ${target}/etc/dracut.conf.d/90-luks.conf || exit 1
