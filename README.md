@@ -52,10 +52,9 @@ Video of installation of Debian with KDE Plasma (Bookworm version):
 
 - GPT disk partitions are created on the designated disk drive: 
   - UEFI ESP partition
-  - Optional swap partition - LUKS encrypted
   - Root partition - [LUKS](https://cryptsetup-team.pages.debian.net/cryptsetup/README.Debian.html) encrypted (rest of the drive)
 - GPT root partition is [auto-discoverable](https://www.freedesktop.org/software/systemd/man/systemd-gpt-auto-generator.html)
-- Btrfs subvolumes will be called `@` for `/` and `@home` for `/home` (compatible with [timeshift](https://github.com/teejee2008/timeshift#supported-system-configurations)); the top-level subvolume will be mounted to `/root/btrfs1`
+- Btrfs subvolumes will be called `@` for `/`, `@home` for `/home` and `@swap` for swap (compatible with [timeshift](https://github.com/teejee2008/timeshift#supported-system-configurations)); the top-level subvolume will be mounted to `/root/btrfs1`
 - The system is installed using an image from the live iso. This will speed up the installation significantly and allow off-line installation.
 - [Dracut](https://github.com/dracutdevs/dracut/wiki/) is used instead of initramfs-tools
 - [Systemd-boot](https://www.freedesktop.org/wiki/Software/systemd/systemd-boot/) is used instead of grub

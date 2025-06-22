@@ -32,7 +32,6 @@ export default {
         ENABLE_TPM: undefined,
         HOSTNAME: undefined,
         TIMEZONE: undefined,
-        ENABLE_SWAP: undefined,
         SWAP_SIZE: undefined,
         NVIDIA_PACKAGE: " ",  // will be changed in install()
         ENABLE_POPCON: undefined,
@@ -46,7 +45,7 @@ export default {
         ret = false;
       }
       for(const [key, value] of Object.entries(this.installer)) {
-        if(key === "SWAP_SIZE" && this.installer["ENABLE_SWAP"] === "none") {
+        if(key === "LUKS_PASSWORD" && this.installer.DISABLE_LUKS) {
           continue;
         }
         if(typeof value === 'undefined') {
@@ -329,15 +328,8 @@ export default {
             <option v-for="item in timezones" :value="item">{{ item }}</option>
         </select>
 
-        <label for="ENABLE_SWAP">Swap Space</label>
-        <select id="ENABLE_SWAP" v-model="installer.ENABLE_SWAP" :disabled="running">
-          <option value="none" selected>None</option>
-          <option value="partition" selected>Partition</option>
-          <option value="file" selected>File</option>
-        </select>
-
         <label for="SWAP_SIZE">Swap Size (GB)</label>
-        <input type="number" id="SWAP_SIZE" v-model="installer.SWAP_SIZE" :disabled="installer.ENABLE_SWAP == 'none' || running">
+        <input type="number" id="SWAP_SIZE" v-model="installer.SWAP_SIZE" :disabled="running">
 
         <input type="checkbox" v-model="want_nvidia" id="WANT_NVIDIA" class="inline mt-3" :disabled="!has_nvidia || running">
         <label for="WANT_NVIDIA" class="inline mt-3">Install the proprietary NVIDIA Accelerated Linux Graphics Driver</label>
@@ -368,7 +360,7 @@ export default {
   </main>
 
   <footer>
-    <span>Opinionated Debian Installer version 20250601a</span>
+    <span>Opinionated Debian Installer version 20250622a</span>
     <span>Installer &copy;2022-2025 <a href="https://github.com/r0b0/debian-installer">Robert T</a></span>
     <span>Banner &copy;2024 <a href="https://github.com/pccouper/trixie">Elise Couper</a></span>
   </footer>

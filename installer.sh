@@ -11,7 +11,6 @@ DISABLE_LUKS=false
 LUKS_PASSWORD=luke
 ENABLE_TPM=true
 HOSTNAME=debian13
-ENABLE_SWAP=partition
 SWAP_SIZE=2
 NVIDIA_PACKAGE=
 ENABLE_POPCON=false
@@ -69,13 +68,6 @@ if [ ! -f main-part.uuid ]; then
     uuidgen > main-part.uuid || exit 1
 fi
 
-if [ "${ENABLE_SWAP}" == "partition" ]; then
-    if [ ! -f swap-part.uuid ]; then
-        notify generate uuid for swap partition
-        uuidgen > swap-part.uuid || exit 1
-    fi
-fi
-
 if [ ! -f btrfs.uuid ]; then
     notify generate uuid for btrfs filesystem
     uuidgen > btrfs.uuid || exit 1
@@ -83,7 +75,7 @@ fi
 
 root_part_type="4f68bce3-e8cd-4db1-96e7-fbcaf984b709"  # X86_64
 system_part_type="C12A7328-F81F-11D2-BA4B-00A0C93EC93B"
-swap_part_type="0657FD6D-A4AB-43C4-84E5-0933C84B4F4F "
+
 efi_part_uuid=$(cat efi-part.uuid)
 main_part_uuid=$(cat main-part.uuid)
 efi_partition=/dev/disk/by-partuuid/${efi_part_uuid}
@@ -94,52 +86,25 @@ target=/target
 kernel_params="rw quiet rootfstype=btrfs rootflags=${FSFLAGS},subvol=@ rd.auto=1 splash"
 if [ "${DISABLE_LUKS}" != "true" ]; then
   kernel_params="rd.luks.options=tpm2-device=auto ${kernel_params}"
-  luks_device=root
-  root_device=/dev/mapper/${luks_device}
+  luks_device_name=root
+  root_device=/dev/mapper/${luks_device_name}
 else
   root_device=${main_partition}
 fi
 
-if [ "${ENABLE_SWAP}" == "partition" ]; then
-swap_part_uuid=$(cat swap-part.uuid)
-swap_size_blocks=$((${SWAP_SIZE}*2048*1024))
-root_start_blocks=$((2099200+${swap_size_blocks}))
-swap_partition=/dev/disk/by-partuuid/${swap_part_uuid}
-swap_device_name=swap1
-if [ "${DISABLE_LUKS}" != "true" ]; then
-  swap_device=/dev/mapper/${swap_device_name}
-else
-  swap_device=${swap_partition}
-fi
-main_partition_nr=3
-sfdisk_format=$(cat <<EOF
-start=2048, size=2097152, type=${system_part_type}, name="EFI system partition", uuid=${efi_part_uuid}
-start=2099200, size=${swap_size_blocks}, type=${swap_part_type}, name="Swap partition", uuid=${swap_part_uuid}
-start=${root_start_blocks}, size=4096000, type=${root_part_type}, name="Root partition", uuid=${main_part_uuid}
-EOF
-)
-else
-main_partition_nr=2
-swap_partition=none
-sfdisk_format=$(cat <<EOF
-start=2048, size=2097152, type=${system_part_type}, name="EFI system partition", uuid=${efi_part_uuid}
-start=2099200, size=4096000, type=${root_part_type}, name="Root partition", uuid=${main_part_uuid}
-EOF
-)
-fi
-
 if [ ! -f partitions_created.txt ]; then
-notify create ${main_partition_nr} partitions on ${DISK}
+notify create partitions on ${DISK}
 sfdisk $DISK <<EOF || exit 1
 label: gpt
 unit: sectors
 sector-size: 512
 
-${sfdisk_format}
+start=2048, size=2097152, type=${system_part_type}, name="EFI system partition", uuid=${efi_part_uuid}
+start=2099200, size=4096000, type=${root_part_type}, name="Root partition", uuid=${main_part_uuid}
 EOF
 
 notify resize the root partition on ${DISK} to fill available space
-echo ", +" | sfdisk -N ${main_partition_nr} $DISK || exit 1
+echo ", +" | sfdisk -N 2 $DISK || exit 1
 
 sfdisk -d $DISK > partitions_created.txt || exit 1
 fi
@@ -154,9 +119,6 @@ function wait_for_file {
 }
 
 wait_for_file ${main_partition}
-if [ "${ENABLE_SWAP}" == "partition" ]; then
-    wait_for_file ${swap_partition}
-fi
 
 if [ "${DISABLE_LUKS}" != "true" -a ! -f $KEYFILE ]; then
     # TODO do we want to store this file in the installed system?
@@ -167,13 +129,6 @@ if [ "${DISABLE_LUKS}" != "true" -a ! -f $KEYFILE ]; then
     wait_for_file ${main_partition}
     wipefs -a ${main_partition} || exit 1
     wait_for_file ${main_partition}
-    if [ -e ${swap_partition} ]; then
-        notify "remove any old luks on ${swap_partition} (swap)"
-        cryptsetup erase --batch-mode ${swap_partition}
-        wait_for_file ${swap_partition}
-        wipefs -a ${swap_partition} || exit 1
-        wait_for_file ${swap_partition}
-    fi
 fi
 
 function setup_luks {
@@ -198,7 +153,7 @@ if [ "${DISABLE_LUKS}" != "true" ]; then
 
   if [ ! -e ${root_device} ]; then
       notify open luks on root
-      cryptsetup luksOpen ${main_partition} ${luks_device} --key-file $KEYFILE || exit 1
+      cryptsetup luksOpen ${main_partition} ${luks_device_name} --key-file $KEYFILE || exit 1
   fi
 fi
 
@@ -228,25 +183,6 @@ if [ ! -f vfat_created.txt ]; then
     touch vfat_created.txt
 fi
 
-if [ "${ENABLE_SWAP}" == "partition" ]; then
-  if [ "${DISABLE_LUKS}" != "true" ]; then
-    setup_luks ${swap_partition} || exit 1
-    swap_uuid=$(cat luks.uuid)
-
-    kernel_params="${kernel_params} rd.luks.name=${swap_uuid}=${swap_device_name}"
-
-    if [ ! -e ${swap_device} ]; then
-        notify open luks swap
-        cryptsetup luksOpen ${swap_partition} ${swap_device_name} --key-file $KEYFILE || exit 1
-    fi
-  fi
-
-  kernel_params="${kernel_params} resume=${swap_device}"
-  notify making swap
-  mkswap ${swap_device} || exit 1
-  swapon ${swap_device} || exit 1
-fi  # swap as partition
-
 if mountpoint -q "${top_level_mount}" ; then
     echo top-level subvolume already mounted on ${top_level_mount}
 else
@@ -260,7 +196,7 @@ if [ ! -e ${top_level_mount}/@ ]; then
     notify create @ and @home subvolumes on ${top_level_mount}
     btrfs subvolume create ${top_level_mount}/@ || exit 1
     btrfs subvolume create ${top_level_mount}/@home || exit 1
-    if [ "${ENABLE_SWAP}" == "file" ]; then
+    if [ ${SWAP_SIZE} -gt 0 ]; then
         notify create @swap subvolume for swap file on ${top_level_mount}
         btrfs subvolume create ${top_level_mount}/@swap || exit 1
         chmod 700 ${top_level_mount}/@swap || exit 1
@@ -275,17 +211,22 @@ else
     mount ${root_device} ${target} -o ${FSFLAGS},subvol=@ || exit 1
     mkdir -p ${target}/home || exit 1
     mount ${root_device} ${target}/home -o ${FSFLAGS},subvol=@home || exit 1
-    if [ "${ENABLE_SWAP}" == "file" ]; then
+    if [ ${SWAP_SIZE} -gt 0 ]; then
         notify mount swap subvolume on ${target}
         mkdir -p ${target}/swap || exit 1
         mount ${root_device} ${target}/swap -o noatime,subvol=@swap || exit 1
     fi
 fi
 
-if [ "${ENABLE_SWAP}" == "file" ]; then
-    notify make swap file at ${target}/swap/swapfile
-    btrfs filesystem mkswapfile --size ${SWAP_SIZE}G ${target}/swap/swapfile || exit 1
-    swapon ${target}/swap/swapfile || exit 1
+if [ ${SWAP_SIZE} -gt 0 ]; then
+    if [ ! -e ${target}/swap/swapfile ]; then
+      notify make swap file at ${target}/swap/swapfile
+      btrfs filesystem mkswapfile --size ${SWAP_SIZE}G ${target}/swap/swapfile || exit 1
+    fi
+    if ! grep -qs "${target}/swap/swapfile" /proc/swaps ; then
+      notify enable swap file ${target}/swap/swapfile
+      swapon ${target}/swap/swapfile || exit 1
+    fi
     swapfile_offset=$(btrfs inspect-internal map-swapfile -r ${target}/swap/swapfile)
     kernel_params="${kernel_params} resume=${root_device} resume_offset=${swapfile_offset}"
 fi
@@ -306,7 +247,7 @@ else
     mount --bind /etc/resolv.conf ${target}/etc/resolv.conf || exit 1
 fi
 
-if mountpoint -q "${efi_partition}" ; then
+if mountpoint -q "${target}/boot/efi" ; then
     echo efi esp partition ${efi_partition} already mounted on ${target}/boot/efi
 else
     notify mount efi esp partition ${efi_partition} on ${target}/boot/efi
@@ -333,11 +274,7 @@ UUID=${btrfs_uuid} /root/btrfs1 btrfs defaults,subvolid=5,${FSFLAGS} 0 1
 PARTUUID=${efi_part_uuid} /boot/efi vfat defaults,umask=077 0 2
 EOF
 
-if [ "${ENABLE_SWAP}" == "partition" ]; then
-cat <<EOF >> ${target}/etc/fstab || exit 1
-${swap_device} swap swap defaults 0 0
-EOF
-elif [ "${ENABLE_SWAP}" == "file" ]; then
+if [ ${SWAP_SIZE} -gt 0 ]; then
 cat <<EOF >> ${target}/etc/fstab || exit 1
 UUID=${btrfs_uuid} /swap btrfs defaults,subvol=@swap,noatime 0 0
 /swap/swapfile none swap defaults 0 0
@@ -422,12 +359,6 @@ cat <<EOF > ${target}/etc/kernel/cmdline || exit 1
 ${kernel_params}
 EOF
 
-if [ "${ENABLE_SWAP}" == "partition" ]; then
-cat <<EOF > ${target}/etc/dracut.conf.d/90-hibernate.conf || exit 1
-add_dracutmodules+=" resume "
-EOF
-fi
-
 notify install required packages on ${target}
 if [ -z "${NON_INTERACTIVE}" ]; then
     chroot ${target}/ apt-get update -y || exit 1
@@ -441,7 +372,7 @@ bootctl install || exit 1
 EOF
 chroot ${target}/ sh /tmp/run1.sh || exit 1
 
-if [ "${ENABLE_TPM}" == "true" ]; then
+if [ "${DISABLE_LUKS}" != "true" -a "${ENABLE_TPM}" == "true" ]; then
   notify checking for tpm
   cp ${KEYFILE} ${target}/ || exit 1
   chmod 600 ${target}/${KEYFILE} || exit 1
@@ -451,18 +382,12 @@ if grep -qs "/dev/tpm" /tmp/tpm-list.txt ; then
       echo tpm available, enrolling
       echo "... on root"
       systemd-cryptenroll --unlock-key-file=/${KEYFILE} --tpm2-device=auto ${main_partition} --tpm2-pcrs=${TPM_PCRS} || exit 1
-      if [ -e "${swap_partition}" ]; then
-          echo "... on swap"
-          systemd-cryptenroll --unlock-key-file=/${KEYFILE} --tpm2-device=auto ${swap_partition} --tpm2-pcrs=${TPM_PCRS} || exit 1
-      fi
 else
     echo tpm not available
 fi
 EOF
   chroot ${target}/ bash /tmp/run4.sh || exit 1
   rm ${target}/${KEYFILE} || exit 1
-else
-  notify tpm disabled
 fi
 
 notify install kernel and firmware on ${target}
@@ -488,6 +413,7 @@ systemd-cryptsetup
 systemd-timesyncd
 btrfs-progs
 dosfstools
+dracut
 firmware-linux
 atmel-firmware
 bluez-firmware
@@ -579,9 +505,7 @@ notify cleaning up
 chroot ${target}/ apt-get autoremove -y
 
 notify umounting all filesystems
-if [ "${ENABLE_SWAP}" == "partition" ]; then
-    swapoff ${swap_device}
-elif [ "${ENABLE_SWAP}" == "file" ]; then
+if [ ${SWAP_SIZE} -gt 0 ]; then
     swapoff ${target}/swap/swapfile
 fi
 umount -R ${target}
@@ -589,10 +513,7 @@ umount -R ${top_level_mount}
 
 if [ "${DISABLE_LUKS}" != "true" ]; then
   notify closing luks
-  cryptsetup luksClose ${luks_device}
-  if [ "${ENABLE_SWAP}" == "partition" ]; then
-    cryptsetup luksClose /dev/mapper/${swap_device_name}
-  fi
+  cryptsetup luksClose ${luks_device_name}
 fi
 
 notify INSTALLATION FINISHED
