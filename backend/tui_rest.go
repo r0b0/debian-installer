@@ -67,12 +67,13 @@ func (m *Model) startInstallation(baseUrl *url.URL, log io.Writer) error {
 	post.Set("USER_FULL_NAME", m.UserFullName)
 	post.Set("USER_PASSWORD", m.UserPassword)
 	post.Set("ROOT_PASSWORD", m.UserPassword)
+	post.Set("DISABLE_LUKS", m.DisableLuks)
 	post.Set("LUKS_PASSWORD", m.LuksPassword)
 	post.Set("ENABLE_TPM", m.EnableTpm)
 	post.Set("HOSTNAME", m.Hostname)
 	post.Set("TIMEZONE", m.Timezone)
-	post.Set("ENABLE_SWAP", m.EnableSwap)
 	post.Set("SWAP_SIZE", m.SwapSize)
+	post.Set("ENABLE_POPCON", m.EnablePopcon)
 	client := http.Client{}
 	resp, err := client.PostForm(baseUrl.JoinPath("install").String(), post)
 	if err != nil {

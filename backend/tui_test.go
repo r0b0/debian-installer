@@ -30,13 +30,9 @@ func TestParseLoginJson(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Failed to open json file: %v", err)
 	}
-	login, err := parseLoginJson(f)
+	_, err = parseLoginJson(f)
 	if err != nil {
 		t.Fatalf("Failed to parse json: %v", err)
-	}
-
-	if "partition" != login.EnableSwap {
-		t.Errorf("Enable Swap = %s; want partition", login.EnableSwap)
 	}
 }
 

@@ -14,12 +14,13 @@ type Model struct {
 	UserFullName  string `json:"USER_FULL_NAME"`
 	UserPassword  string `json:"USER_PASSWORD"`
 	RootPassword  string `json:"ROOT_PASSWORD"`
+	DisableLuks   string `json:"DISABLE_LUKS"`
 	LuksPassword  string `json:"LUKS_PASSWORD"`
 	EnableTpm     string `json:"ENABLE_TPM"`
 	Hostname      string `json:"HOSTNAME"`
 	Timezone      string `json:"TIMEZONE"`
-	EnableSwap    string `json:"ENABLE_SWAP"`
 	SwapSize      string `json:"SWAP_SIZE"`
+	EnablePopcon  string `json:"ENABLE_POPCON"`
 }
 type LoginResp struct {
 	Environ  Model  `json:"environ"`
