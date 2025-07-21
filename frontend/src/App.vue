@@ -44,6 +44,8 @@ export default {
       if(this.error_message.length>0) {
         ret = false;
       }
+      /*
+      // XXX this is currently broken
       for(const [key, value] of Object.entries(this.installer)) {
         if(key === "LUKS_PASSWORD" && this.installer.DISABLE_LUKS) {
           continue;
@@ -57,6 +59,7 @@ export default {
           break;
         }
       }
+       */
       return ret;
     },
     hostname() {
@@ -298,6 +301,7 @@ export default {
         <input type="checkbox" v-model="installer.DISABLE_LUKS" id="DISABLE_LUKS" class="inline">
         <label for="DISABLE_LUKS" class="inline">Device already encrypted</label>
 
+        <!-- TODO: skip if DISABLE_LUKS -->
         <Password v-model="installer.LUKS_PASSWORD" :disabled="running" :is-main="true"/>
 
         <input type="checkbox" v-model="installer.ENABLE_TPM" id="ENABLE_TPM" class="inline mt-3">
@@ -360,7 +364,7 @@ export default {
   </main>
 
   <footer>
-    <span>Opinionated Debian Installer version 20250622a</span>
+    <span>Opinionated Debian Installer version 20250721a</span>
     <span>Installer &copy;2022-2025 <a href="https://github.com/r0b0/debian-installer">Robert T</a></span>
     <span>Banner &copy;2024 <a href="https://github.com/pccouper/trixie">Elise Couper</a></span>
   </footer>
