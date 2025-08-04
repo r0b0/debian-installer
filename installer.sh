@@ -157,23 +157,10 @@ if [ "${DISABLE_LUKS}" != "true" ]; then
   fi
 fi
 
-if [ -e /dev/disk/by-partlabel/BaseImage ]; then
-    if [ ! -f base_image_copied.txt ]; then
-        notify copy base image to ${root_device}
-        wipefs -a ${root_device} || exit 1
-        dd if=/dev/disk/by-partlabel/BaseImage of=${root_device} bs=256M oflag=dsync status=progress || exit 1
-        notify check the filesystem on root
-        btrfs check ${root_device} || exit 1
-        notify change the filesystem uuid on root
-        btrfstune -U ${btrfs_uuid} -f ${root_device} || exit 1  # change the uuid
-        touch base_image_copied.txt
-    fi
-else
-    if [ ! -f btrfs_created.txt ]; then
-        notify create root filesystem on ${root_device}
-        wipefs -a ${root_device} || exit 1
-        mkfs.btrfs -U ${btrfs_uuid} ${root_device} | tee btrfs_created.txt || exit 1
-    fi
+if [ ! -f btrfs_created.txt ]; then
+    notify create root filesystem on ${root_device}
+    wipefs -a ${root_device} || exit 1
+    mkfs.btrfs -U ${btrfs_uuid} ${root_device} | tee btrfs_created.txt || exit 1
 fi
 
 if [ ! -f vfat_created.txt ]; then
@@ -192,10 +179,27 @@ else
     btrfs filesystem resize max ${top_level_mount} || exit 1
 fi
 
+if [ -e /root/btrfs1/opinionated_installer_bootstrap ]; then
+    if [ ! -f base_image_copied.txt ]; then
+        notify send installer bootrstrap data
+        # TODO add reporting e.g. pv
+        btrfs send /root/btrfs1/opinionated_installer_bootstrap | btrfs receive ${top_level_mount} || exit 1
+        (cd ${top_level_mount}; btrfs subvolume snapshot opinionated_installer_bootstrap @; btrfs subvolume delete opinionated_installer_bootstrap)
+        touch base_image_copied.txt
+    fi
+fi
+
 if [ ! -e ${top_level_mount}/@ ]; then
-    notify create @ and @home subvolumes on ${top_level_mount}
+    notify create @ subvolume on ${top_level_mount}
     btrfs subvolume create ${top_level_mount}/@ || exit 1
+fi
+
+if [ ! -e ${top_level_mount}/@home ]; then
+    notify create @home subvolume on ${top_level_mount}
     btrfs subvolume create ${top_level_mount}/@home || exit 1
+fi
+
+if [ ! -e ${top_level_mount}/@swap ]; then
     if [ ${SWAP_SIZE} -gt 0 ]; then
         notify create @swap subvolume for swap file on ${top_level_mount}
         btrfs subvolume create ${top_level_mount}/@swap || exit 1
@@ -495,6 +499,7 @@ fi
 
 if [ -z "${NON_INTERACTIVE}" ]; then
     notify running tasksel
+    # XXX this does not open for some reason
     chroot ${target}/ tasksel
 fi
 

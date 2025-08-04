@@ -8,7 +8,6 @@ BACKPORTS_VERSION=${DEBIAN_VERSION}  # TODO append "-backports" when available
 FSFLAGS="compress=zstd:19"
 
 target=/target
-root_device=${DISK}2
 
 SCRIPT_DIR=$( cd -- "$( dirname -- "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )
 . ${SCRIPT_DIR}/_make_image_lib.sh
@@ -21,28 +20,24 @@ if [ ! -f efi-part.uuid ]; then
     echo generate uuid for efi partition
     uuidgen > efi-part.uuid
 fi
-if [ ! -f base-image-part.uuid ]; then
-    echo generate uuid for base image partition
-    uuidgen > base-image-part.uuid
-fi
-if [ ! -f top-part.uuid ]; then
-    echo generate uuid for top partition
-    uuidgen > top-part.uuid
+if [ ! -f installer-image-part.uuid ]; then
+    echo generate uuid for installer image partition
+    uuidgen > installer-image-part.uuid
 fi
 efi_uuid=$(cat efi-part.uuid)
-base_image_uuid=$(cat base-image-part.uuid)
-top_uuid=$(cat top-part.uuid)
+installer_image_uuid=$(cat installer-image-part.uuid)
+
+root_part_type="4f68bce3-e8cd-4db1-96e7-fbcaf984b709"  # X86_64
 
 if [ ! -f partitions_created.txt ]; then
-# TODO mark the BaseImage partition as read-only (bit 60 - 0x1000000000000000)
 notify create 2 partitions on ${DISK}
 sfdisk $DISK <<EOF
 label: gpt
 unit: sectors
 sector-size: 512
 
-${DISK}1: start=2048, size=409600, type=uefi, name="EFI system partition", uuid=${efi_uuid}
-${DISK}2: start=411648, size=409600, type=linux, name="BaseImage", uuid=${base_image_uuid}
+start=2048, size=409600, type=uefi, name="EFI system partition", uuid=${efi_uuid}
+start=411648, size=409600, type=${root_part_type}, name="installerImage", uuid=${installer_image_uuid}
 EOF
 
 notify resize the second partition on ${DISK} to fill available space
@@ -51,13 +46,16 @@ echo ", +" | sfdisk -N 2 $DISK
 sfdisk -d $DISK > partitions_created.txt
 fi
 
+root_device=/dev/disk/by-partuuid/${installer_image_uuid}
+efi_device=/dev/disk/by-partuuid/${efi_uuid}
+
 if [ ! -f btrfs_created.txt ]; then
     notify create root filesystem on ${root_device}
     mkfs.btrfs -f ${root_device} | tee btrfs_created.txt
 fi
 if [ ! -f vfat_created.txt ]; then
-    notify create esp filesystem on ${DISK}1
-    mkfs.vfat ${DISK}1 | tee vfat_created.txt
+    notify create esp filesystem on ${efi_device}
+    mkfs.vfat ${efi_device} | tee vfat_created.txt
 fi
 
 if mountpoint -q "/mnt/btrfs1" ; then
@@ -69,10 +67,9 @@ else
 fi
 
 if [ ! -e /mnt/btrfs1/@ ]; then
-    notify create @, @swap and @home subvolumes on /mnt/btrfs1
+    notify create @ and @home subvolumes on /mnt/btrfs1
     btrfs subvolume create /mnt/btrfs1/@
     btrfs subvolume create /mnt/btrfs1/@home
-    btrfs subvolume create /mnt/btrfs1/@swap
 fi
 
 if mountpoint -q "${target}" ; then
@@ -236,14 +233,7 @@ rm -f ${target}/etc/crypttab
 rm -f ${target}/var/log/*log
 rm -f ${target}/var/log/apt/*log
 
-# shrink_btrfs_filesystem ${target}  # XXX ERROR: error during balancing '/target': No space left on device
+notify create snapshot after first phase
+(cd /mnt/btrfs1; btrfs subvolume snapshot -r @ opinionated_installer_bootstrap)
 
-echo "Disk usage on ${target}"
-df -h ${target}
-btrfs fi df ${target}
-
-notify umounting all filesystems
-umount -R ${target}
-umount -R /mnt/btrfs1
-
-echo "NOW POWER OFF, ADD 500MB AND CONTINUE WITH PART 2"
+echo "NOW CONTINUE WITH PART 2"  # TODO merge the 2 scripts (and the _lib script as well)
