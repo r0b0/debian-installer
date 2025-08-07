@@ -34,6 +34,9 @@ jobs:
         path: backend/opinionated-installer
 
   build-web-gui:
+    permissions:
+      id-token: write
+      pages: write
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v4
@@ -51,8 +54,22 @@ jobs:
         npm ci
         npm run build
         
-    - name: 'Upload Artifact'
+    - name: Upload Artifact
       uses: actions/upload-artifact@v4
       with:
         name: browser-gui-frontend-dist
         path: frontend/dist/
+        
+    - name: Build for GitHub Pages
+      run: |
+        cd frontend
+        npm ci
+        npm run ghpages
+        
+    - name: Upload GitHub Pages
+      uses: actions/upload-pages-artifact@v3
+      with:
+        path: 'frontend/dist'
+    
+    - name: Deploy to GitHub Pages
+      uses: actions/deploy-pages@v4

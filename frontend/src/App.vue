@@ -61,9 +61,6 @@ export default {
       }
        */
       return ret;
-    },
-    hostname() {
-      return window.location.hostname;
     }
   },
   setup() {
@@ -153,7 +150,7 @@ export default {
       }
     },
     read_process_output() {
-      this.output_reader_connection = new WebSocket(`ws://${this.hostname}:5000/process_output`);
+      this.output_reader_connection = new WebSocket(`ws://localhost:5000/process_output`);
       this.output_reader_connection.onmessage = (event) => {
         // console.log("Websocket event received");
         // console.log(event);
@@ -181,7 +178,7 @@ export default {
       for(const [key, value] of Object.entries(this.installer)) {
         data.append(key, value);
       }
-      fetch(`http://${this.hostname}:5000/install`, {"method": "POST", "body": data})
+      fetch(`http://localhost:5000/install`, {"method": "POST", "body": data})
         .then(response => {
             //console.debug(response);
             if(!response.ok) {
@@ -232,7 +229,7 @@ export default {
           });
     },
     fetch_from_backend(path) {
-      let url = new URL(path, `http://${this.hostname}:5000`);
+      let url = new URL(path, `http://localhost:5000`);
       return fetch(url.href)
           .then(response => {
             if(!response.ok) {
@@ -358,7 +355,7 @@ export default {
         <textarea ref="process_output_ta" :class="overall_status">{{ install_to_device_status }}</textarea>
 
         <!-- TODO disable this while not finished instead of hiding -->
-        <a v-if="finished" :href="'http://' + hostname + ':5000/download_log'" download>Download Log</a>
+        <a v-if="finished" :href="'http://localhost:5000/download_log'" download>Download Log</a>
       </fieldset>
     </form>
   </main>

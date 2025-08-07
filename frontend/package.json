@@ -5,7 +5,8 @@
   "scripts": {
     "dev": "vite",
     "build": "vite build",
-    "preview": "vite preview --port 4173"
+    "preview": "vite preview --port 4173",
+    "ghpages": "vite build --base=/debian-installer/"
   },
   "dependencies": {
     "vue": "^3.5.17"
