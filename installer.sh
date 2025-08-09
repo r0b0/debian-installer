@@ -55,7 +55,7 @@ fi
 if [ -z "${NON_INTERACTIVE}" ]; then
     notify install required packages
     apt-get update -y  || exit 1
-    apt-get install -y cryptsetup debootstrap uuid-runtime btrfs-progs dosfstools || exit 1
+    apt-get install -y cryptsetup debootstrap uuid-runtime btrfs-progs dosfstools pv || exit 1
 fi
 
 KEYFILE=luks.key
@@ -181,8 +181,7 @@ fi
 if [ -e /root/btrfs1/opinionated_installer_bootstrap ]; then
     if [ ! -f base_image_copied.txt ]; then
         notify send installer bootrstrap data
-        # TODO add reporting e.g. pv
-        btrfs send --compressed-data /root/btrfs1/opinionated_installer_bootstrap | btrfs receive ${top_level_mount} || exit 1
+        btrfs send --compressed-data /root/btrfs1/opinionated_installer_bootstrap | pv -nb | btrfs receive ${top_level_mount} || exit 1
         (cd ${top_level_mount}; btrfs subvolume snapshot opinionated_installer_bootstrap @; btrfs subvolume delete opinionated_installer_bootstrap)
         touch base_image_copied.txt
     fi
@@ -360,6 +359,7 @@ fi
 
 notify configuring dracut and kernel command line
 mkdir -p ${target}/etc/dracut.conf.d
+# TODO change this when DISABLE_LUKS
 cat <<EOF > ${target}/etc/dracut.conf.d/90-luks.conf || exit 1
 add_dracutmodules+=" systemd crypt btrfs tpm2-tss "
 kernel_cmdline="${kernel_params}"

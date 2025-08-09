@@ -268,6 +268,7 @@ notify setup fstab
 mkdir -p ${target}/root/btrfs1
 cat <<EOF > ${target}/etc/fstab
 PARTUUID=${installer_image_uuid} / btrfs defaults,subvol=@ 0 1
+PARTUUID=${installer_image_uuid} /home btrfs defaults,subvol=@home 0 1
 PARTUUID=${installer_image_uuid} /root/btrfs1 btrfs defaults,subvolid=5 0 1
 PARTUUID=${efi_uuid} /boot/efi vfat defaults,umask=077 0 2
 EOF
@@ -341,7 +342,7 @@ cat <<EOF > ${target}/tmp/run1.sh
 export DEBIAN_FRONTEND=noninteractive
 apt-get update -y
 apt-get upgrade -y
-apt-get install -y  debootstrap uuid-runtime curl
+apt-get install -y  debootstrap uuid-runtime curl pv
 apt-get install -y -t ${BACKPORTS_VERSION} systemd-boot systemd-repart libsystemd-dev dracut cryptsetup nvidia-detect
 apt-get purge initramfs-tools initramfs-tools-core -y
 bootctl install
