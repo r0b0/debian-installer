@@ -173,17 +173,16 @@ fi
 if mountpoint -q "${top_level_mount}" ; then
     echo top-level subvolume already mounted on ${top_level_mount}
 else
-    notify mount top-level subvolume on ${top_level_mount} and resize to fit the whole partition
+    notify mount top-level subvolume on ${top_level_mount}
     mkdir -p ${top_level_mount} || exit 1
     mount ${root_device} ${top_level_mount} -o rw,${FSFLAGS},subvolid=5,skip_balance || exit 1
-    btrfs filesystem resize max ${top_level_mount} || exit 1
 fi
 
 if [ -e /root/btrfs1/opinionated_installer_bootstrap ]; then
     if [ ! -f base_image_copied.txt ]; then
         notify send installer bootrstrap data
         # TODO add reporting e.g. pv
-        btrfs send /root/btrfs1/opinionated_installer_bootstrap | btrfs receive ${top_level_mount} || exit 1
+        btrfs send --compressed-data /root/btrfs1/opinionated_installer_bootstrap | btrfs receive ${top_level_mount} || exit 1
         (cd ${top_level_mount}; btrfs subvolume snapshot opinionated_installer_bootstrap @; btrfs subvolume delete opinionated_installer_bootstrap)
         touch base_image_copied.txt
     fi
