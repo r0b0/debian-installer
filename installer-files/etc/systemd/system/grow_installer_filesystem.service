@@ -1,0 +1,13 @@
+# Grow filesystem of installer partition
+
+[Unit]
+Description=Opinionated Debian Installer - Grow installer filesystem
+Wants=systemd-repart.service
+After=systemd-repart.service
+
+[Service]
+Type=oneshot
+ExecStart=/usr/bin/btrfs filesystem resize max /
+
+[Install]
+WantedBy=multi-user.target

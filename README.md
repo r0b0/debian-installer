@@ -135,20 +135,22 @@ Just don't forget to edit the configuration options (especially the `DISK` varia
 ### Creating Your Own Installer Image
 
  1. Insert a blank storage device
- 2. Edit the **DISK** variable at the top of files `make_image_*.sh`
- 3. Execute the `make_image_*.sh` files as root
+ 2. Edit the **DISK** and other variables at the top of `make_image.sh`
+ 3. Execute  `make_image.sh` as root
 
 In the first stage of image generation, you will get a _tasksel_ prompt where you can select a different set of packages for your image.
 
 ### Installer Image Structure
 
-There are 3 GPT partitions on the installer image:
+There are two GPT partitions on the installer image: EFI boot partition and a Btrfs partition.  
+The Btrfs filesystem is created in two phases.
 
- 1. EFI boot partition
- 2. Base Image - Btrfs partition with maximum zstd compression. 
-    When the live system is running, this is used as a [read-only lower device for overlayfs](https://docs.kernel.org/filesystems/overlayfs.html). 
-    When installing the target system, the installer will copy this to the target system, mount it read-write, resize to expand to the whole partition and continue with the system installation.
- 3. Top Overlay - upper and work device for the overlayfs for the live system. The changes you make while the live system is running are persisted here.
+In the first phase, a basic, neutral debian installation is created by debootstrap, tasksel.
+At this point, a snapshot called **opinionated_installer_bootstrap** is created.
+When installing the target system, the installer will detect the snapshot and copy its contents to the target root subvolume using btrfs send/receive.
+
+In the second phase, all the installer specific files are added to the installer Btrfs filesystem.
+Obviously, these are not part of the target installed system.
 
 ### Building the Front-End
 
