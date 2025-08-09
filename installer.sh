@@ -14,6 +14,8 @@ HOSTNAME=debian13
 SWAP_SIZE=2
 NVIDIA_PACKAGE=
 ENABLE_POPCON=false
+LOCALE=C.UTF-8
+KEYMAP=us
 SSH_PUBLIC_KEY=
 AFTER_INSTALLED_CMD=
 fi
@@ -257,15 +259,10 @@ else
     mount ${efi_partition} ${target}/boot/efi -o umask=077 || exit 1
 fi
 
-if [ ! -z "${HOSTNAME}" ]; then
-    notify setup hostname
-    echo "$HOSTNAME" > ${target}/etc/hostname || exit 1
-fi
-
-notify setup timezone
-echo "${TIMEZONE}" > ${target}/etc/timezone || exit 1
-rm -f ${target}/etc/localtime
-(cd ${target} && ln -s /usr/share/zoneinfo/${TIMEZONE} etc/localtime)
+notify setup locale, keymap, timezone, hostname, root password, kernel command line
+systemd-firstboot --root=${target} --locale=${LOCALE} --keymap=${KEYMAP} --timezone=${TIMEZONE} \
+  --hostname=${HOSTNAME} --root-password=${ROOT_PASSWORD} --kernel-command-line="${kernel_params}" \
+  --force || exit 1
 
 notify setup fstab
 mkdir -p ${target}/root/btrfs1 || exit 1
@@ -327,15 +324,6 @@ fi
 notify enable 32bit
 chroot ${target}/ dpkg --add-architecture i386
 
-if grep -qs 'root:\$' ${target}/etc/shadow ; then
-    echo root password already set up
-elif [ ! -z "${ROOT_PASSWORD}" ]; then
-    notify set up root password
-    echo "root:${ROOT_PASSWORD}" > ${target}/tmp/passwd || exit 1
-    chroot ${target}/ bash -c "chpasswd < /tmp/passwd" || exit 1
-    rm -f ${target}/tmp/passwd
-fi
-
 if [ ! -z "${USERNAME}" ]; then
     if grep -qs "^${USERNAME}:" ${target}/etc/shadow ; then
         echo ${USERNAME} user already set up
@@ -359,14 +347,15 @@ fi
 
 notify configuring dracut and kernel command line
 mkdir -p ${target}/etc/dracut.conf.d
-# TODO change this when DISABLE_LUKS
-cat <<EOF > ${target}/etc/dracut.conf.d/90-luks.conf || exit 1
-add_dracutmodules+=" systemd crypt btrfs tpm2-tss "
+cat <<EOF > ${target}/etc/dracut.conf.d/89-btrfs.conf || exit 1
+add_dracutmodules+=" systemd btrfs "
 kernel_cmdline="${kernel_params}"
 EOF
-cat <<EOF > ${target}/etc/kernel/cmdline || exit 1
-${kernel_params}
+if [ "${DISABLE_LUKS}" != "true" ]; then
+cat <<EOF > ${target}/etc/dracut.conf.d/90-luks.conf || exit 1
+add_dracutmodules+=" crypt tpm2-tss "
 EOF
+fi
 
 notify install required packages on ${target}
 if [ -z "${NON_INTERACTIVE}" ]; then
