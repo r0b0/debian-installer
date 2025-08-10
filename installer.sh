@@ -182,7 +182,7 @@ fi
 
 if [ -e /root/btrfs1/opinionated_installer_bootstrap ]; then
     if [ ! -f base_image_copied.txt ]; then
-        notify send installer bootrstrap data
+        notify send installer bootrstrap data - see nr of bytes transferred
         btrfs send --compressed-data /root/btrfs1/opinionated_installer_bootstrap | pv -nb | btrfs receive ${top_level_mount} || exit 1
         (cd ${top_level_mount}; btrfs subvolume snapshot opinionated_installer_bootstrap @; btrfs subvolume delete opinionated_installer_bootstrap)
         touch base_image_copied.txt

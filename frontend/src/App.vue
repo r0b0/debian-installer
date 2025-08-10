@@ -332,7 +332,7 @@ export default {
             <option v-for="item in timezones" :value="item">{{ item }}</option>
         </select>
 
-        <label for="SWAP_SIZE">Swap Size (GB)</label>
+        <label for="SWAP_SIZE">Swap Size (GB) - Set to 0 to Disable</label>
         <input type="number" id="SWAP_SIZE" v-model="installer.SWAP_SIZE" :disabled="running">
 
         <input type="checkbox" v-model="want_nvidia" id="WANT_NVIDIA" class="inline mt-3" :disabled="!has_nvidia || running">
@@ -364,7 +364,7 @@ export default {
   </main>
 
   <footer>
-    <span>Opinionated Debian Installer version 20250722a</span>
+    <span>Opinionated Debian Installer version 20250810a</span>
     <span>Installer &copy;2022-2025 <a href="https://github.com/r0b0/debian-installer">Robert T</a></span>
     <span>Banner &copy;2024 <a href="https://github.com/pccouper/trixie">Elise Couper</a></span>
   </footer>
