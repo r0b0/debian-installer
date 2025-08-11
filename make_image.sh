@@ -345,7 +345,7 @@ apt-get upgrade -y
 apt-get install -y  debootstrap uuid-runtime curl pv
 apt-get install -y -t ${BACKPORTS_VERSION} systemd-boot systemd-repart libsystemd-dev dracut cryptsetup nvidia-detect
 apt-get purge initramfs-tools initramfs-tools-core -y
-bootctl install
+bootctl install --no-variables
 systemctl enable NetworkManager.service
 systemctl disable systemd-networkd.service  # seems to fight with NetworkManager
 systemctl disable systemd-networkd.socket

@@ -378,7 +378,6 @@ if [ "${DISABLE_LUKS}" != "true" -a "${ENABLE_TPM}" == "true" ]; then
 systemd-cryptenroll --tpm2-device=list > /tmp/tpm-list.txt || exit 1
 if grep -qs "/dev/tpm" /tmp/tpm-list.txt ; then
       echo tpm available, enrolling
-      echo "... on root"
       systemd-cryptenroll --unlock-key-file=/${KEYFILE} --tpm2-device=auto ${main_partition} --tpm2-pcrs=${TPM_PCRS} || exit 1
 else
     echo tpm not available
