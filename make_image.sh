@@ -5,7 +5,7 @@ DISK=/dev/vdb
 USERNAME=live
 DEBIAN_VERSION=trixie
 BACKPORTS_VERSION=${DEBIAN_VERSION}  # TODO append "-backports" when available
-FSFLAGS="compress=zstd:19"
+FSFLAGS="compress=zstd:15"
 
 target=/target
 SCRIPT_DIR=$( cd -- "$( dirname -- "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )
@@ -17,7 +17,7 @@ function notify {
 
 notify install required packages
 apt-get update -y
-DEBIAN_FRONTEND=noninteractive apt-get install -y debootstrap uuid-runtime btrfs-progs dosfstools
+DEBIAN_FRONTEND=noninteractive apt-get install -y debootstrap uuid-runtime btrfs-progs dosfstools systemd-repart
 
 if [ ! -f efi-part.uuid ]; then
     echo generate uuid for efi partition
@@ -30,37 +30,41 @@ fi
 efi_uuid=$(cat efi-part.uuid)
 installer_image_uuid=$(cat installer-image-part.uuid)
 
-root_part_type="4f68bce3-e8cd-4db1-96e7-fbcaf984b709"  # X86_64
+notify setting up partitions on ${DISK}
+mkdir -p /mnt/btrfs1
+mkdir -p ${target}/home
+rm -rf repart.d
+mkdir -p repart.d
 
-if [ ! -f partitions_created.txt ]; then
-notify create 2 partitions on ${DISK}
-sfdisk $DISK <<EOF
-label: gpt
-unit: sectors
-sector-size: 512
-
-start=2048, size=409600, type=uefi, name="EFI system partition", uuid=${efi_uuid}
-start=411648, size=409600, type=${root_part_type}, name="installerImage", uuid=${installer_image_uuid}
+cat <<EOF > repart.d/01_efi.conf || exit 1
+[Partition]
+Type=esp
+Label=EFI system partition
+UUID=${efi_uuid}
+SizeMinBytes=200M
+SizeMaxBytes=200M
+Format=vfat
+Encrypt=off
 EOF
 
-notify resize the second partition on ${DISK} to fill available space
-echo ", +" | sfdisk -N 2 $DISK
+cat <<EOF > repart.d/02_baseImage.conf || exit 1
+[Partition]
+Type=root
+Label=Opinionated Debian Installer
+UUID=${installer_image_uuid}
+SizeMinBytes=200M
+Format=btrfs
+MakeDirectories=/@ /@swap /@home
+Subvolumes=/@ /@swap /@home
+Encrypt=off
+EOF
 
-sfdisk -d $DISK > partitions_created.txt
-fi
+wipefs --all ${DISK} || exit 1
+systemd-repart --empty=allow --no-pager --definitions=repart.d --dry-run=no ${DISK} || exit 1
 
 root_device=/dev/disk/by-partuuid/${installer_image_uuid}
 efi_device=/dev/disk/by-partuuid/${efi_uuid}
 kernel_params="rw quiet root=${root_device} rootfstype=btrfs rootflags=subvol=@ splash"
-
-if [ ! -f btrfs_created.txt ]; then
-    notify create root filesystem on ${root_device}
-    mkfs.btrfs -f ${root_device} | tee btrfs_created.txt
-fi
-if [ ! -f vfat_created.txt ]; then
-    notify create esp filesystem on ${efi_device}
-    mkfs.vfat ${efi_device} | tee vfat_created.txt
-fi
 
 if mountpoint -q "/mnt/btrfs1" ; then
     echo top-level subvolume already mounted on /mnt/btrfs1
@@ -68,12 +72,6 @@ else
     notify mount top-level subvolume on /mnt/btrfs1
     mkdir -p /mnt/btrfs1
     mount ${root_device} /mnt/btrfs1 -o ${FSFLAGS},subvolid=5
-fi
-
-if [ ! -e /mnt/btrfs1/@ ]; then
-    notify create @ and @home subvolumes on /mnt/btrfs1
-    btrfs subvolume create /mnt/btrfs1/@
-    btrfs subvolume create /mnt/btrfs1/@home
 fi
 
 if mountpoint -q "${target}" ; then
@@ -143,6 +141,9 @@ EOF
 
 notify enable 32bit
 chroot ${target}/ dpkg --add-architecture i386
+
+notify preconfigure locales
+echo "locales locales/locales_to_be_generated multiselect     en_US.UTF-8 UTF-8" | chroot ${target}/ debconf-set-selections
 
 notify install required packages on ${target}
 cat <<EOF > ${target}/tmp/packages.txt
@@ -345,7 +346,7 @@ apt-get upgrade -y
 apt-get install -y  debootstrap uuid-runtime curl pv
 apt-get install -y -t ${BACKPORTS_VERSION} systemd-boot systemd-repart libsystemd-dev dracut cryptsetup nvidia-detect
 apt-get purge initramfs-tools initramfs-tools-core -y
-bootctl install --no-variables
+bootctl install
 systemctl enable NetworkManager.service
 systemctl disable systemd-networkd.service  # seems to fight with NetworkManager
 systemctl disable systemd-networkd.socket
