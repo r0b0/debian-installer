@@ -21,9 +21,11 @@ AFTER_INSTALLED_CMD=
 fi
 
 function notify () {
-    echo $@
     if [ -z "${NON_INTERACTIVE}" ]; then
-      read -p "Enter to continue"
+      echo -e "\033[32m$*\033[0m"
+      read -rp "Enter to continue"
+    else
+      echo "$*"
     fi
 }
 

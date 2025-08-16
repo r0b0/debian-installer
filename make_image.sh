@@ -11,8 +11,8 @@ target=/target
 SCRIPT_DIR=$( cd -- "$( dirname -- "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )
 
 function notify {
-  echo $@
-  read -p "Enter to continue"
+  echo -e "\033[32m$*\033[0m"
+  read -rp "Enter to continue"
 }
 
 notify install required packages
@@ -39,12 +39,10 @@ mkdir -p repart.d
 cat <<EOF > repart.d/01_efi.conf || exit 1
 [Partition]
 Type=esp
-Label=EFI system partition
 UUID=${efi_uuid}
 SizeMinBytes=200M
 SizeMaxBytes=200M
 Format=vfat
-Encrypt=off
 EOF
 
 cat <<EOF > repart.d/02_baseImage.conf || exit 1
@@ -71,7 +69,7 @@ if mountpoint -q "/mnt/btrfs1" ; then
 else
     notify mount top-level subvolume on /mnt/btrfs1
     mkdir -p /mnt/btrfs1
-    mount ${root_device} /mnt/btrfs1 -o ${FSFLAGS},subvolid=5
+    mount "${root_device}" /mnt/btrfs1 -o ${FSFLAGS},subvolid=5
 fi
 
 if mountpoint -q "${target}" ; then
@@ -79,9 +77,9 @@ if mountpoint -q "${target}" ; then
 else
     notify mount root and home subvolume on ${target}
     mkdir -p ${target}
-    mount ${root_device} ${target} -o ${FSFLAGS},subvol=@
+    mount "${root_device}" ${target} -o ${FSFLAGS},subvol=@
     mkdir -p ${target}/home
-    mount ${root_device} ${target}/home -o ${FSFLAGS},subvol=@home
+    mount "${root_device}" ${target}/home -o ${FSFLAGS},subvol=@home
 fi
 
 mkdir -p ${target}/var/cache/apt/archives
@@ -246,7 +244,7 @@ fi
 
 function install_file() {
   echo "Copying $1 to ${target}"
-  rm -rf "${target}/$1"
+  rm -rf "${target:?}/$1"
   cp -r "${SCRIPT_DIR}/installer-files/$1" "${target}/$1"
 }
 
@@ -262,7 +260,7 @@ if mountpoint -q "${target}/boot/efi" ; then
 else
     notify mount efi esp partition ${efi_device} on ${target}/boot/efi
     mkdir -p ${target}/boot/efi
-    mount ${efi_device} ${target}/boot/efi -o umask=077
+    mount "${efi_device}" ${target}/boot/efi -o umask=077
 fi
 
 notify setup fstab
@@ -336,7 +334,7 @@ cat <<EOF > ${target}/etc/kernel/cmdline
 ${kernel_params}
 EOF
 
-notify install required packages on ${target}
+notify install required installer packages on ${target}
 mkdir -p ${target}/etc/systemd/system
 cat <<EOF > ${target}/tmp/run1.sh
 #!/bin/bash
@@ -381,12 +379,12 @@ rm -f ${target}/var/log/*log
 rm -f ${target}/var/log/apt/*log
 
 notify building the frontend
-(cd ${SCRIPT_DIR}/frontend && npm run build)
-mkdir -p ${SCRIPT_DIR}/installer-files/var/www/html/opinionated-debian-installer
-cp -r ${SCRIPT_DIR}/frontend/dist/* ${SCRIPT_DIR}/installer-files/var/www/html/opinionated-debian-installer
+(cd "${SCRIPT_DIR}/frontend" && npm run build)
+mkdir -p "${SCRIPT_DIR}/installer-files/var/www/html/opinionated-debian-installer"
+cp -r ${SCRIPT_DIR}/frontend/dist/* "${SCRIPT_DIR}/installer-files/var/www/html/opinionated-debian-installer"
 
 notify copying the opinionated debian installer to ${target}
-cp ${SCRIPT_DIR}/installer.sh ${target}/
+cp "${SCRIPT_DIR}/installer.sh" "${target}/"
 chmod +x ${target}/installer.sh
 mkdir -p ${target}/var/www/html
 install_file var/www/html/opinionated-debian-installer
@@ -398,7 +396,7 @@ chroot ${target}/ systemctl enable installer_backend
 chroot ${target}/ systemctl enable grow_installer_filesystem.service
 
 notify installing tui frontend
-cp ${SCRIPT_DIR}/backend/opinionated-installer ${target}/sbin/opinionated-installer
+cp "${SCRIPT_DIR}/backend/opinionated-installer" "${target}/sbin/opinionated-installer"
 chmod +x ${target}/sbin/opinionated-installer
 install_file etc/systemd/system/installer_tui.service
 cat <<EOF > ${target}/tmp/run1.sh
@@ -417,7 +415,8 @@ rm -f ${target}/tmp/run1.sh
 
 notify note the filesystem usage
 df -h ${target}
-btrfs fi df ${target}
+btrfs filesystem df ${target}
+df -h ${target}/boot/efi
 
 notify umounting the installer filesystem
 sync
