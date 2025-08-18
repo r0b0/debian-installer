@@ -23,7 +23,7 @@ Our opinions of what a modern installation of Debian should look like in 2025 ar
 |---------------------|---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|-------------------------------------------------------------------------|
 | KDE Plasma          | [opinionated-debian-installer-trixie-kde-plasma-20250810a.img (5.4GB)](https://objectstorage.eu-frankfurt-1.oraclecloud.com/n/fr2rf1wke5iq/b/public/o/opinionated-debian-installer-trixie-kde-plasma-20250810a.img) | 15ebf0b3 7846c2c3 ffe4c8f8 a6167f93 c6e57bba 5231cc8f 8bd6ba9f cc399f80 |
 | Gnome               | [opinionated-debian-installer-trixie-gnome-20250811a.img (4.3GB)](https://objectstorage.eu-frankfurt-1.oraclecloud.com/n/fr2rf1wke5iq/b/public/o/opinionated-debian-installer-trixie-gnome-20250811a.img)           | 6901e643 2ef93c19 7e133434 60e765af 49c5728d 94783314 5737cc75 d6091d1a |
-| Server              | [opinionated-debian-installer-trixie-server-20250602a.img (2.5GB)](https://objectstorage.eu-frankfurt-1.oraclecloud.com/n/fr2rf1wke5iq/b/public/o/opinionated-debian-installer-trixie-server-20250602a.img)         | 09fa62ec 04f3201b db5557e5 61215c70 d706be85 c0034d1f 8cff893a ee884a1a |
+| Server              | [opinionated-debian-installer-trixie-server-20250818a.img (2.4GB)](https://objectstorage.eu-frankfurt-1.oraclecloud.com/n/fr2rf1wke5iq/b/public/o/opinionated-debian-installer-trixie-server-20250818a.img)         | a92e0fe1 daedd9f7 f254a4fc 4fc8bafa e83871dc c22080cf bdce4154 c03909d1 |
 
 ## Instructions
 

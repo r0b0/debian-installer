@@ -362,6 +362,7 @@ notify install kernel on ${target}
 cat <<EOF > ${target}/tmp/run1.sh
 #!/bin/bash
 export DEBIAN_FRONTEND=noninteractive
+# TODO remove busybox klibc-utils libklibc
 apt-get -t ${BACKPORTS_VERSION} install linux-image-amd64 -y
 EOF
 chroot ${target}/ bash /tmp/run1.sh
