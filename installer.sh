@@ -15,6 +15,7 @@ SWAP_SIZE=2
 NVIDIA_PACKAGE=
 ENABLE_POPCON=false
 LOCALE=C.UTF-8
+TIMEZONE=Europe/Bratislava
 KEYMAP=us
 SSH_PUBLIC_KEY=
 AFTER_INSTALLED_CMD=
@@ -59,32 +60,23 @@ fi
 if [ -z "${NON_INTERACTIVE}" ]; then
     notify install required packages
     apt-get update -y  || exit 1
-    apt-get install -y cryptsetup debootstrap uuid-runtime btrfs-progs dosfstools pv || exit 1
+    apt-get install -y cryptsetup debootstrap uuid-runtime btrfs-progs dosfstools pv systemd-repart || exit 1
 fi
 
 KEYFILE=luks.key
+dd if=/dev/random of=${KEYFILE} bs=512 count=1 || exit 1
+
 if [ ! -f efi-part.uuid ]; then
-    notify generate uuid for efi partition
     uuidgen > efi-part.uuid || exit 1
 fi
 if [ ! -f main-part.uuid ]; then
-    notify generate uuid for main partition
     uuidgen > main-part.uuid || exit 1
 fi
-
-if [ ! -f btrfs.uuid ]; then
-    notify generate uuid for btrfs filesystem
-    uuidgen > btrfs.uuid || exit 1
-fi
-
-root_part_type="4f68bce3-e8cd-4db1-96e7-fbcaf984b709"  # X86_64
-system_part_type="C12A7328-F81F-11D2-BA4B-00A0C93EC93B"
 
 efi_part_uuid=$(cat efi-part.uuid)
 main_part_uuid=$(cat main-part.uuid)
 efi_partition=/dev/disk/by-partuuid/${efi_part_uuid}
 main_partition=/dev/disk/by-partuuid/${main_part_uuid}
-btrfs_uuid=$(cat btrfs.uuid)
 top_level_mount=/mnt/top_level_mount
 target=/target
 kernel_params="rw quiet rootfstype=btrfs rootflags=${FSFLAGS},subvol=@ rd.auto=1 splash"
@@ -96,22 +88,41 @@ else
   root_device=${main_partition}
 fi
 
-if [ ! -f partitions_created.txt ]; then
-notify create partitions on ${DISK}
-sfdisk $DISK <<EOF || exit 1
-label: gpt
-unit: sectors
-sector-size: 512
-
-start=2048, size=2097152, type=${system_part_type}, name="EFI system partition", uuid=${efi_part_uuid}
-start=2099200, size=4096000, type=${root_part_type}, name="Root partition", uuid=${main_part_uuid}
+notify setting up partitions on ${DISK}
+rm -rf repart.d
+mkdir -p repart.d
+cat <<EOF > repart.d/01_efi.conf || exit 1
+[Partition]
+Type=esp
+UUID=${efi_part_uuid}
+SizeMinBytes=1024M
+SizeMaxBytes=1024M
+Format=vfat
 EOF
 
-notify resize the root partition on ${DISK} to fill available space
-echo ", +" | sfdisk -N 2 $DISK || exit 1
+cat <<EOF > repart.d/02_root.conf || exit 1
+[Partition]
+Type=root
+Label=Debian ${DEBIAN_VERSION}
+UUID=${main_part_uuid}
+Format=btrfs
+MakeDirectories=/@home
+Subvolumes=/@home
+EOF
 
-sfdisk -d $DISK > partitions_created.txt || exit 1
+if [ "${DISABLE_LUKS}" == "true" ]; then
+  echo "Encrypt=off" >> repart.d/02_root.conf
+elif [ "${ENABLE_TPM}" == "true" ]; then
+  echo "Encrypt=key-file+tpm2" >> repart.d/02_root.conf
+else
+  echo "Encrypt=key-file" >> repart.d/02_root.conf
 fi
+
+wipefs --all ${DISK} || exit 1
+# sector-size: see https://github.com/systemd/systemd/issues/37801
+# remove with systemd 258
+systemd-repart --sector-size=512 --empty=allow --no-pager --definitions=repart.d --dry-run=no ${DISK} \
+  --key-file=${KEYFILE} --tpm2-device=auto --tpm2-pcrs=${TPM_PCRS} || exit 1
 
 function wait_for_file {
     filename="$1"
@@ -124,55 +135,20 @@ function wait_for_file {
 
 wait_for_file ${main_partition}
 
-if [ "${DISABLE_LUKS}" != "true" -a ! -f $KEYFILE ]; then
-    # TODO do we want to store this file in the installed system?
-    notify generate key file for luks
-    dd if=/dev/random of=${KEYFILE} bs=512 count=1 || exit 1
-    notify "remove any old luks on ${main_partition} (root)"
-    cryptsetup erase --batch-mode ${main_partition}
-    wait_for_file ${main_partition}
-    wipefs -a ${main_partition} || exit 1
-    wait_for_file ${main_partition}
-fi
-
-function setup_luks {
-  cryptsetup isLuks "$1"
-  retVal=$?
-  if [ $retVal -ne 0 ]; then
-      notify setup luks on "$1"
-      cryptsetup luksFormat "$1" --type luks2 --batch-mode --key-file $KEYFILE || exit 1
-      notify setup luks password on "$1"
-      echo -n "${LUKS_PASSWORD}" > /tmp/passwd
-      cryptsetup --key-file=luks.key luksAddKey "$1" /tmp/passwd || exit 1
-      rm -f /tmp/passwd
-  else
-      echo luks already set up on "$1"
-  fi
-  cryptsetup luksUUID "$1" > luks.uuid || exit 1
-}
-
 if [ "${DISABLE_LUKS}" != "true" ]; then
-  setup_luks ${main_partition}
+  notify setup luks password on ${main_partition}
+  echo -n "${LUKS_PASSWORD}" > /tmp/passwd
+  cryptsetup --key-file=luks.key luksAddKey "${main_partition}" /tmp/passwd || exit 1
+  rm -f /tmp/passwd
+  cryptsetup luksUUID "${main_partition}" > luks.uuid || exit 1
   root_uuid=$(cat luks.uuid)
-
   if [ ! -e ${root_device} ]; then
       notify open luks on root
       cryptsetup luksOpen ${main_partition} ${luks_device_name} --key-file $KEYFILE || exit 1
   fi
 fi
 
-if [ ! -f btrfs_created.txt ]; then
-    notify create root filesystem on ${root_device}
-    wipefs -a ${root_device} || exit 1
-    mkfs.btrfs -U ${btrfs_uuid} ${root_device} | tee btrfs_created.txt || exit 1
-fi
-
-if [ ! -f vfat_created.txt ]; then
-    notify create esp filesystem on ${efi_partition}
-    wipefs -a ${efi_partition} || exit 1
-    mkfs.vfat ${efi_partition} || exit 1
-    touch vfat_created.txt
-fi
+btrfs_uuid=$(lsblk -no UUID ${root_device})
 
 if mountpoint -q "${top_level_mount}" ; then
     echo top-level subvolume already mounted on ${top_level_mount}
@@ -189,16 +165,9 @@ if [ -e /root/btrfs1/opinionated_installer_bootstrap ]; then
         (cd ${top_level_mount}; btrfs subvolume snapshot opinionated_installer_bootstrap @; btrfs subvolume delete opinionated_installer_bootstrap)
         touch base_image_copied.txt
     fi
-fi
-
-if [ ! -e ${top_level_mount}/@ ]; then
-    notify create @ subvolume on ${top_level_mount}
-    btrfs subvolume create ${top_level_mount}/@ || exit 1
-fi
-
-if [ ! -e ${top_level_mount}/@home ]; then
-    notify create @home subvolume on ${top_level_mount}
-    btrfs subvolume create ${top_level_mount}/@home || exit 1
+else
+  notify create @ subvolume on ${top_level_mount}
+  btrfs subvolume create ${top_level_mount}/@ || exit 1
 fi
 
 if [ ! -e ${top_level_mount}/@swap ]; then
@@ -256,7 +225,7 @@ fi
 if mountpoint -q "${target}/boot/efi" ; then
     echo efi esp partition ${efi_partition} already mounted on ${target}/boot/efi
 else
-    notify mount efi esp partition ${efi_partition} on ${target}/boot/efi
+    notify mount esp partition ${efi_partition} on ${target}/boot/efi
     mkdir -p ${target}/boot/efi || exit 1
     mount ${efi_partition} ${target}/boot/efi -o umask=077 || exit 1
 fi
@@ -265,6 +234,8 @@ notify setup locale, keymap, timezone, hostname, root password, kernel command l
 systemd-firstboot --root=${target} --locale=${LOCALE} --keymap=${KEYMAP} --timezone=${TIMEZONE} \
   --hostname=${HOSTNAME} --root-password=${ROOT_PASSWORD} --kernel-command-line="${kernel_params}" \
   --force || exit 1
+echo "127.0.1.1 ${HOSTNAME}" >> ${target}/etc/hosts || exit 1
+echo "locales locales/locales_to_be_generated multiselect     en_US.UTF-8 UTF-8" | chroot ${target}/ debconf-set-selections || exit 1
 
 notify setup fstab
 mkdir -p ${target}/root/btrfs1 || exit 1
@@ -277,7 +248,7 @@ EOF
 
 if [ ${SWAP_SIZE} -gt 0 ]; then
 cat <<EOF >> ${target}/etc/fstab || exit 1
-UUID=${btrfs_uuid} /swap btrfs defaults,subvol=@swap,noatime 0 0
+UUID=${btrfs_uuid} /swap btrfs defaults,subvol=@swap,noatime,${FSFLAGS} 0 0
 /swap/swapfile none swap defaults 0 0
 EOF
 fi
@@ -351,7 +322,6 @@ notify configuring dracut and kernel command line
 mkdir -p ${target}/etc/dracut.conf.d
 cat <<EOF > ${target}/etc/dracut.conf.d/89-btrfs.conf || exit 1
 add_dracutmodules+=" systemd btrfs "
-kernel_cmdline="${kernel_params}"
 EOF
 if [ "${DISABLE_LUKS}" != "true" ]; then
 cat <<EOF > ${target}/etc/dracut.conf.d/90-luks.conf || exit 1
@@ -366,28 +336,11 @@ fi
 cat <<EOF > ${target}/tmp/run1.sh || exit 1
 #!/bin/bash
 export DEBIAN_FRONTEND=noninteractive
-apt-get install -y locales  tasksel network-manager sudo || exit 1
+apt-get install -y locales tasksel network-manager sudo || exit 1
 apt-get install -y -t ${BACKPORTS_VERSION} systemd systemd-boot dracut btrfs-progs cryptsetup tpm2-tools tpm-udev || exit 1
 bootctl install || exit 1
 EOF
 chroot ${target}/ sh /tmp/run1.sh || exit 1
-
-if [ "${DISABLE_LUKS}" != "true" -a "${ENABLE_TPM}" == "true" ]; then
-  notify checking for tpm
-  cp ${KEYFILE} ${target}/ || exit 1
-  chmod 600 ${target}/${KEYFILE} || exit 1
-  cat <<EOF > ${target}/tmp/run4.sh || exit 1
-systemd-cryptenroll --tpm2-device=list > /tmp/tpm-list.txt || exit 1
-if grep -qs "/dev/tpm" /tmp/tpm-list.txt ; then
-      echo tpm available, enrolling
-      systemd-cryptenroll --unlock-key-file=/${KEYFILE} --tpm2-device=auto ${main_partition} --tpm2-pcrs=${TPM_PCRS} || exit 1
-else
-    echo tpm not available
-fi
-EOF
-  chroot ${target}/ bash /tmp/run4.sh || exit 1
-  rm ${target}/${KEYFILE} || exit 1
-fi
 
 notify install kernel and firmware on ${target}
 cat <<EOF > ${target}/tmp/packages.txt || exit 1
@@ -445,6 +398,9 @@ plymouth-themes
 polkitd
 tpm2-tools
 tpm-udev
+initramfs-tools-
+initramfs-tools-core-
+initramfs-tools-bin-
 EOF
 cat <<EOF > ${target}/tmp/run2.sh || exit 1
 #!/bin/bash

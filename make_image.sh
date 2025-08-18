@@ -54,11 +54,14 @@ SizeMinBytes=200M
 Format=btrfs
 MakeDirectories=/@ /@swap /@home
 Subvolumes=/@ /@swap /@home
+GrowFileSystem=on
 Encrypt=off
 EOF
 
 wipefs --all ${DISK} || exit 1
-systemd-repart --empty=allow --no-pager --definitions=repart.d --dry-run=no ${DISK} || exit 1
+# sector-size: see https://github.com/systemd/systemd/issues/37801
+# remove with systemd 258
+systemd-repart --sector-size=512 --empty=allow --no-pager --definitions=repart.d --dry-run=no ${DISK} || exit 1
 
 root_device=/dev/disk/by-partuuid/${installer_image_uuid}
 efi_device=/dev/disk/by-partuuid/${efi_uuid}
@@ -266,7 +269,7 @@ fi
 notify setup fstab
 mkdir -p ${target}/root/btrfs1
 cat <<EOF > ${target}/etc/fstab
-PARTUUID=${installer_image_uuid} / btrfs defaults,subvol=@ 0 1
+PARTUUID=${installer_image_uuid} / btrfs defaults,subvol=@,x-systemd.growfs 0 1
 PARTUUID=${installer_image_uuid} /home btrfs defaults,subvol=@home 0 1
 PARTUUID=${installer_image_uuid} /root/btrfs1 btrfs defaults,subvolid=5 0 1
 PARTUUID=${efi_uuid} /boot/efi vfat defaults,umask=077 0 2
@@ -343,7 +346,7 @@ apt-get update -y
 apt-get upgrade -y
 apt-get install -y  debootstrap uuid-runtime curl pv
 apt-get install -y -t ${BACKPORTS_VERSION} systemd-boot systemd-repart libsystemd-dev dracut cryptsetup nvidia-detect
-apt-get purge initramfs-tools initramfs-tools-core -y
+apt-get purge initramfs-tools initramfs-tools-core initramfs-tools-bin -y
 bootctl install
 systemctl enable NetworkManager.service
 systemctl disable systemd-networkd.service  # seems to fight with NetworkManager
@@ -389,11 +392,8 @@ chmod +x ${target}/installer.sh
 mkdir -p ${target}/var/www/html
 install_file var/www/html/opinionated-debian-installer
 install_file etc/systemd/system/installer_backend.service
-install_file etc/systemd/system/grow_installer_filesystem.service
 install_file boot/efi/installer.ini
 chroot ${target}/ systemctl enable installer_backend
-# TODO replace by systemd-growfs
-chroot ${target}/ systemctl enable grow_installer_filesystem.service
 
 notify installing tui frontend
 cp "${SCRIPT_DIR}/backend/opinionated-installer" "${target}/sbin/opinionated-installer"
