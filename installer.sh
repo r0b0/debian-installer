@@ -328,6 +328,17 @@ cat <<EOF > ${target}/etc/dracut.conf.d/90-luks.conf || exit 1
 add_dracutmodules+=" crypt tpm2-tss "
 EOF
 fi
+cat <<EOF > ${target}/etc/kernel/install.conf || exit 1
+layout=uki
+uki_generator=ukify
+initrd_generator=dracut
+EOF
+cat <<EOF > ${target}/etc/kernel/uki.conf || exit 1
+[UKI]
+Cmdline=@/etc/kernel/cmdline
+SecureBootCertificate=/etc/kernel/mok.cert.pem
+SecureBootPrivateKey=/etc/kernel/mok.priv.pem
+EOF
 
 notify install required packages on ${target}
 if [ -z "${NON_INTERACTIVE}" ]; then
@@ -337,8 +348,19 @@ cat <<EOF > ${target}/tmp/run1.sh || exit 1
 #!/bin/bash
 export DEBIAN_FRONTEND=noninteractive
 apt-get install -y locales tasksel network-manager sudo || exit 1
-apt-get install -y -t ${BACKPORTS_VERSION} systemd systemd-boot dracut btrfs-progs cryptsetup tpm2-tools tpm-udev || exit 1
+apt-get install -y -t ${BACKPORTS_VERSION} systemd systemd-boot systemd-ukify sbsigntool dracut btrfs-progs cryptsetup tpm2-tools tpm-udev || exit 1
+
 bootctl install || exit 1
+
+ukify genkey --config /etc/kernel/uki.conf || exit 1
+openssl x509 -in /etc/kernel/mok.cert.pem -out /etc/kernel/mok.cert.der -outform der || exit 1
+
+mkdir -p /var/lib/dkms || exit 1
+ln -s /etc/kernel/mok.priv.pem /var/lib/dkms/mok.key || exit 1
+ln -s /etc/kernel/mok.cert.der /var/lib/dkms/mok.pub || exit 1
+
+# see https://bugs.debian.org/cgi-bin/bugreport.cgi?bug=1095646
+ln -s /dev/null /etc/kernel/install.d/50-dracut.install
 EOF
 chroot ${target}/ sh /tmp/run1.sh || exit 1
 
@@ -401,6 +423,9 @@ tpm-udev
 initramfs-tools-
 initramfs-tools-core-
 initramfs-tools-bin-
+busybox-
+klibc-utils-
+libklibc-
 EOF
 cat <<EOF > ${target}/tmp/run2.sh || exit 1
 #!/bin/bash

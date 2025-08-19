@@ -166,6 +166,8 @@ cat <<EOF > ${target}/tmp/packages_backports.txt
 systemd
 systemd-cryptsetup
 systemd-timesyncd
+systemd-ukify
+sbsigntool
 btrfs-progs
 dosfstools
 firmware-linux
@@ -336,6 +338,15 @@ EOF
 cat <<EOF > ${target}/etc/kernel/cmdline
 ${kernel_params}
 EOF
+cat <<EOF > ${target}/etc/kernel/install.conf || exit 1
+layout=uki
+uki_generator=ukify
+initrd_generator=dracut
+EOF
+cat <<EOF > ${target}/etc/kernel/uki.conf || exit 1
+[UKI]
+Cmdline=@/etc/kernel/cmdline
+EOF
 
 notify install required installer packages on ${target}
 mkdir -p ${target}/etc/systemd/system
@@ -344,9 +355,9 @@ cat <<EOF > ${target}/tmp/run1.sh
 export DEBIAN_FRONTEND=noninteractive
 apt-get update -y
 apt-get upgrade -y
-apt-get install -y  debootstrap uuid-runtime curl pv
-apt-get install -y -t ${BACKPORTS_VERSION} systemd-boot systemd-repart libsystemd-dev dracut cryptsetup nvidia-detect
-apt-get purge initramfs-tools initramfs-tools-core initramfs-tools-bin -y
+apt-get install -y debootstrap uuid-runtime curl pv
+apt-get install -y -t ${BACKPORTS_VERSION} systemd-boot systemd-repart dracut cryptsetup nvidia-detect
+apt-get purge initramfs-tools initramfs-tools-core initramfs-tools-bin busybox klibc-utils libklibc -y
 bootctl install
 systemctl enable NetworkManager.service
 systemctl disable systemd-networkd.service  # seems to fight with NetworkManager
@@ -361,8 +372,11 @@ chroot ${target}/ bash /tmp/run1.sh
 notify install kernel on ${target}
 cat <<EOF > ${target}/tmp/run1.sh
 #!/bin/bash
+
+# see https://bugs.debian.org/cgi-bin/bugreport.cgi?bug=1095646
+ln -s /dev/null /etc/kernel/install.d/50-dracut.install
+
 export DEBIAN_FRONTEND=noninteractive
-# TODO remove busybox klibc-utils libklibc
 apt-get -t ${BACKPORTS_VERSION} install linux-image-amd64 -y
 EOF
 chroot ${target}/ bash /tmp/run1.sh
