@@ -9,6 +9,7 @@ USER_PASSWORD=hunter2
 ROOT_PASSWORD=changeme
 DISABLE_LUKS=false
 LUKS_PASSWORD=luke
+ENABLE_MOK_SIGNED_UKI=true
 ENABLE_TPM=true
 HOSTNAME=debian13
 SWAP_SIZE=2
@@ -328,6 +329,8 @@ cat <<EOF > ${target}/etc/dracut.conf.d/90-luks.conf || exit 1
 add_dracutmodules+=" crypt tpm2-tss "
 EOF
 fi
+
+if [ "${ENABLE_MOK_SIGNED_UKI}" == "true" ]; then
 cat <<EOF > ${target}/etc/kernel/install.conf || exit 1
 layout=uki
 uki_generator=ukify
@@ -339,6 +342,7 @@ Cmdline=@/etc/kernel/cmdline
 SecureBootCertificate=/etc/kernel/mok.cert.pem
 SecureBootPrivateKey=/etc/kernel/mok.priv.pem
 EOF
+fi # ENABLE_MOK_SIGNED_UKI
 
 notify install required packages on ${target}
 if [ -z "${NON_INTERACTIVE}" ]; then
@@ -348,21 +352,42 @@ cat <<EOF > ${target}/tmp/run1.sh || exit 1
 #!/bin/bash
 export DEBIAN_FRONTEND=noninteractive
 apt-get install -y locales tasksel network-manager sudo || exit 1
-apt-get install -y -t ${BACKPORTS_VERSION} systemd systemd-boot systemd-ukify sbsigntool dracut btrfs-progs cryptsetup tpm2-tools tpm-udev || exit 1
+apt-get install -y -t ${BACKPORTS_VERSION} systemd shim-signed systemd-boot systemd-boot-efi-amd64-signed systemd-ukify sbsigntool dracut btrfs-progs cryptsetup tpm2-tools tpm-udev || exit 1
 
 bootctl install || exit 1
 
-ukify genkey --config /etc/kernel/uki.conf || exit 1
-openssl x509 -in /etc/kernel/mok.cert.pem -out /etc/kernel/mok.cert.der -outform der || exit 1
+# see https://bugs.debian.org/cgi-bin/bugreport.cgi?bug=1095646
+ln -s /dev/null /etc/kernel/install.d/50-dracut.install
+# XXX this didn't seem to work
+EOF
+chroot ${target}/ sh /tmp/run1.sh || exit 1
 
+if [ "${ENABLE_MOK_SIGNED_UKI}" == "true" ]; then
+cat <<EOF > ${target}/tmp/run1.sh || exit 1
+#!/bin/bash
+# generate cert and key in pem format in /etc/kernel/mok.*.pem
+ukify genkey --config /etc/kernel/uki.conf || exit 1
+
+# convert to der format
+openssl x509 -in /etc/kernel/mok.cert.pem -out /etc/kernel/mok.cert.der -outform der || exit 1
+openssl rsa -in /etc/kernel/mok.priv.pem -out /etc/kernel/mok.priv.der -outform der || exit 1
+
+# symlink for DKMS
 mkdir -p /var/lib/dkms || exit 1
 ln -s /etc/kernel/mok.priv.pem /var/lib/dkms/mok.key || exit 1
 ln -s /etc/kernel/mok.cert.der /var/lib/dkms/mok.pub || exit 1
 
-# see https://bugs.debian.org/cgi-bin/bugreport.cgi?bug=1095646
-ln -s /dev/null /etc/kernel/install.d/50-dracut.install
+# symlink in "ubuntu" de-facto standard directory
+mkdir -p /var/lib/shim-signed/mok || exit 1
+ln -s /etc/kernel/mok.cert.der /var/lib/shim-signed/mok/MOK-Kernel.der || exit 1
+ln -s /etc/kernel/mok.cert.pem /var/lib/shim-signed/mok/MOK-Kernel.pem || exit 1
+ln -s /etc/kernel/mok.priv.der /var/lib/shim-signed/mok/MOK-Kernel.priv || exit 1
+
+# TODO bootctl install --secure-boot-auto-enroll=yes \
+#  --private-key=/etc/kernel/mok.priv.der --private-key=/etc/kernel/mok.cert.der
 EOF
 chroot ${target}/ sh /tmp/run1.sh || exit 1
+fi # ENABLE_MOK_SIGNED_UKI
 
 notify install kernel and firmware on ${target}
 cat <<EOF > ${target}/tmp/packages.txt || exit 1

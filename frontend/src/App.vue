@@ -28,6 +28,7 @@ export default {
         USER_PASSWORD: undefined,
         ROOT_PASSWORD: undefined,
         LUKS_PASSWORD: undefined,
+        ENABLE_MOK_SIGNED_UKI: undefined,
         DISABLE_LUKS: undefined,
         ENABLE_TPM: undefined,
         HOSTNAME: undefined,
@@ -326,6 +327,10 @@ export default {
         <legend>Configuration</legend>
         <label for="HOSTNAME">Hostname</label>
         <input type="text" id="HOSTNAME" v-model="installer.HOSTNAME" :disabled="running">
+
+        <input type="checkbox" v-model="installer.ENABLE_MOK_SIGNED_UKI" class="inline mt-3" :disabled="running" />
+        <label for="ENABLE_MOK_SIGNED_UKI" class="inline mt-3">Enable MOK-signed UKI</label>
+        <!-- TODO explain -->
 
         <label for="TIMEZONE">Time Zone</label>
         <select :disabled="timezones.length==0 || running" id="TIMEZONE" v-model="installer.TIMEZONE">

@@ -227,7 +227,7 @@ cat <<EOF > ${target}/tmp/run3.sh
 #!/bin/bash
 export DEBIAN_FRONTEND=noninteractive
 apt-get install -y --download-only locales tasksel openssh-server
-apt-get install -t ${BACKPORTS_VERSION} -y --download-only systemd-boot dracut linux-image-amd64 popularity-contest
+apt-get install -t ${BACKPORTS_VERSION} -y --download-only systemd-boot systemd-boot-efi-signed dracut linux-image-amd64 popularity-contest
 if (dpkg --get-selections | grep -w install |grep -qs "task.*desktop"); then
   apt-get install -t ${BACKPORTS_VERSION} -y --download-only linux-headers-amd64 nvidia-driver nvidia-driver-libs:i386
 fi
@@ -338,15 +338,6 @@ EOF
 cat <<EOF > ${target}/etc/kernel/cmdline
 ${kernel_params}
 EOF
-cat <<EOF > ${target}/etc/kernel/install.conf || exit 1
-layout=uki
-uki_generator=ukify
-initrd_generator=dracut
-EOF
-cat <<EOF > ${target}/etc/kernel/uki.conf || exit 1
-[UKI]
-Cmdline=@/etc/kernel/cmdline
-EOF
 
 notify install required installer packages on ${target}
 mkdir -p ${target}/etc/systemd/system
@@ -356,7 +347,7 @@ export DEBIAN_FRONTEND=noninteractive
 apt-get update -y
 apt-get upgrade -y
 apt-get install -y debootstrap uuid-runtime curl pv
-apt-get install -y -t ${BACKPORTS_VERSION} systemd-boot systemd-repart dracut cryptsetup nvidia-detect
+apt-get install -y -t ${BACKPORTS_VERSION} systemd-boot systemd-boot-efi-amd64-signed shim-signed systemd-repart dracut cryptsetup nvidia-detect
 apt-get purge initramfs-tools initramfs-tools-core initramfs-tools-bin busybox klibc-utils libklibc -y
 bootctl install
 systemctl enable NetworkManager.service
