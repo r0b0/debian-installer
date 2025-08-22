@@ -43,6 +43,16 @@ Video of installation of Debian with KDE Plasma (Bookworm version):
 
 [![Watch the video](https://img.youtube.com/vi/sbnKvGMcagI/maxresdefault.jpg)](https://youtu.be/sbnKvGMcagI?si=W9NvZygB8Z7-LCT8&t=92)
 
+## FAQ
+
+**I have started to be asked for disk encryption password.
+Can I have my passwordless boot back?**
+
+You need to re-enroll the TPM to decrypt your drive.
+Use the following command:
+
+    sudo systemd-cryptenroll --tpm2-device=auto --tpm2-pcrs=7+14
+
 ## Details
 
 - GPT disk partitions are created on the designated disk drive: 

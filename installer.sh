@@ -354,8 +354,6 @@ export DEBIAN_FRONTEND=noninteractive
 apt-get install -y locales tasksel network-manager sudo || exit 1
 apt-get install -y -t ${BACKPORTS_VERSION} systemd shim-signed systemd-boot systemd-boot-efi-amd64-signed systemd-ukify sbsigntool dracut btrfs-progs cryptsetup tpm2-tools tpm-udev || exit 1
 
-bootctl install || exit 1
-
 # see https://bugs.debian.org/cgi-bin/bugreport.cgi?bug=1095646
 ln -s /dev/null /etc/kernel/install.d/50-dracut.install
 # XXX this didn't seem to work
