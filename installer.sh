@@ -33,8 +33,7 @@ function notify () {
 
 DEBIAN_VERSION=trixie
 BACKPORTS_VERSION=${DEBIAN_VERSION}  # TODO append "-backports" when available
-# see https://www.freedesktop.org/software/systemd/man/systemd-cryptenroll.html#--tpm2-pcrs=PCR
-TPM_PCRS="7+14"
+TPM_PCRS="platform-config+secure-boot-policy+shim-policy"
 # do not enable this on a live-cd
 SHARE_APT_ARCHIVE=false
 FSFLAGS="compress=zstd:1"
@@ -122,8 +121,9 @@ fi
 wipefs --all ${DISK} || exit 1
 # sector-size: see https://github.com/systemd/systemd/issues/37801
 # remove with systemd 258
+# --tpm2-pcrlock= XXX: wtf is pcrlock?
 systemd-repart --sector-size=512 --empty=allow --no-pager --definitions=repart.d --dry-run=no ${DISK} \
-  --key-file=${KEYFILE} --tpm2-device=auto --tpm2-pcrs=${TPM_PCRS} || exit 1
+  --key-file=${KEYFILE} --tpm2-device=auto --tpm2-pcrs=${TPM_PCRS} --tpm2-pcrlock= || exit 1
 
 function wait_for_file {
     filename="$1"

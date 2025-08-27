@@ -49,9 +49,16 @@ Video of installation of Debian with KDE Plasma (Bookworm version):
 Can I have my passwordless boot back?**
 
 You need to re-enroll the TPM to decrypt your drive.
-Use the following command:
+Find the path to the underlying device (such as /dev/vda2) and use the following command:
 
-    sudo systemd-cryptenroll --tpm2-device=auto --tpm2-pcrs=7+14
+    sudo systemd-cryptenroll --tpm2-pcrs=platform-config+secure-boot-policy+shim-policy \
+        --tpm2-device=auto --tpm2-pcrlock= --wipe-slot=tpm2 /dev/vda2
+
+**The installer is very slow to start up or does not start at all**
+
+You need fast USB storage.
+USB3 is strongly recommended, including any hubs or extension cables you might be using.
+On slow storage, some systemd services might time-out and the boot of the installer will not be successful.
 
 ## Details
 
@@ -85,17 +92,17 @@ As a start, edit the configuration file installer.ini (see above), set option BA
 You have several options to access the installer. 
 Assuming the IP address of the installed machine is 192.168.1.29 and you can reach it from your PC:
 
-* Use the web interface in a browser on a PC - open `http://192.168.1.29/opinionated-debian-installer/`
+* Use the web interface in a browser on a PC - open `http://192.168.1.29:5000/`
 * Use the text mode interface - start `opinionated-installer tui -baseUrl http://192.168.1.29:5000`
 * Use curl - again, see the [installer.ini](installer-files/boot/efi/installer.ini) file for list of all options for the form data in -F parameters:
 
       curl -v -F "DISK=/dev/vda" -F "USER_PASSWORD=hunter2" \
-      -F "ROOT_PASSWORD=changeme" -F "LUKS_PASSWORD=luke" \ 
-      http://192.168.1.29:5000/install
+        -F "ROOT_PASSWORD=changeme" -F "LUKS_PASSWORD=luke" \ 
+        http://192.168.1.29:5000/install
 
 * Use curl to prompt for logs:
 
-      curl  http://192.168.1.29:5000/download_log
+      curl http://192.168.1.29:5000/download_log
 
 ## Testing
 
@@ -121,7 +128,7 @@ Attach the downloaded installer image file as _Device type: Disk device_, not ~~
 
 To test with the MS hyper-v virtualization, make sure to create your VM with [Generation 2](https://learn.microsoft.com/en-us/windows-server/virtualization/hyper-v/plan/Should-I-create-a-generation-1-or-2-virtual-machine-in-Hyper-V). 
 This will enable UEFI.
-TPM can be enabled and Secure Boot disabled in the Security tab of the Hyper-V settings.
+TPM can be enabled (and maybe Secure Boot disabled) in the Security tab of the Hyper-V settings.
 
 You will also need to convert the installer image to VHDx format and make the file not sparse.
 You can use [qemu-img](https://www.qemu.org/docs/master/tools/qemu-img.html) ([windows download](https://qemu.weilnetz.de/w64/)) and fsutil like this:

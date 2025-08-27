@@ -13,6 +13,7 @@ func (c *BackendContext) Login(w http.ResponseWriter, _ *http.Request) {
 		Hostname  string            `json:"hostname"`
 		HasEfi    bool              `json:"has_efi"`
 		HasNvidia bool              `json:"has_nvidia"`
+		SBState   string			`json:"sb_state"`
 		Running   bool              `json:"running"`
 		Environ   map[string]string `json:"environ"`
 	}
@@ -35,6 +36,13 @@ func (c *BackendContext) Login(w http.ResponseWriter, _ *http.Request) {
 		return
 	}
 	data.HasNvidia = detectNvidia()
+	sbState, err := runAndGiveStdout("mokutil", "--sb-state")
+	if err != nil {
+		slog.Error("failed to detect secure boot state", "error", err)
+		http.Error(w, "failed to detect secure boot state", http.StatusInternalServerError)
+		return
+	}
+	data.SBState = string(sbState)
 	data.Running = c.runningCmd != nil && c.runningCmd.Process != nil
 	data.Environ = c.runningParameters
 	err = writeJson(w, data)
