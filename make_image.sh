@@ -11,8 +11,8 @@ target=/target
 SCRIPT_DIR=$( cd -- "$( dirname -- "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )
 
 function notify {
-  echo -e "\033[32m$*\033[0m"
-  read -rp "Enter to continue"
+  echo -en "\033[32m$*\033[0m> "
+  read -r
 }
 
 notify install required packages
@@ -58,7 +58,11 @@ GrowFileSystem=on
 Encrypt=off
 EOF
 
-wipefs --all ${DISK} || exit 1
+if [ ! -f disk_wiped.txt ]; then
+  wipefs --all ${DISK} || exit 1
+  touch disk_wiped.txt
+fi
+
 # sector-size: see https://github.com/systemd/systemd/issues/37801
 # remove with systemd 258
 systemd-repart --sector-size=512 --empty=allow --no-pager --definitions=repart.d --dry-run=no ${DISK} || exit 1
@@ -277,6 +281,8 @@ PARTUUID=${installer_image_uuid} /root/btrfs1 btrfs defaults,subvolid=5 0 1
 PARTUUID=${efi_uuid} /boot/efi vfat defaults,umask=077 0 2
 EOF
 
+# TODO use systemd-firstboot
+
 if grep -qs 'root:\$' ${target}/etc/shadow ; then
     echo root password already set up
 else
@@ -347,7 +353,7 @@ export DEBIAN_FRONTEND=noninteractive
 apt-get update -y
 apt-get upgrade -y
 apt-get install -y debootstrap uuid-runtime curl pv
-apt-get install -y -t ${BACKPORTS_VERSION} systemd-boot systemd-boot-efi-amd64-signed shim-signed systemd-repart dracut cryptsetup nvidia-detect
+apt-get install -y -t ${BACKPORTS_VERSION} systemd-boot systemd-boot-efi-amd64-signed shim-signed shim-helpers-amd64-signed systemd-repart dracut cryptsetup nvidia-detect
 apt-get purge initramfs-tools initramfs-tools-core initramfs-tools-bin busybox klibc-utils libklibc -y
 systemctl enable NetworkManager.service
 systemctl disable systemd-networkd.service  # seems to fight with NetworkManager

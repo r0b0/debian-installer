@@ -13,6 +13,7 @@ export default {
       install_to_device_process_key: "",
       install_to_device_status: "",
       has_nvidia: false,
+      sb_state: "",
       want_nvidia: false,
       overall_status: "",
       running: false,
@@ -29,6 +30,7 @@ export default {
         ROOT_PASSWORD: undefined,
         LUKS_PASSWORD: undefined,
         ENABLE_MOK_SIGNED_UKI: undefined,
+        MOK_ENROLL_PASSWORD: undefined,
         DISABLE_LUKS: undefined,
         ENABLE_TPM: undefined,
         HOSTNAME: undefined,
@@ -92,6 +94,7 @@ export default {
           }
           this.has_nvidia = response.has_nvidia;
           this.want_nvidia = response.has_nvidia;
+          this.sb_state = response.sb_state;
 
           for(const [key, value] of Object.entries(this.installer)) {
             if(key in response.environ) {
@@ -328,10 +331,6 @@ export default {
         <label for="HOSTNAME">Hostname</label>
         <input type="text" id="HOSTNAME" v-model="installer.HOSTNAME" :disabled="running">
 
-        <input type="checkbox" v-model="installer.ENABLE_MOK_SIGNED_UKI" class="inline mt-3" :disabled="running" />
-        <label for="ENABLE_MOK_SIGNED_UKI" class="inline mt-3">Enable MOK-signed UKI</label>
-        <!-- TODO explain -->
-
         <label for="TIMEZONE">Time Zone</label>
         <select :disabled="timezones.length==0 || running" id="TIMEZONE" v-model="installer.TIMEZONE">
             <option v-for="item in timezones" :value="item">{{ item }}</option>
@@ -346,6 +345,20 @@ export default {
         <br>
         <input type="checkbox" v-model="installer.ENABLE_POPCON" id="ENABLE_POPCON" class="inline mt-3" :disabled="running">
         <label for="ENABLE_POPCON" class="inline mt-3">Participate in the <a href="https://popcon.debian.org/" target="_blank">debian package usage survey</a></label>
+      </fieldset>
+
+      <fieldset>
+        <legend>SecureBoot</legend>
+
+        <label for="sb_state">Current Status</label>
+        <input type="text" id="sb_state" disabled v-model="sb_state">
+
+        <input type="checkbox" v-model="installer.ENABLE_MOK_SIGNED_UKI" class="inline mt-3" :disabled="running" />
+        <label for="ENABLE_MOK_SIGNED_UKI" class="inline mt-3">Enable MOK-signed UKI</label>
+
+        <label class="mt-3">Machine-Owner-Keys Enrollment Password</label>
+        <Password v-model="installer.MOK_ENROLL_PASSWORD" :disabled="running || !installer.ENABLE_MOK_SIGNED_UKI" />
+        <!-- TODO explain -->
       </fieldset>
 
       <fieldset>

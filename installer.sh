@@ -10,6 +10,7 @@ ROOT_PASSWORD=changeme
 DISABLE_LUKS=false
 LUKS_PASSWORD=luke
 ENABLE_MOK_SIGNED_UKI=true
+MOK_ENROLL_PASSWORD=mokka
 ENABLE_TPM=true
 HOSTNAME=debian13
 SWAP_SIZE=2
@@ -20,12 +21,15 @@ TIMEZONE=Europe/Bratislava
 KEYMAP=us
 SSH_PUBLIC_KEY=
 AFTER_INSTALLED_CMD=
+
+echo -e "\033[32m Opinionated Debian Installer \033[0m"
+echo Press Enter on all green prompts
 fi
 
 function notify () {
     if [ -z "${NON_INTERACTIVE}" ]; then
-      echo -e "\033[32m$*\033[0m"
-      read -rp "Enter to continue"
+      echo -en "\033[32m$*\033[0m> "
+      read -r
     else
       echo "$*"
     fi
@@ -60,11 +64,12 @@ fi
 if [ -z "${NON_INTERACTIVE}" ]; then
     notify install required packages
     apt-get update -y  || exit 1
-    apt-get install -y cryptsetup debootstrap uuid-runtime btrfs-progs dosfstools pv systemd-repart || exit 1
+    apt-get install -y cryptsetup debootstrap uuid-runtime btrfs-progs dosfstools pv systemd-repart mokutil || exit 1
 fi
 
 KEYFILE=luks.key
 dd if=/dev/random of=${KEYFILE} bs=512 count=1 || exit 1
+chmod 600 ${KEYFILE}
 
 if [ ! -f efi-part.uuid ]; then
     uuidgen > efi-part.uuid || exit 1
@@ -118,7 +123,11 @@ else
   echo "Encrypt=key-file" >> repart.d/02_root.conf
 fi
 
-wipefs --all ${DISK} || exit 1
+if [ ! -f disk_wiped.txt ]; then
+  wipefs --all ${DISK} || exit 1
+  touch disk_wiped.txt
+fi
+
 # sector-size: see https://github.com/systemd/systemd/issues/37801
 # remove with systemd 258
 # --tpm2-pcrlock= XXX: wtf is pcrlock?
@@ -352,7 +361,7 @@ cat <<EOF > ${target}/tmp/run1.sh || exit 1
 #!/bin/bash
 export DEBIAN_FRONTEND=noninteractive
 apt-get install -y locales tasksel network-manager sudo || exit 1
-apt-get install -y -t ${BACKPORTS_VERSION} systemd shim-signed systemd-boot systemd-boot-efi-amd64-signed systemd-ukify sbsigntool dracut btrfs-progs cryptsetup tpm2-tools tpm-udev || exit 1
+apt-get install -y -t ${BACKPORTS_VERSION} systemd shim-signed shim-helpers-amd64-signed systemd-boot systemd-boot-efi-amd64-signed systemd-ukify sbsigntool dracut btrfs-progs cryptsetup tpm2-tools tpm-udev || exit 1
 
 # see https://bugs.debian.org/cgi-bin/bugreport.cgi?bug=1095646
 ln -s /dev/null /etc/kernel/install.d/50-dracut.install
@@ -361,6 +370,7 @@ EOF
 chroot ${target}/ sh /tmp/run1.sh || exit 1
 
 if [ "${ENABLE_MOK_SIGNED_UKI}" == "true" ]; then
+  mokutil "--generate-hash=${MOK_ENROLL_PASSWORD}" > ${target}/tmp/mok.key
 cat <<EOF > ${target}/tmp/run1.sh || exit 1
 #!/bin/bash
 # generate cert and key in pem format in /etc/kernel/mok.*.pem
@@ -381,10 +391,11 @@ ln -s /etc/kernel/mok.cert.der /var/lib/shim-signed/mok/MOK-Kernel.der || exit 1
 ln -s /etc/kernel/mok.cert.pem /var/lib/shim-signed/mok/MOK-Kernel.pem || exit 1
 ln -s /etc/kernel/mok.priv.der /var/lib/shim-signed/mok/MOK-Kernel.priv || exit 1
 
-# TODO bootctl install --secure-boot-auto-enroll=yes \
-#  --private-key=/etc/kernel/mok.priv.der --private-key=/etc/kernel/mok.cert.der
+# XXX: Failed to get Subject Key ID
+mokutil --import /etc/kernel/mok.cert.der --hash-file /tmp/mok.key
 EOF
 chroot ${target}/ sh /tmp/run1.sh || exit 1
+rm -f ${target}/tmp/mok.key
 fi # ENABLE_MOK_SIGNED_UKI
 
 notify install kernel and firmware on ${target}
