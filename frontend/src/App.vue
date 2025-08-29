@@ -358,7 +358,8 @@ export default {
 
         <label class="mt-3">Machine-Owner-Keys Enrollment Password</label>
         <Password v-model="installer.MOK_ENROLL_PASSWORD" :disabled="running || !installer.ENABLE_MOK_SIGNED_UKI" />
-        <!-- TODO explain -->
+
+        <button type="button" @click="this.$refs.mok_dialog.showModal()" class="mt-3">Explanation</button>
       </fieldset>
 
       <fieldset>
@@ -392,6 +393,31 @@ export default {
       Debian successfully installed. You can now turn off your computer, remove the installation media and start it again.
     </p>
     <button class="right-align mt-2" @click="$refs.completed_dialog.close()">Close</button>
+  </dialog>
+  <dialog ref="mok_dialog">
+    <p>
+      If you keep the <i>Enable MOK-signed UKI</i> box unchecked, a simple mode will be used, where the shim, systemd-boot
+      and kernel are signed by Microsoft and Debian.
+      The initrd file will not be signed.
+    </p>
+    <p>
+      If you check the box, the fully-authenticated boot will be enabled.
+      This is the most secure option.
+      The installer will generate your Machine Owner Key (MOK) and configure the system to use Unified Kernel Image (UKI) which contains both the kernel and initrd.
+      The MOK will be used to sign the UKI so that all the files involved in the boot process are authenticated.
+    </p>
+    <p>
+      After the installation, on the next boot, you will be asked to enroll your MOK.
+      Use the password you provided in the installer.
+      See the screenshots of the process below:
+      <img src="@/assets/Screenshot_mok_import_01.png" alt="mok enroll screenshot 1" width="320" />
+      <img src="@/assets/Screenshot_mok_import_02.png" alt="mok enroll screenshot 2" width="320" />
+      <img src="@/assets/Screenshot_mok_import_03.png" alt="mok enroll screenshot 3" width="320" />
+      <img src="@/assets/Screenshot_mok_import_04.png" alt="mok enroll screenshot 4" width="320" />
+      <img src="@/assets/Screenshot_mok_import_05.png" alt="mok enroll screenshot 5" width="320" />
+      <img src="@/assets/Screenshot_mok_import_06.png" alt="mok enroll screenshot 6" width="320" />
+    </p>
+    <button class="right-align mt-2" @click="$refs.mok_dialog.close()">Close</button>
   </dialog>
 </template>
 

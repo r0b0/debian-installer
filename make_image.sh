@@ -353,7 +353,7 @@ export DEBIAN_FRONTEND=noninteractive
 apt-get update -y
 apt-get upgrade -y
 apt-get install -y debootstrap uuid-runtime curl pv
-apt-get install -y -t ${BACKPORTS_VERSION} systemd-boot systemd-boot-efi-amd64-signed shim-signed shim-helpers-amd64-signed systemd-repart dracut cryptsetup nvidia-detect
+apt-get install -y -t ${BACKPORTS_VERSION} systemd-boot systemd-boot-efi-amd64-signed shim-signed systemd-repart dracut cryptsetup nvidia-detect
 apt-get purge initramfs-tools initramfs-tools-core initramfs-tools-bin busybox klibc-utils libklibc -y
 systemctl enable NetworkManager.service
 systemctl disable systemd-networkd.service  # seems to fight with NetworkManager

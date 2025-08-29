@@ -8,6 +8,7 @@ Our opinions of what a modern installation of Debian should look like in 2025 ar
  - Firmware installed
  - Installed on btrfs subvolumes
  - Full disk encryption, unlocked by TPM
+ - Authenticated boot with self-generated Machine Owner Keys
  - Fast installation using an image
  - Browser-based installer
   
@@ -49,7 +50,7 @@ Video of installation of Debian with KDE Plasma (Bookworm version):
 Can I have my passwordless boot back?**
 
 You need to re-enroll the TPM to decrypt your drive.
-Find the path to the underlying device (such as /dev/vda2) and use the following command:
+Find the path to the underlying device (with `lsblk` or similar) and use the following command (replacing /dev/vda2 with your device):
 
     sudo systemd-cryptenroll --tpm2-pcrs=platform-config+secure-boot-policy+shim-policy \
         --tpm2-device=auto --tpm2-pcrlock= --wipe-slot=tpm2 /dev/vda2
@@ -57,8 +58,43 @@ Find the path to the underlying device (such as /dev/vda2) and use the following
 **The installer is very slow to start up or does not start at all**
 
 You need fast USB storage.
-USB3 is strongly recommended, including any hubs or extension cables you might be using.
+USB3 is strongly recommended, including any hubs, converters or extension cables you might be using.
 On slow storage, some systemd services might time-out and the boot of the installer will not be successful.
+
+## SecureBoot
+
+There are two options with regards to SecureBoot: simple or full.
+
+The **simple mode** will just use shim, systemd-boot and kernel signed by Microsoft and Debian.
+Your initrd file will not be signed.
+
+If you Select the option **Enable MOK-signed UKI** in the installer, the **full mode** will apply.
+This is the most secure option.
+The installer will generate your Machine Owner Key (MOK) and configure the system to use Unified Kernel Image (UKI) which contains both the kernel and initrd. 
+The MOK will be used to sign the UKI so that all the files involved in the boot process are authenticated.
+
+After the installation, on the next boot, you will be asked to enroll your MOK.
+Use the password you provided in the installer.
+See the screenshots of the process below:
+<details>
+<summary>Screenshots of the MOK enrollment process</summary>
+
+![mok enroll screenshot 1](readme-files/Screenshot_mok_import_01.png)
+![mok enroll screenshot 2](readme-files/Screenshot_mok_import_02.png)
+![mok enroll screenshot 3](readme-files/Screenshot_mok_import_03.png)
+![mok enroll screenshot 4](readme-files/Screenshot_mok_import_04.png)
+![mok enroll screenshot 5](readme-files/Screenshot_mok_import_05.png)
+![mok enroll screenshot 6](readme-files/Screenshot_mok_import_06.png)
+
+</details>
+
+We also recommend to re-enroll the TPM device to decrypt your drive with PCRs 7 (secure-boot-policy) and 14 (shim-policy) after the installation.
+Identify your underlying boot device (with `lsblk`) and use the following command (replacing /dev/vda2 with your device):
+
+    sudo systemd-cryptenroll --tpm2-pcrs=platform-config+secure-boot-policy+shim-policy \
+        --tpm2-device=auto --tpm2-pcrlock= --wipe-slot=tpm2 /dev/vda2
+
+This will prevent auto-decryption of your drive if SecureBoot is disabled or keys are tampered with.
 
 ## Details
 

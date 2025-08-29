@@ -23,7 +23,7 @@ SSH_PUBLIC_KEY=
 AFTER_INSTALLED_CMD=
 
 echo -e "\033[32m Opinionated Debian Installer \033[0m"
-echo Press Enter on all green prompts
+echo Press Enter at green prompts
 fi
 
 function notify () {
@@ -37,7 +37,9 @@ function notify () {
 
 DEBIAN_VERSION=trixie
 BACKPORTS_VERSION=${DEBIAN_VERSION}  # TODO append "-backports" when available
-TPM_PCRS="platform-config+secure-boot-policy+shim-policy"
+# we only enable PCR1 here and recommend that users re-enroll with PCR7 and PCR14 afterwards
+# this is because we enroll MOKs and this invalidates PCR7 and/or PCR14
+TPM_PCRS="platform-config"
 # do not enable this on a live-cd
 SHARE_APT_ARCHIVE=false
 FSFLAGS="compress=zstd:1"
@@ -64,7 +66,7 @@ fi
 if [ -z "${NON_INTERACTIVE}" ]; then
     notify install required packages
     apt-get update -y  || exit 1
-    apt-get install -y cryptsetup debootstrap uuid-runtime btrfs-progs dosfstools pv systemd-repart mokutil || exit 1
+    apt-get install -y cryptsetup debootstrap uuid-runtime btrfs-progs dosfstools pv systemd-repart mokutil tpm2-tools || exit 1
 fi
 
 KEYFILE=luks.key
@@ -361,7 +363,7 @@ cat <<EOF > ${target}/tmp/run1.sh || exit 1
 #!/bin/bash
 export DEBIAN_FRONTEND=noninteractive
 apt-get install -y locales tasksel network-manager sudo || exit 1
-apt-get install -y -t ${BACKPORTS_VERSION} systemd shim-signed shim-helpers-amd64-signed systemd-boot systemd-boot-efi-amd64-signed systemd-ukify sbsigntool dracut btrfs-progs cryptsetup tpm2-tools tpm-udev || exit 1
+apt-get install -y -t ${BACKPORTS_VERSION} systemd shim-signed systemd-boot systemd-boot-efi-amd64-signed systemd-ukify sbsigntool dracut btrfs-progs cryptsetup tpm2-tools tpm-udev || exit 1
 
 # see https://bugs.debian.org/cgi-bin/bugreport.cgi?bug=1095646
 ln -s /dev/null /etc/kernel/install.d/50-dracut.install
