@@ -22,7 +22,7 @@ Our opinions of what a modern installation of Debian should look like in 2025 ar
 
 | Desktop environment | Download                                                                                                                                                                                                            | SHA-256 Checksum                                                        |
 |---------------------|---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|-------------------------------------------------------------------------|
-| KDE Plasma          | [opinionated-debian-installer-trixie-kde-plasma-20250810a.img (5.4GB)](https://objectstorage.eu-frankfurt-1.oraclecloud.com/n/fr2rf1wke5iq/b/public/o/opinionated-debian-installer-trixie-kde-plasma-20250810a.img) | 15ebf0b3 7846c2c3 ffe4c8f8 a6167f93 c6e57bba 5231cc8f 8bd6ba9f cc399f80 |
+| KDE Plasma          | [opinionated-debian-installer-trixie-kde-plasma-20250830a.img (5.4GB)](https://objectstorage.eu-frankfurt-1.oraclecloud.com/n/fr2rf1wke5iq/b/public/o/opinionated-debian-installer-trixie-kde-plasma-20250830a.img) | 07e1a69c cab3080c 6c289690 0d1989ad fad0b04f 20547365 df0a45da 81db562a |
 | Gnome               | [opinionated-debian-installer-trixie-gnome-20250811a.img (4.3GB)](https://objectstorage.eu-frankfurt-1.oraclecloud.com/n/fr2rf1wke5iq/b/public/o/opinionated-debian-installer-trixie-gnome-20250811a.img)           | 6901e643 2ef93c19 7e133434 60e765af 49c5728d 94783314 5737cc75 d6091d1a |
 | Server              | [opinionated-debian-installer-trixie-server-20250818a.img (2.4GB)](https://objectstorage.eu-frankfurt-1.oraclecloud.com/n/fr2rf1wke5iq/b/public/o/opinionated-debian-installer-trixie-server-20250818a.img)         | a92e0fe1 daedd9f7 f254a4fc 4fc8bafa e83871dc c22080cf bdce4154 c03909d1 |
 
@@ -32,7 +32,8 @@ Our opinions of what a modern installation of Debian should look like in 2025 ar
 2. Write the image file to a USB flash drive. **Do not use ventoy** or similar "clever" tools - they are not compatible with these images. If you need a GUI, use [etcher](https://github.com/balena-io/etcher/releases) or [win32DiskImager](https://sourceforge.net/projects/win32diskimager/files/Archive/) or just use dd - `dd if=opinionated-debian-installer*.img of=/dev/sdX bs=256M oflag=dsync status=progress` where sdX is your USB flash drive 
 3. Boot from the USB flash drive
 4. Start the installer icon from the desktop/dash, fill in the form in the browser and press the big _Install_ button
-5. Reboot and enjoy
+5. (If you are using the fully authenticated boot mode: Reboot, enroll your MOK and reboot again)
+6. Shutdown, remove the USB drive, boot debian and enjoy!
 
 ## Screencast & Screenshot
 
@@ -164,7 +165,7 @@ Attach the downloaded installer image file as _Device type: Disk device_, not ~~
 
 To test with the MS hyper-v virtualization, make sure to create your VM with [Generation 2](https://learn.microsoft.com/en-us/windows-server/virtualization/hyper-v/plan/Should-I-create-a-generation-1-or-2-virtual-machine-in-Hyper-V). 
 This will enable UEFI.
-TPM can be enabled (and maybe Secure Boot disabled) in the Security tab of the Hyper-V settings.
+TPM can be enabled in the Security tab of the Hyper-V settings.
 
 You will also need to convert the installer image to VHDx format and make the file not sparse.
 You can use [qemu-img](https://www.qemu.org/docs/master/tools/qemu-img.html) ([windows download](https://qemu.weilnetz.de/w64/)) and fsutil like this:
@@ -252,6 +253,7 @@ The following table contains comparison of features between our opinionated debi
 | Btrfs subvolumes                                    | Y[2]  | Y[3]                                             | Y[2]                                                                         |
 | Full drive encryption                               | **Y** | Y[1]                                             | Y                                                                            |
 | Passwordless unlock (TPM)                           | **Y** | N                                                | N                                                                            |
+| Fully authenticated boot (UKI+MOK)                  | **Y** | N                                                | N                                                                            |
 | Image-based installation                            | **Y** | N                                                | N                                                                            |
 | Non-free and backports                              | **Y** | N                                                | N                                                                            |
 | Browser-based installer                             | **Y** | N                                                | N                                                                            |

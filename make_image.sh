@@ -147,7 +147,7 @@ EOF
 notify enable 32bit
 chroot ${target}/ dpkg --add-architecture i386
 
-notify preconfigure locales
+notify "preconfigure locales (ignore warnings in this step)"
 echo "locales locales/locales_to_be_generated multiselect     en_US.UTF-8 UTF-8" | chroot ${target}/ debconf-set-selections
 
 notify install required packages on ${target}
