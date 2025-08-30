@@ -52,7 +52,7 @@ Can I have my passwordless boot back?**
 You need to re-enroll the TPM to decrypt your drive.
 Find the path to the underlying device (with `lsblk` or similar) and use the following command (replacing /dev/vda2 with your device):
 
-    sudo systemd-cryptenroll --tpm2-pcrs=platform-config+secure-boot-policy+shim-policy \
+    sudo systemd-cryptenroll --tpm2-pcrs=secure-boot-policy+shim-policy \
         --tpm2-device=auto --tpm2-pcrlock= --wipe-slot=tpm2 /dev/vda2
 
 **The installer is very slow to start up or does not start at all**
@@ -91,7 +91,7 @@ See the screenshots of the process below:
 We also recommend to re-enroll the TPM device to decrypt your drive with PCRs 7 (secure-boot-policy) and 14 (shim-policy) after the installation.
 Identify your underlying boot device (with `lsblk`) and use the following command (replacing /dev/vda2 with your device):
 
-    sudo systemd-cryptenroll --tpm2-pcrs=platform-config+secure-boot-policy+shim-policy \
+    sudo systemd-cryptenroll --tpm2-pcrs=secure-boot-policy+shim-policy \
         --tpm2-device=auto --tpm2-pcrlock= --wipe-slot=tpm2 /dev/vda2
 
 This will prevent auto-decryption of your drive if SecureBoot is disabled or keys are tampered with.

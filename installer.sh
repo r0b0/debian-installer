@@ -36,10 +36,7 @@ function notify () {
 }
 
 DEBIAN_VERSION=trixie
-BACKPORTS_VERSION=${DEBIAN_VERSION}  # TODO append "-backports" when available
-# we only enable PCR1 here and recommend that users re-enroll with PCR7 and PCR14 afterwards
-# this is because we enroll MOKs and this invalidates PCR7 and/or PCR14
-TPM_PCRS="platform-config"
+BACKPORTS_VERSION=${DEBIAN_VERSION}-backports
 # do not enable this on a live-cd
 SHARE_APT_ARCHIVE=false
 FSFLAGS="compress=zstd:1"
@@ -65,8 +62,8 @@ fi
 
 if [ -z "${NON_INTERACTIVE}" ]; then
     notify install required packages
-    apt-get update -y  || exit 1
-    apt-get install -y cryptsetup debootstrap uuid-runtime btrfs-progs dosfstools pv systemd-repart mokutil tpm2-tools || exit 1
+    apt update -y  || exit 1
+    apt install -y cryptsetup debootstrap uuid-runtime btrfs-progs dosfstools pv systemd-repart mokutil tpm2-tools || exit 1
 fi
 
 KEYFILE=luks.key
@@ -132,9 +129,10 @@ fi
 
 # sector-size: see https://github.com/systemd/systemd/issues/37801
 # remove with systemd 258
-# --tpm2-pcrlock= XXX: wtf is pcrlock?
+# tpm2-pcrs= If we are enrolling MOK, PCRs would reset anyway. If SB is disabled, we want to allow enabling it.
+# tpm2-pcrlock= XXX: wtf is pcrlock?
 systemd-repart --sector-size=512 --empty=allow --no-pager --definitions=repart.d --dry-run=no ${DISK} \
-  --key-file=${KEYFILE} --tpm2-device=auto --tpm2-pcrs=${TPM_PCRS} --tpm2-pcrlock= || exit 1
+  --key-file=${KEYFILE} --tpm2-device=auto --tpm2-pcrs= --tpm2-pcrlock= || exit 1
 
 function wait_for_file {
     filename="$1"
@@ -357,13 +355,13 @@ fi # ENABLE_MOK_SIGNED_UKI
 
 notify install required packages on ${target}
 if [ -z "${NON_INTERACTIVE}" ]; then
-    chroot ${target}/ apt-get update -y || exit 1
+    chroot ${target}/ apt update -y || exit 1
 fi
 cat <<EOF > ${target}/tmp/run1.sh || exit 1
 #!/bin/bash
 export DEBIAN_FRONTEND=noninteractive
-apt-get install -y locales tasksel network-manager sudo || exit 1
-apt-get install -y -t ${BACKPORTS_VERSION} systemd shim-signed systemd-boot systemd-boot-efi-amd64-signed systemd-ukify sbsigntool dracut btrfs-progs cryptsetup tpm2-tools tpm-udev || exit 1
+apt install -y locales tasksel network-manager sudo || exit 1
+apt install -y -t ${BACKPORTS_VERSION} systemd shim-signed systemd-boot systemd-boot-efi-amd64-signed systemd-ukify sbsigntool dracut btrfs-progs cryptsetup tpm2-tools tpm-udev || exit 1
 
 # see https://bugs.debian.org/cgi-bin/bugreport.cgi?bug=1095646
 ln -s /dev/null /etc/kernel/install.d/50-dracut.install
@@ -466,8 +464,8 @@ EOF
 cat <<EOF > ${target}/tmp/run2.sh || exit 1
 #!/bin/bash
 export DEBIAN_FRONTEND=noninteractive
-xargs apt-get install -y < /tmp/packages.txt || exit 1
-xargs apt-get install -t ${BACKPORTS_VERSION} -y < /tmp/packages_backports.txt || exit 1
+xargs apt install -y < /tmp/packages.txt || exit 1
+xargs apt install -t ${BACKPORTS_VERSION} -y < /tmp/packages_backports.txt || exit 1
 systemctl disable systemd-networkd.service  # seems to fight with NetworkManager
 systemctl disable systemd-networkd.socket
 systemctl disable systemd-networkd-wait-online.service
@@ -479,7 +477,7 @@ if [ "$ENABLE_POPCON" = true ] ; then
   cat <<EOF > ${target}/tmp/run3.sh || exit 1
 #!/bin/bash
 echo "popularity-contest      popularity-contest/participate  boolean true" | debconf-set-selections
-apt-get install -y popularity-contest
+apt install -y popularity-contest
 EOF
   chroot ${target}/ bash /tmp/run3.sh || exit 1
 fi
@@ -500,7 +498,7 @@ if [ ! -z "${SSH_PUBLIC_KEY}" ]; then
     fi
 
     notify installing openssh-server
-    chroot ${target}/ apt-get install -y openssh-server || exit 1
+    chroot ${target}/ apt install -y openssh-server || exit 1
 fi
 
 if [ -z "${NON_INTERACTIVE}" ]; then
@@ -515,11 +513,11 @@ if [ ! -z "${NVIDIA_PACKAGE}" ]; then
   cat <<EOF > ${target}/etc/dracut.conf.d/10-nvidia.conf || exit 1
 install_items+=" /etc/modprobe.d/nvidia-blacklists-nouveau.conf /etc/modprobe.d/nvidia.conf /etc/modprobe.d/nvidia-options.conf "
 EOF
-  chroot ${target}/ apt-get install -t ${BACKPORTS_VERSION} -y "${NVIDIA_PACKAGE}" nvidia-driver-libs:i386 linux-headers-amd64 || exit 1
+  chroot ${target}/ apt install -t ${BACKPORTS_VERSION} -y "${NVIDIA_PACKAGE}" nvidia-driver-libs:i386 linux-headers-amd64 || exit 1
 fi
 
 notify cleaning up
-chroot ${target}/ apt-get autoremove -y
+chroot ${target}/ apt autoremove -y
 
 notify umounting all filesystems
 if [ ${SWAP_SIZE} -gt 0 ]; then

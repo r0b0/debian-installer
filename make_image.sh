@@ -4,7 +4,7 @@
 DISK=/dev/vdb
 USERNAME=live
 DEBIAN_VERSION=trixie
-BACKPORTS_VERSION=${DEBIAN_VERSION}  # TODO append "-backports" when available
+BACKPORTS_VERSION=${DEBIAN_VERSION}-backports
 FSFLAGS="compress=zstd:15"
 
 target=/target
@@ -16,8 +16,8 @@ function notify {
 }
 
 notify install required packages
-apt-get update -y
-DEBIAN_FRONTEND=noninteractive apt-get install -y debootstrap uuid-runtime btrfs-progs dosfstools systemd-repart
+apt update -y
+DEBIAN_FRONTEND=noninteractive apt install -y debootstrap uuid-runtime btrfs-progs dosfstools systemd-repart
 
 if [ ! -f efi-part.uuid ]; then
     echo generate uuid for efi partition
@@ -210,9 +210,9 @@ EOF
 cat <<EOF > ${target}/tmp/run2.sh
 #!/bin/bash
 export DEBIAN_FRONTEND=noninteractive
-apt-get update
-xargs apt-get install -y < /tmp/packages.txt
-xargs apt-get install -t ${BACKPORTS_VERSION} -y < /tmp/packages_backports.txt
+apt update
+xargs apt install -y < /tmp/packages.txt
+xargs apt install -t ${BACKPORTS_VERSION} -y < /tmp/packages_backports.txt
 EOF
 chroot ${target}/ bash /tmp/run2.sh
 
@@ -230,16 +230,16 @@ notify downloading remaining .deb files for the installer
 cat <<EOF > ${target}/tmp/run3.sh
 #!/bin/bash
 export DEBIAN_FRONTEND=noninteractive
-apt-get install -y --download-only locales tasksel openssh-server
-apt-get install -t ${BACKPORTS_VERSION} -y --download-only systemd-boot systemd-boot-efi-signed dracut linux-image-amd64 popularity-contest
+apt install -y --download-only locales tasksel openssh-server
+apt install -t ${BACKPORTS_VERSION} -y --download-only systemd-boot systemd-boot-efi-signed dracut linux-image-amd64 popularity-contest
 if (dpkg --get-selections | grep -w install |grep -qs "task.*desktop"); then
-  apt-get install -t ${BACKPORTS_VERSION} -y --download-only linux-headers-amd64 nvidia-driver nvidia-driver-libs:i386
+  apt install -t ${BACKPORTS_VERSION} -y --download-only linux-headers-amd64 nvidia-driver nvidia-driver-libs:i386
 fi
 EOF
 chroot ${target}/ bash /tmp/run3.sh
 
 notify cleaning up
-chroot ${target}/ apt-get autoremove -y
+chroot ${target}/ apt autoremove -y
 rm -f ${target}/etc/machine-id
 rm -f ${target}/etc/crypttab
 rm -f ${target}/var/log/*log
@@ -350,11 +350,11 @@ mkdir -p ${target}/etc/systemd/system
 cat <<EOF > ${target}/tmp/run1.sh
 #!/bin/bash
 export DEBIAN_FRONTEND=noninteractive
-apt-get update -y
-apt-get upgrade -y
-apt-get install -y debootstrap uuid-runtime curl pv
-apt-get install -y -t ${BACKPORTS_VERSION} systemd-boot systemd-boot-efi-amd64-signed shim-signed systemd-repart dracut cryptsetup nvidia-detect
-apt-get purge initramfs-tools initramfs-tools-core initramfs-tools-bin busybox klibc-utils libklibc -y
+apt update -y
+apt upgrade -y
+apt install -y debootstrap uuid-runtime curl pv
+apt install -y -t ${BACKPORTS_VERSION} systemd-boot systemd-boot-efi-amd64-signed shim-signed systemd-repart dracut cryptsetup nvidia-detect
+apt purge initramfs-tools initramfs-tools-core initramfs-tools-bin busybox klibc-utils libklibc -y
 systemctl enable NetworkManager.service
 systemctl disable systemd-networkd.service  # seems to fight with NetworkManager
 systemctl disable systemd-networkd.socket
@@ -373,7 +373,7 @@ cat <<EOF > ${target}/tmp/run1.sh
 ln -s /dev/null /etc/kernel/install.d/50-dracut.install
 
 export DEBIAN_FRONTEND=noninteractive
-apt-get -t ${BACKPORTS_VERSION} install linux-image-amd64 -y
+apt -t ${BACKPORTS_VERSION} install linux-image-amd64 -y
 EOF
 chroot ${target}/ bash /tmp/run1.sh
 
@@ -386,7 +386,7 @@ mkdir -p ${target}/etc/lightdm/lightdm.conf.d
 install_file etc/lightdm/lightdm.conf.d/10-autologin.conf
 
 notify cleaning up
-chroot ${target}/ apt-get autoremove -y
+chroot ${target}/ apt autoremove -y
 rm -f ${target}/etc/machine-id
 rm -f ${target}/etc/crypttab
 rm -f ${target}/var/log/*log

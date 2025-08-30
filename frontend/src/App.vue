@@ -389,8 +389,15 @@ export default {
   </footer>
 
   <dialog ref="completed_dialog">
-    <p>
-      Debian successfully installed. You can now turn off your computer, remove the installation media and start it again.
+    <p v-if="installer.ENABLE_MOK_SIGNED_UKI">
+      Debian successfully installed.
+      <b>Do not remove the installation media (e.g. USB drive) yet.</b>
+      Reboot your PC now, enroll the Machine Owner Key.
+      Only after that, turn off your computer, remove the installation media and start it again.
+    </p>
+    <p v-else>
+      Debian successfully installed.
+      You can now turn off your computer, remove the installation media and start it again.
     </p>
     <button class="right-align mt-2" @click="$refs.completed_dialog.close()">Close</button>
   </dialog>
