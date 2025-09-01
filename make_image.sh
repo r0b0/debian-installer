@@ -1,5 +1,7 @@
 #!/bin/bash
 
+set -euo pipefail
+
 # edit this:
 DISK=/dev/vdb
 USERNAME=live
@@ -36,7 +38,7 @@ mkdir -p ${target}/home
 rm -rf repart.d
 mkdir -p repart.d
 
-cat <<EOF > repart.d/01_efi.conf || exit 1
+cat <<EOF > repart.d/01_efi.conf
 [Partition]
 Type=esp
 UUID=${efi_uuid}
@@ -45,7 +47,7 @@ SizeMaxBytes=200M
 Format=vfat
 EOF
 
-cat <<EOF > repart.d/02_baseImage.conf || exit 1
+cat <<EOF > repart.d/02_baseImage.conf
 [Partition]
 Type=root
 Label=Opinionated Debian Installer
@@ -59,13 +61,13 @@ Encrypt=off
 EOF
 
 if [ ! -f disk_wiped.txt ]; then
-  wipefs --all ${DISK} || exit 1
+  wipefs --all ${DISK}
   touch disk_wiped.txt
 fi
 
 # sector-size: see https://github.com/systemd/systemd/issues/37801
 # remove with systemd 258
-systemd-repart --sector-size=512 --empty=allow --no-pager --definitions=repart.d --dry-run=no ${DISK} || exit 1
+systemd-repart --sector-size=512 --empty=allow --no-pager --definitions=repart.d --dry-run=no ${DISK}
 
 root_device=/dev/disk/by-partuuid/${installer_image_uuid}
 efi_device=/dev/disk/by-partuuid/${efi_uuid}
@@ -116,7 +118,7 @@ fi
 notify setup sources list
 rm -f ${target}/etc/apt/sources.list
 mkdir -p ${target}/etc/apt/sources.list.d
-cat <<EOF > ${target}/etc/apt/sources.list.d/debian.sources || exit 1
+cat <<EOF > ${target}/etc/apt/sources.list.d/debian.sources
 Types: deb
 URIs: http://deb.debian.org/debian/
 Suites: ${DEBIAN_VERSION}
@@ -136,7 +138,7 @@ Components: main contrib non-free non-free-firmware
 Signed-By: /usr/share/keyrings/debian-archive-keyring.gpg
 EOF
 
-cat <<EOF > ${target}/etc/apt/sources.list.d/debian-backports.sources || exit 1
+cat <<EOF > ${target}/etc/apt/sources.list.d/debian-backports.sources
 Types: deb
 URIs: http://deb.debian.org/debian/
 Suites: ${DEBIAN_VERSION}-backports
