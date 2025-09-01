@@ -19,7 +19,14 @@ function notify {
 
 notify install required packages
 apt update -y
-DEBIAN_FRONTEND=noninteractive apt install -y debootstrap uuid-runtime btrfs-progs dosfstools systemd-repart
+DEBIAN_FRONTEND=noninteractive apt install -y \
+    btrfs-progs \
+    debootstrap \
+    dosfstools \
+    golang-go \
+    npm \
+    systemd-repart \
+    uuid-runtime
 
 if [ ! -f efi-part.uuid ]; then
     echo generate uuid for efi partition
@@ -395,7 +402,7 @@ rm -f ${target}/var/log/*log
 rm -f ${target}/var/log/apt/*log
 
 notify building the frontend
-(cd "${SCRIPT_DIR}/frontend" && npm run build)
+(cd "${SCRIPT_DIR}/frontend" && npm install && npm run build)
 mkdir -p "${SCRIPT_DIR}/installer-files/var/www/html/opinionated-debian-installer"
 cp -r ${SCRIPT_DIR}/frontend/dist/* "${SCRIPT_DIR}/installer-files/var/www/html/opinionated-debian-installer"
 
@@ -407,6 +414,8 @@ install_file var/www/html/opinionated-debian-installer
 install_file etc/systemd/system/installer_backend.service
 install_file boot/efi/installer.ini
 chroot ${target}/ systemctl enable installer_backend
+
+(cd "${SCRIPT_DIR}/backend" && CGO_ENABLED=0 go build -v -ldflags="-s -w" -o opinionated-installer)
 
 notify installing tui frontend
 cp "${SCRIPT_DIR}/backend/opinionated-installer" "${target}/sbin/opinionated-installer"
