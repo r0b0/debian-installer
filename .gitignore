@@ -2,3 +2,10 @@
 /venv
 /installer-files/var/www/html/opinionated-debian-installer/assets/
 /installer-files/var/www/html/opinionated-debian-installer/index.html
+disk_wiped.txt
+efi-part.uuid
+first_phase_done.txt
+installer-image-part.uuid
+backend/opinionated-installer
+repart.d/01_efi.conf
+repart.d/02_baseImage.conf
