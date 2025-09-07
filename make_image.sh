@@ -1,5 +1,7 @@
 #!/bin/bash
 
+set -euo pipefail
+
 # edit this:
 DISK=/dev/vdb
 USERNAME=live
@@ -17,7 +19,14 @@ function notify {
 
 notify install required packages
 apt update -y
-DEBIAN_FRONTEND=noninteractive apt install -y debootstrap uuid-runtime btrfs-progs dosfstools systemd-repart
+DEBIAN_FRONTEND=noninteractive apt install -y \
+    btrfs-progs \
+    debootstrap \
+    dosfstools \
+    golang-go \
+    npm \
+    systemd-repart \
+    uuid-runtime
 
 if [ ! -f efi-part.uuid ]; then
     echo generate uuid for efi partition
@@ -36,7 +45,7 @@ mkdir -p ${target}/home
 rm -rf repart.d
 mkdir -p repart.d
 
-cat <<EOF > repart.d/01_efi.conf || exit 1
+cat <<EOF > repart.d/01_efi.conf
 [Partition]
 Type=esp
 UUID=${efi_uuid}
@@ -45,7 +54,7 @@ SizeMaxBytes=200M
 Format=vfat
 EOF
 
-cat <<EOF > repart.d/02_baseImage.conf || exit 1
+cat <<EOF > repart.d/02_baseImage.conf
 [Partition]
 Type=root
 Label=Opinionated Debian Installer
@@ -59,13 +68,13 @@ Encrypt=off
 EOF
 
 if [ ! -f disk_wiped.txt ]; then
-  wipefs --all ${DISK} || exit 1
+  wipefs --all ${DISK}
   touch disk_wiped.txt
 fi
 
 # sector-size: see https://github.com/systemd/systemd/issues/37801
 # remove with systemd 258
-systemd-repart --sector-size=512 --empty=allow --no-pager --definitions=repart.d --dry-run=no ${DISK} || exit 1
+systemd-repart --sector-size=512 --empty=allow --no-pager --definitions=repart.d --dry-run=no ${DISK}
 
 root_device=/dev/disk/by-partuuid/${installer_image_uuid}
 efi_device=/dev/disk/by-partuuid/${efi_uuid}
@@ -116,7 +125,7 @@ fi
 notify setup sources list
 rm -f ${target}/etc/apt/sources.list
 mkdir -p ${target}/etc/apt/sources.list.d
-cat <<EOF > ${target}/etc/apt/sources.list.d/debian.sources || exit 1
+cat <<EOF > ${target}/etc/apt/sources.list.d/debian.sources
 Types: deb
 URIs: http://deb.debian.org/debian/
 Suites: ${DEBIAN_VERSION}
@@ -136,7 +145,7 @@ Components: main contrib non-free non-free-firmware
 Signed-By: /usr/share/keyrings/debian-archive-keyring.gpg
 EOF
 
-cat <<EOF > ${target}/etc/apt/sources.list.d/debian-backports.sources || exit 1
+cat <<EOF > ${target}/etc/apt/sources.list.d/debian-backports.sources
 Types: deb
 URIs: http://deb.debian.org/debian/
 Suites: ${DEBIAN_VERSION}-backports
@@ -393,7 +402,7 @@ rm -f ${target}/var/log/*log
 rm -f ${target}/var/log/apt/*log
 
 notify building the frontend
-(cd "${SCRIPT_DIR}/frontend" && npm run build)
+(cd "${SCRIPT_DIR}/frontend" && npm install && npm run build)
 mkdir -p "${SCRIPT_DIR}/installer-files/var/www/html/opinionated-debian-installer"
 cp -r ${SCRIPT_DIR}/frontend/dist/* "${SCRIPT_DIR}/installer-files/var/www/html/opinionated-debian-installer"
 
@@ -405,6 +414,8 @@ install_file var/www/html/opinionated-debian-installer
 install_file etc/systemd/system/installer_backend.service
 install_file boot/efi/installer.ini
 chroot ${target}/ systemctl enable installer_backend
+
+(cd "${SCRIPT_DIR}/backend" && CGO_ENABLED=0 go build -v -ldflags="-s -w" -o opinionated-installer)
 
 notify installing tui frontend
 cp "${SCRIPT_DIR}/backend/opinionated-installer" "${target}/sbin/opinionated-installer"
