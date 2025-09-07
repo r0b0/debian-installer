@@ -218,6 +218,8 @@ tpm-udev
 EOF
 cat <<EOF > ${target}/tmp/run2.sh
 #!/bin/bash
+set -euo pipefail
+
 export DEBIAN_FRONTEND=noninteractive
 apt update
 xargs apt install -y < /tmp/packages.txt
@@ -238,6 +240,8 @@ fi
 notify downloading remaining .deb files for the installer
 cat <<EOF > ${target}/tmp/run3.sh
 #!/bin/bash
+set -euo pipefail
+
 export DEBIAN_FRONTEND=noninteractive
 apt install -y --download-only locales tasksel openssh-server
 apt install -t ${BACKPORTS_VERSION} -y --download-only systemd-boot systemd-boot-efi-signed dracut linux-image-amd64 popularity-contest
@@ -358,6 +362,8 @@ notify install required installer packages on ${target}
 mkdir -p ${target}/etc/systemd/system
 cat <<EOF > ${target}/tmp/run1.sh
 #!/bin/bash
+set -euo pipefail
+
 export DEBIAN_FRONTEND=noninteractive
 apt update -y
 apt upgrade -y
@@ -377,6 +383,7 @@ chroot ${target}/ bash /tmp/run1.sh
 notify install kernel on ${target}
 cat <<EOF > ${target}/tmp/run1.sh
 #!/bin/bash
+set -euo pipefail
 
 # see https://bugs.debian.org/cgi-bin/bugreport.cgi?bug=1095646
 ln -s /dev/null /etc/kernel/install.d/50-dracut.install
@@ -422,6 +429,9 @@ cp "${SCRIPT_DIR}/backend/opinionated-installer" "${target}/sbin/opinionated-ins
 chmod +x ${target}/sbin/opinionated-installer
 install_file etc/systemd/system/installer_tui.service
 cat <<EOF > ${target}/tmp/run1.sh
+#!/bin/bash
+set -euo pipefail
+
 if systemctl is-enabled display-manager.service ; then
     echo "A login manager enabled in systemd, disabling installer TUI frontend"
     systemctl disable installer_tui.service

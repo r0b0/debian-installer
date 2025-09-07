@@ -423,7 +423,6 @@ systemd-cryptsetup
 systemd-timesyncd
 btrfs-progs
 dosfstools
-dracut
 firmware-linux
 atmel-firmware
 bluez-firmware
@@ -456,17 +455,15 @@ plymouth-themes
 polkitd
 tpm2-tools
 tpm-udev
-initramfs-tools-
-initramfs-tools-core-
-initramfs-tools-bin-
-busybox-
-klibc-utils-
-libklibc-
 EOF
 cat <<EOF > ${target}/tmp/run2.sh
 #!/bin/bash
+set -euo pipefail
+
 export DEBIAN_FRONTEND=noninteractive
 xargs apt install -y < /tmp/packages.txt
+apt install -t ${BACKPORTS_VERSION} -y dracut initramfs-tools- initramfs-tools-core- initramfs-tools-bin- \
+  busybox- klibc-utils- libklibc-
 xargs apt install -t ${BACKPORTS_VERSION} -y < /tmp/packages_backports.txt
 systemctl disable systemd-networkd.service  # seems to fight with NetworkManager
 systemctl disable systemd-networkd.socket
@@ -478,6 +475,8 @@ if [ "$ENABLE_POPCON" = true ] ; then
   notify enabling popularity-contest
   cat <<EOF > ${target}/tmp/run3.sh
 #!/bin/bash
+set -euo pipefail
+
 echo "popularity-contest      popularity-contest/participate  boolean true" | debconf-set-selections
 apt install -y popularity-contest
 EOF
@@ -530,7 +529,7 @@ umount -R ${top_level_mount}
 
 if [ "${DISABLE_LUKS}" != "true" ]; then
   notify closing luks
-  cryptsetup luksClose ${luks_device_name}
+  cryptsetup luksClose ${luks_device_name} || true
 fi
 
 notify INSTALLATION FINISHED
