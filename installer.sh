@@ -18,6 +18,7 @@ HOSTNAME=debian13
 SWAP_SIZE=2
 NVIDIA_PACKAGE=
 ENABLE_POPCON=false
+ENABLE_FLATHUB=true
 LOCALE=C.UTF-8
 TIMEZONE=Europe/Bratislava
 KEYMAP=us
@@ -69,9 +70,10 @@ if [ -z "${NON_INTERACTIVE}" ]; then
 fi
 
 KEYFILE=luks.key
-dd if=/dev/random of=${KEYFILE} bs=512 count=1
-chmod 600 ${KEYFILE}
-
+if [ ! -f ${KEYFILE} ]; then
+  dd if=/dev/random of=${KEYFILE} bs=512 count=1
+  chmod 600 ${KEYFILE}
+fi
 if [ ! -f efi-part.uuid ]; then
     uuidgen > efi-part.uuid
 fi
@@ -449,6 +451,7 @@ firmware-realtek
 firmware-ti-connectivity
 firmware-zd1211
 cryptsetup
+dracut
 lvm2
 mdadm
 plymouth-themes
@@ -477,6 +480,7 @@ if [ "$ENABLE_POPCON" = true ] ; then
 #!/bin/bash
 set -euo pipefail
 
+export DEBIAN_FRONTEND=noninteractive
 echo "popularity-contest      popularity-contest/participate  boolean true" | debconf-set-selections
 apt install -y popularity-contest
 EOF
@@ -506,6 +510,26 @@ if [ -z "${NON_INTERACTIVE}" ]; then
     notify running tasksel
     # XXX this does not open for some reason
     chroot ${target}/ tasksel
+fi
+
+if [ "${ENABLE_FLATHUB}" = true ] ; then
+  notify enabling flatpak and flathub
+  cat <<EOF > ${target}/tmp/run4.sh
+#!/bin/bash
+set -e
+
+export DEBIAN_FRONTEND=noninteractive
+apt install -y flatpak
+flatpak remote-add --if-not-exists flathub https://flathub.org/repo/flathub.flatpakrepo
+if (dpkg --get-selections | grep -w install |grep -qs "task-kde-desktop"); then
+  apt install -y plasma-discover-backend-flatpak
+fi
+if (dpkg --get-selections | grep -w install |grep -qs "task-gnome-desktop"); then
+  apt install -y gnome-software-plugin-flatpak
+fi
+EOF
+  chroot ${target}/ bash /tmp/run4.sh
+  rm ${target}/tmp/run4.sh
 fi
 
 if [ ! -z "${NVIDIA_PACKAGE}" ]; then

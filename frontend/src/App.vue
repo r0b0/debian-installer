@@ -38,6 +38,7 @@ export default {
         SWAP_SIZE: undefined,
         NVIDIA_PACKAGE: " ",  // will be changed in install()
         ENABLE_POPCON: undefined,
+        ENABLE_FLATHUB: undefined,
       }
     }
   },
@@ -341,6 +342,10 @@ export default {
 
         <input type="checkbox" v-model="want_nvidia" id="WANT_NVIDIA" class="inline mt-3" :disabled="!has_nvidia || running">
         <label for="WANT_NVIDIA" class="inline mt-3">Install the proprietary NVIDIA Accelerated Linux Graphics Driver</label>
+
+        <br>
+        <input type="checkbox" v-model="installer.ENABLE_FLATHUB" id="ENABLE_FLATHUB" class="inline mt-3" :disabled="running">
+        <label for="ENABLE_FLATHUB" class="inline mt-3">Enable <a href="https://flatpak.org/">Flatpak</a> and <a href="https://flathub.org/">Flathub</a></label>
 
         <br>
         <input type="checkbox" v-model="installer.ENABLE_POPCON" id="ENABLE_POPCON" class="inline mt-3" :disabled="running">
