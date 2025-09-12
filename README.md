@@ -29,7 +29,7 @@ Our opinions of what a modern installation of Debian should look like in 2025 ar
 ## Instructions
 
 1. Download one of the live image files from the table above
-2. Write the image file to a USB flash drive. **Do not use ventoy** or similar "clever" tools - they are not compatible with these images. If you need a GUI, use [etcher](https://github.com/balena-io/etcher/releases) or [win32DiskImager](https://sourceforge.net/projects/win32diskimager/files/Archive/) or just use dd - `dd if=opinionated-debian-installer*.img of=/dev/sdX bs=256M oflag=dsync status=progress` where sdX is your USB flash drive
+2. Write the image file to a USB flash drive. **Do not use ventoy** or similar "clever" tools - they are not compatible with these images. If you need a GUI, use [etcher](https://github.com/balena-io/etcher/releases), [fedora media writer](https://flathub.org/en/apps/org.fedoraproject.MediaWriter) or [win32DiskImager](https://sourceforge.net/projects/win32diskimager/files/Archive/) or just use dd - `dd if=opinionated-debian-installer*.img of=/dev/sdX bs=256M oflag=dsync status=progress` where sdX is your USB flash drive
 3. Boot from the USB flash drive
 4. Start the installer icon from the desktop/dash, fill in the form in the browser and press the big _Install_ button
 5. (If you are using the fully authenticated boot mode: Reboot, enroll your MOK and reboot again)
