@@ -1,6 +1,6 @@
 # Opinionated Debian Installer
 
-This tool can be used to create a modern installation of Debian. 
+This tool can be used to create a modern installation of Debian.
 Our opinions of what a modern installation of Debian should look like in 2025 are:
 
  - Debian 13 (Trixie)
@@ -11,7 +11,7 @@ Our opinions of what a modern installation of Debian should look like in 2025 ar
  - Authenticated boot with self-generated Machine Owner Keys
  - Fast installation using an image
  - Browser-based installer
-  
+
 ## Limitations
 
  - **The installer will take over your whole disk**
@@ -29,7 +29,7 @@ Our opinions of what a modern installation of Debian should look like in 2025 ar
 ## Instructions
 
 1. Download one of the live image files from the table above
-2. Write the image file to a USB flash drive. **Do not use ventoy** or similar "clever" tools - they are not compatible with these images. If you need a GUI, use [etcher](https://github.com/balena-io/etcher/releases) or [win32DiskImager](https://sourceforge.net/projects/win32diskimager/files/Archive/) or just use dd - `dd if=opinionated-debian-installer*.img of=/dev/sdX bs=256M oflag=dsync status=progress` where sdX is your USB flash drive 
+2. Write the image file to a USB flash drive. **Do not use ventoy** or similar "clever" tools - they are not compatible with these images. If you need a GUI, use [etcher](https://github.com/balena-io/etcher/releases), [fedora media writer](https://flathub.org/en/apps/org.fedoraproject.MediaWriter) or [win32DiskImager](https://sourceforge.net/projects/win32diskimager/files/Archive/) or just use dd - `dd if=opinionated-debian-installer*.img of=/dev/sdX bs=256M oflag=dsync status=progress` where sdX is your USB flash drive
 3. Boot from the USB flash drive
 4. Start the installer icon from the desktop/dash, fill in the form in the browser and press the big _Install_ button
 5. (If you are using the fully authenticated boot mode: Reboot, enroll your MOK and reboot again)
@@ -71,7 +71,7 @@ Your initrd file will not be signed.
 
 If you Select the option **Enable MOK-signed UKI** in the installer, the **full mode** will apply.
 This is the most secure option.
-The installer will generate your Machine Owner Key (MOK) and configure the system to use Unified Kernel Image (UKI) which contains both the kernel and initrd. 
+The installer will generate your Machine Owner Key (MOK) and configure the system to use Unified Kernel Image (UKI) which contains both the kernel and initrd.
 The MOK will be used to sign the UKI so that all the files involved in the boot process are authenticated.
 
 After the installation, on the next boot, you will be asked to enroll your MOK.
@@ -99,7 +99,7 @@ This will prevent auto-decryption of your drive if SecureBoot is disabled or key
 
 ## Details
 
-- GPT disk partitions are created on the designated disk drive: 
+- GPT disk partitions are created on the designated disk drive:
   - UEFI ESP partition
   - Root partition - [LUKS](https://cryptsetup-team.pages.debian.net/cryptsetup/README.Debian.html) encrypted (rest of the drive)
 - GPT root partition is [auto-discoverable](https://www.freedesktop.org/software/systemd/man/systemd-gpt-auto-generator.html)
@@ -109,7 +109,7 @@ This will prevent auto-decryption of your drive if SecureBoot is disabled or key
 - [Systemd-boot](https://www.freedesktop.org/wiki/Software/systemd/systemd-boot/) is used instead of grub
 - [Network-manager](https://wiki.debian.org/NetworkManager) is used for networking
 - [Systemd-cryptenroll](https://www.freedesktop.org/software/systemd/man/systemd-cryptenroll.html#--tpm2-device=PATH) is used to unlock the disk, using TPM (if available)
-- [Sudo](https://wiki.debian.org/sudo) is installed and configured for the created user 
+- [Sudo](https://wiki.debian.org/sudo) is installed and configured for the created user
 
 ## (Optional) Configuration, Automatic Installation
 
@@ -126,7 +126,7 @@ You can use the installer for server installation.
 As a start, edit the configuration file installer.ini (see above), set option BACK_END_IP_ADDRESS to 0.0.0.0 and reboot the installer.
 **There is no encryption or authentication in the communication so only do this on a trusted network.**
 
-You have several options to access the installer. 
+You have several options to access the installer.
 Assuming the IP address of the installed machine is 192.168.1.29 and you can reach it from your PC:
 
 * Use the web interface in a browser on a PC - open `http://192.168.1.29:5000/`
@@ -134,7 +134,7 @@ Assuming the IP address of the installed machine is 192.168.1.29 and you can rea
 * Use curl - again, see the [installer.ini](installer-files/boot/efi/installer.ini) file for list of all options for the form data in -F parameters:
 
       curl -v -F "DISK=/dev/vda" -F "USER_PASSWORD=hunter2" \
-        -F "ROOT_PASSWORD=changeme" -F "LUKS_PASSWORD=luke" \ 
+        -F "ROOT_PASSWORD=changeme" -F "LUKS_PASSWORD=luke" \
         http://192.168.1.29:5000/install
 
 * Use curl to prompt for logs:
@@ -163,7 +163,7 @@ Attach the downloaded installer image file as _Device type: Disk device_, not ~~
 
 ### Hyper-V
 
-To test with the MS hyper-v virtualization, make sure to create your VM with [Generation 2](https://learn.microsoft.com/en-us/windows-server/virtualization/hyper-v/plan/Should-I-create-a-generation-1-or-2-virtual-machine-in-Hyper-V). 
+To test with the MS hyper-v virtualization, make sure to create your VM with [Generation 2](https://learn.microsoft.com/en-us/windows-server/virtualization/hyper-v/plan/Should-I-create-a-generation-1-or-2-virtual-machine-in-Hyper-V).
 This will enable UEFI.
 TPM can be enabled in the Security tab of the Hyper-V settings.
 
@@ -191,7 +191,7 @@ In the first stage of image generation, you will get a _tasksel_ prompt where yo
 
 ### Installer Image Structure
 
-There are two GPT partitions on the installer image: EFI boot partition and a Btrfs partition.  
+There are two GPT partitions on the installer image: EFI boot partition and a Btrfs partition.
 The Btrfs filesystem is created in two phases.
 
 In the first phase, a basic, neutral debian installation is created by debootstrap, tasksel.
@@ -203,7 +203,7 @@ Obviously, these are not part of the target installed system.
 
 ### Building the Front-End
 
-The front-end is a [vue](https://vuejs.org/) application. 
+The front-end is a [vue](https://vuejs.org/) application.
 You need [npm](https://www.npmjs.com/) to build it.
 Run the following commands to build it:
 
