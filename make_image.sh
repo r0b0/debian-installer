@@ -247,7 +247,8 @@ export DEBIAN_FRONTEND=noninteractive
 apt install -y --download-only locales tasksel openssh-server flatpak
 apt install -t ${BACKPORTS_VERSION} -y --download-only systemd-boot systemd-boot-efi-signed dracut linux-image-amd64 popularity-contest
 if (dpkg --get-selections | grep -w install |grep -qs "task.*desktop"); then
-  apt install -t ${BACKPORTS_VERSION} -y --download-only linux-headers-amd64 nvidia-driver nvidia-driver-libs:i386
+  # libelf1t64:i386 - XXX workaround 2025-09-13
+  apt install -t ${BACKPORTS_VERSION} -y --download-only linux-headers-amd64 nvidia-driver nvidia-driver-libs:i386 libelf1t64:i386
 fi
 if (dpkg --get-selections | grep -w install |grep -qs "task-kde-desktop"); then
   apt install -y --download-only plasma-discover-backend-flatpak

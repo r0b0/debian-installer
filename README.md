@@ -11,18 +11,19 @@ Our opinions of what a modern installation of Debian should look like in 2025 ar
  - Authenticated boot with self-generated Machine Owner Keys
  - Fast installation using an image
  - Browser-based installer
+ - One-click installation of a swap file, NVIDIA drivers or flathub
   
 ## Limitations
 
  - **The installer will take over your whole disk**
- - Amd64 with EFI only
- - The installer is in english only
+ - Amd64 with UEFI only
+ - The installer is in English only
 
 ## Downloads
 
 | Desktop environment | Download                                                                                                                                                                                                            | SHA-256 Checksum                                                        |
 |---------------------|---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|-------------------------------------------------------------------------|
-| KDE Plasma          | [opinionated-debian-installer-trixie-kde-plasma-20250830a.img (5.4GB)](https://objectstorage.eu-frankfurt-1.oraclecloud.com/n/fr2rf1wke5iq/b/public/o/opinionated-debian-installer-trixie-kde-plasma-20250830a.img) | 07e1a69c cab3080c 6c289690 0d1989ad fad0b04f 20547365 df0a45da 81db562a |
+| KDE Plasma          | [opinionated-debian-installer-trixie-kde-plasma-20250913a.img (5.5GB)](https://objectstorage.eu-frankfurt-1.oraclecloud.com/n/fr2rf1wke5iq/b/public/o/opinionated-debian-installer-trixie-kde-plasma-20250913a.img) | a25c9a1d 026d4c1e d2b4d149 45ed3f46 ebf08970 84460f1c d0da1133 efc1c720 |
 | Gnome               | [opinionated-debian-installer-trixie-gnome-20250907a.img (4.2GB)](https://objectstorage.eu-frankfurt-1.oraclecloud.com/n/fr2rf1wke5iq/b/public/o/opinionated-debian-installer-trixie-gnome-20250907a.img)           | 9d7c4df0 993d6658 a3b73819 c8d4edea 4d3fcfdf 5b6ab6b6 21ff4e40 b7c7c932 |
 | Server              | [opinionated-debian-installer-trixie-server-20250818a.img (2.4GB)](https://objectstorage.eu-frankfurt-1.oraclecloud.com/n/fr2rf1wke5iq/b/public/o/opinionated-debian-installer-trixie-server-20250818a.img)         | a92e0fe1 daedd9f7 f254a4fc 4fc8bafa e83871dc c22080cf bdce4154 c03909d1 |
 
@@ -201,9 +202,9 @@ When installing the target system, the installer will detect the snapshot and co
 In the second phase, all the installer specific files are added to the installer Btrfs filesystem.
 Obviously, these are not part of the target installed system.
 
-### Building the Front-End
+### Building the Frontend
 
-The front-end is a [vue](https://vuejs.org/) application. 
+The frontend is a [vue](https://vuejs.org/) application. 
 You need [npm](https://www.npmjs.com/) to build it.
 Run the following commands to build it:
 
