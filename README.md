@@ -21,6 +21,16 @@ Our opinions of what a modern installation of Debian should look like in 2025 ar
 
 ## Downloads
 
+<details><summary>Alternative downloads - torrent</summary>
+
+### KDE Plasma
+
+```
+magnet:?xt=urn:btih:86c8b3e0ce4d33bd6af7a263f319661e37b66236&dn=opinionated-debian-installer-trixie-kde-plasma-20250913a.img&tr=udp%3A%2F%2Ftracker.opentrackr.org%3A1337%2Fannounce&tr=udp%3A%2F%2Fopen.demonii.com%3A1337%2Fannounce&tr=udp%3A%2F%2Fopen.stealth.si%3A80%2Fannounce&tr=udp%3A%2F%2Fexodus.desync.com%3A6969%2Fannounce&tr=udp%3A%2F%2Fexplodie.org%3A6969%2Fannounce&ws=https%3A%2F%2Fobjectstorage.eu-frankfurt-1.oraclecloud.com%2Fn%2Ffr2rf1wke5iq%2Fb%2Fpublic%2Fo%2Fopinionated-debian-installer-trixie-kde-plasma-20250913a.img
+```
+
+</details>
+
 | Desktop environment | Download                                                                                                                                                                                                            | SHA-256 Checksum                                                        |
 |---------------------|---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|-------------------------------------------------------------------------|
 | KDE Plasma          | [opinionated-debian-installer-trixie-kde-plasma-20250913a.img (5.5GB)](https://objectstorage.eu-frankfurt-1.oraclecloud.com/n/fr2rf1wke5iq/b/public/o/opinionated-debian-installer-trixie-kde-plasma-20250913a.img) | a25c9a1d 026d4c1e d2b4d149 45ed3f46 ebf08970 84460f1c d0da1133 efc1c720 |
@@ -78,6 +88,7 @@ The MOK will be used to sign the UKI so that all the files involved in the boot 
 After the installation, on the next boot, you will be asked to enroll your MOK.
 Use the password you provided in the installer.
 See the screenshots of the process below:
+
 <details>
 <summary>Screenshots of the MOK enrollment process</summary>
 
