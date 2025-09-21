@@ -21,19 +21,9 @@ Our opinions of what a modern installation of Debian should look like in 2025 ar
 
 ## Downloads
 
-<details><summary>Alternative downloads - torrent</summary>
-
-### KDE Plasma
-
-```
-magnet:?xt=urn:btih:86c8b3e0ce4d33bd6af7a263f319661e37b66236&dn=opinionated-debian-installer-trixie-kde-plasma-20250913a.img&tr=udp%3A%2F%2Ftracker.opentrackr.org%3A1337%2Fannounce&tr=udp%3A%2F%2Fopen.demonii.com%3A1337%2Fannounce&tr=udp%3A%2F%2Fopen.stealth.si%3A80%2Fannounce&tr=udp%3A%2F%2Fexodus.desync.com%3A6969%2Fannounce&tr=udp%3A%2F%2Fexplodie.org%3A6969%2Fannounce&ws=https%3A%2F%2Fobjectstorage.eu-frankfurt-1.oraclecloud.com%2Fn%2Ffr2rf1wke5iq%2Fb%2Fpublic%2Fo%2Fopinionated-debian-installer-trixie-kde-plasma-20250913a.img
-```
-
-</details>
-
 | Desktop environment | Download                                                                                                                                                                                                            | SHA-256 Checksum                                                        |
 |---------------------|---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|-------------------------------------------------------------------------|
-| KDE Plasma          | [opinionated-debian-installer-trixie-kde-plasma-20250913a.img (5.5GB)](https://objectstorage.eu-frankfurt-1.oraclecloud.com/n/fr2rf1wke5iq/b/public/o/opinionated-debian-installer-trixie-kde-plasma-20250913a.img) | a25c9a1d 026d4c1e d2b4d149 45ed3f46 ebf08970 84460f1c d0da1133 efc1c720 |
+| KDE Plasma          | opinionated-debian-installer-trixie-kde-plasma-20250913a.img (5.5GB) [torrent](https://objectstorage.eu-frankfurt-1.oraclecloud.com/n/fr2rf1wke5iq/b/public/o/opinionated-debian-installer-trixie-kde-plasma-20250913a.torrent) [direct](https://objectstorage.eu-frankfurt-1.oraclecloud.com/n/fr2rf1wke5iq/b/public/o/opinionated-debian-installer-trixie-kde-plasma-20250913a.img) | a25c9a1d 026d4c1e d2b4d149 45ed3f46 ebf08970 84460f1c d0da1133 efc1c720 |
 | Gnome               | [opinionated-debian-installer-trixie-gnome-20250907a.img (4.2GB)](https://objectstorage.eu-frankfurt-1.oraclecloud.com/n/fr2rf1wke5iq/b/public/o/opinionated-debian-installer-trixie-gnome-20250907a.img)           | 9d7c4df0 993d6658 a3b73819 c8d4edea 4d3fcfdf 5b6ab6b6 21ff4e40 b7c7c932 |
 | Server              | [opinionated-debian-installer-trixie-server-20250818a.img (2.4GB)](https://objectstorage.eu-frankfurt-1.oraclecloud.com/n/fr2rf1wke5iq/b/public/o/opinionated-debian-installer-trixie-server-20250818a.img)         | a92e0fe1 daedd9f7 f254a4fc 4fc8bafa e83871dc c22080cf bdce4154 c03909d1 |
 
