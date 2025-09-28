@@ -44,6 +44,7 @@ func Tui(baseUrlString *string) {
 	dataOk := true
 
 	form := tview.NewForm().
+		SetHorizontal(true).
 		AddDropDown("Installation Target Device", deviceNames, getSliceIndex(m.Disk, devices), func(_ string, optionIndex int) {
 			m.Disk = devices[optionIndex]
 		}).
@@ -88,12 +89,36 @@ func Tui(baseUrlString *string) {
 		}, func(text string) {
 			m.SwapSize = text
 		}).
+		AddCheckbox("Enable NVIDIA", false, func(checked bool) {
+			if checked {
+				m.NvidiaPackage = "nvidia-driver"
+			} else {
+				m.NvidiaPackage = ""
+			}
+		}).
+		AddCheckbox("Enable Flathub", false, func(checked bool) {
+			if checked {
+				m.EnableFlathub = "true"
+			} else {
+				m.EnableFlathub = "false"
+			}
+		}).
 		AddCheckbox("Enable Popcon", false, func(checked bool) {
 			if checked {
 				m.EnablePopcon = "true"
 			} else {
 				m.EnablePopcon = "false"
 			}
+		}).
+		AddCheckbox("MOK-Signed UKI", false, func(checked bool) {
+			if checked {
+				m.EnableMokUki = "true"
+			} else {
+				m.EnableMokUki = "false"
+			}
+		}).
+		AddPasswordField("MOK Password", m.MokPassword, 0, '*', func(text string) {
+			m.MokPassword = text
 		}).
 		AddButton("Install OVERWRITING THE WHOLE DRIVE", func() {
 			if !dataOk {
@@ -115,7 +140,7 @@ func Tui(baseUrlString *string) {
 	processOutput(baseUrl, logView)
 
 	grid := tview.NewGrid().
-		SetRows(27, 0).
+		SetRows(17, -1).
 		AddItem(form, 0, 0, 1, 1, 0, 0, true).
 		AddItem(logView, 1, 0, 1, 1, 0, 0, false)
 	grid.SetBorder(true).

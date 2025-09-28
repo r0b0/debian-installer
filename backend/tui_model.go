@@ -16,11 +16,15 @@ type Model struct {
 	RootPassword  string `json:"ROOT_PASSWORD"`
 	DisableLuks   string `json:"DISABLE_LUKS"`
 	LuksPassword  string `json:"LUKS_PASSWORD"`
+	EnableMokUki  string `json:"ENABLE_MOK_SIGNED_UKI"`
+	MokPassword   string `json:"MOK_ENROLL_PASSWORD"`
 	EnableTpm     string `json:"ENABLE_TPM"`
 	Hostname      string `json:"HOSTNAME"`
 	Timezone      string `json:"TIMEZONE"`
 	SwapSize      string `json:"SWAP_SIZE"`
+	NvidiaPackage string `json:"NVIDIA_PACKAGE"`
 	EnablePopcon  string `json:"ENABLE_POPCON"`
+	EnableFlathub string `json:"ENABLE_FLATHUB"`
 }
 type LoginResp struct {
 	Environ  Model  `json:"environ"`
