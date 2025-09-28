@@ -42,10 +42,10 @@ func Tui(baseUrlString *string) {
 		})
 
 	dataOk := true
+	pages := tview.NewPages()
 
-	form := tview.NewForm().
-		SetHorizontal(true).
-		AddDropDown("Installation Target Device", deviceNames, getSliceIndex(m.Disk, devices), func(_ string, optionIndex int) {
+	diskForm := tview.NewForm().
+		AddDropDown("Device", deviceNames, getSliceIndex(m.Disk, devices), func(_ string, optionIndex int) {
 			m.Disk = devices[optionIndex]
 		}).
 		AddCheckbox("Disable Encryption", m.DisableLuks == "true", func(checked bool) {
@@ -65,6 +65,11 @@ func Tui(baseUrlString *string) {
 				m.EnableTpm = "false"
 			}
 		}).
+		AddButton("Next", func() {
+			pages.SwitchToPage("Users")
+		})
+
+	usersForm := tview.NewForm().
 		AddPasswordField("Root Password", m.RootPassword, 0, '*', func(text string) {
 			m.RootPassword = text
 		}).
@@ -77,6 +82,14 @@ func Tui(baseUrlString *string) {
 		AddPasswordField("Regular User Password", m.UserPassword, 0, '*', func(text string) {
 			m.UserPassword = text
 		}).
+		AddButton("Back", func() {
+			pages.SwitchToPage("Device")
+		}).
+		AddButton("Next", func() {
+			pages.SwitchToPage("Configuration")
+		})
+
+	configForm := tview.NewForm().
 		AddInputField("Hostname", m.Hostname, 0, nil, func(text string) {
 			m.Hostname = text
 		}).
@@ -110,6 +123,14 @@ func Tui(baseUrlString *string) {
 				m.EnablePopcon = "false"
 			}
 		}).
+		AddButton("Back", func() {
+			pages.SwitchToPage("Users")
+		}).
+		AddButton("Next", func() {
+			pages.SwitchToPage("Secure Boot")
+		})
+
+	secureBootForm := tview.NewForm().
 		AddCheckbox("MOK-Signed UKI", false, func(checked bool) {
 			if checked {
 				m.EnableMokUki = "true"
@@ -119,6 +140,17 @@ func Tui(baseUrlString *string) {
 		}).
 		AddPasswordField("MOK Password", m.MokPassword, 0, '*', func(text string) {
 			m.MokPassword = text
+		}).
+		AddButton("Back", func() {
+			pages.SwitchToPage("Configuration")
+		}).
+		AddButton("Next", func() {
+			pages.SwitchToPage("Processing")
+		})
+
+	processingForm := tview.NewForm().
+		AddButton("Back", func() {
+			pages.SwitchToPage("Secure Boot")
 		}).
 		AddButton("Install OVERWRITING THE WHOLE DRIVE", func() {
 			if !dataOk {
@@ -139,18 +171,57 @@ func Tui(baseUrlString *string) {
 
 	processOutput(baseUrl, logView)
 
-	grid := tview.NewGrid().
-		SetRows(17, -1).
-		AddItem(form, 0, 0, 1, 1, 0, 0, true).
-		AddItem(logView, 1, 0, 1, 1, 0, 0, false)
-	grid.SetBorder(true).
+	footer := tview.NewTextView().
+		SetText(" [:blue]F1[-:-] Device  [:blue]F2[-:-] Users  [:blue]F3[-:-] Configuration  [:blue]F4[-:-] SecureBoot  [:blue]F5[-:-] Log").
+		SetDynamicColors(true)
+
+	pages.
+		AddPage("Device", diskForm, true, true).
+		AddPage("Users", usersForm, true, false).
+		AddPage("Configuration", configForm, true, false).
+		AddPage("Secure Boot", secureBootForm, true, false).
+		AddPage("Processing", tview.NewFlex().
+			SetDirection(tview.FlexRow).
+			AddItem(tview.NewTextView().
+				SetText(" Processing"), 3, 0, false).
+			AddItem(processingForm, 3, 0, true).
+			AddItem(logView, 0, 100, false),
+			true, false)
+
+	mainFlex := tview.NewFlex().
+		SetDirection(tview.FlexRow).
+		AddItem(pages, 0, 100, true).
+		AddItem(footer, 1, 0, false)
+	mainFlex.SetBorder(true).
 		SetTitle("Opinionated Debian Installer").
 		SetTitleColor(greenColour).
 		SetTitleAlign(tview.AlignCenter)
+	
+	app.SetInputCapture(func(event *tcell.EventKey) *tcell.EventKey {
+		switch event.Key() {
+		case tcell.KeyF1:
+			pages.SwitchToPage("Device")
+			return nil
+		case tcell.KeyF2:
+			pages.SwitchToPage("Users")
+			return nil
+		case tcell.KeyF3:
+			pages.SwitchToPage("Configuration")
+			return nil
+		case tcell.KeyF4:
+			pages.SwitchToPage("Secure Boot")
+			return nil
+		case tcell.KeyF5:
+			pages.SwitchToPage("Processing")
+			return nil
+		default:
+			return event
+		}
+	})
 
 	_ = SystemdNotifyReady()
 
-	if err := app.SetRoot(grid, true).EnableMouse(true).SetFocus(grid).Run(); err != nil {
+	if err := app.SetRoot(mainFlex, true).EnableMouse(true).SetFocus(mainFlex).Run(); err != nil {
 		panic(err)
 	}
 }
