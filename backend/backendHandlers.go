@@ -13,7 +13,7 @@ func (c *BackendContext) Login(w http.ResponseWriter, _ *http.Request) {
 		Hostname  string            `json:"hostname"`
 		HasEfi    bool              `json:"has_efi"`
 		HasNvidia bool              `json:"has_nvidia"`
-		SBState   string			`json:"sb_state"`
+		SBState   string            `json:"sb_state"`
 		Running   bool              `json:"running"`
 		Environ   map[string]string `json:"environ"`
 	}

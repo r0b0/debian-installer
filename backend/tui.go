@@ -42,7 +42,6 @@ func Tui(baseUrlString *string) {
 		})
 
 	dataOk := true
-	pages := tview.NewPages()
 
 	diskForm := tview.NewForm().
 		AddDropDown("Device", deviceNames, getSliceIndex(m.Disk, devices), func(_ string, optionIndex int) {
@@ -64,9 +63,6 @@ func Tui(baseUrlString *string) {
 			} else {
 				m.EnableTpm = "false"
 			}
-		}).
-		AddButton("Next", func() {
-			pages.SwitchToPage("Users")
 		})
 
 	usersForm := tview.NewForm().
@@ -81,12 +77,6 @@ func Tui(baseUrlString *string) {
 		}).
 		AddPasswordField("Regular User Password", m.UserPassword, 0, '*', func(text string) {
 			m.UserPassword = text
-		}).
-		AddButton("Back", func() {
-			pages.SwitchToPage("Device")
-		}).
-		AddButton("Next", func() {
-			pages.SwitchToPage("Configuration")
 		})
 
 	configForm := tview.NewForm().
@@ -122,12 +112,6 @@ func Tui(baseUrlString *string) {
 			} else {
 				m.EnablePopcon = "false"
 			}
-		}).
-		AddButton("Back", func() {
-			pages.SwitchToPage("Users")
-		}).
-		AddButton("Next", func() {
-			pages.SwitchToPage("Secure Boot")
 		})
 
 	secureBootForm := tview.NewForm().
@@ -140,18 +124,9 @@ func Tui(baseUrlString *string) {
 		}).
 		AddPasswordField("MOK Password", m.MokPassword, 0, '*', func(text string) {
 			m.MokPassword = text
-		}).
-		AddButton("Back", func() {
-			pages.SwitchToPage("Configuration")
-		}).
-		AddButton("Next", func() {
-			pages.SwitchToPage("Processing")
 		})
 
 	processingForm := tview.NewForm().
-		AddButton("Back", func() {
-			pages.SwitchToPage("Secure Boot")
-		}).
 		AddButton("Install OVERWRITING THE WHOLE DRIVE", func() {
 			if !dataOk {
 				LOG(logView, "Data not consistent") // TODO
@@ -171,53 +146,28 @@ func Tui(baseUrlString *string) {
 
 	processOutput(baseUrl, logView)
 
-	footer := tview.NewTextView().
-		SetText(" [:blue]F1[-:-] Device  [:blue]F2[-:-] Users  [:blue]F3[-:-] Configuration  [:blue]F4[-:-] SecureBoot  [:blue]F5[-:-] Log").
-		SetDynamicColors(true)
-
-	pages.
-		AddPage("Device", diskForm, true, true).
-		AddPage("Users", usersForm, true, false).
-		AddPage("Configuration", configForm, true, false).
-		AddPage("Secure Boot", secureBootForm, true, false).
-		AddPage("Processing", tview.NewFlex().
+	wizard := NewWizard()
+	wizard.AddForm("Device", diskForm).
+		AddForm("Users", usersForm).
+		AddForm("Configuration", configForm).
+		AddForm("Secure Boot", secureBootForm).
+		AddPage("Processing", processingForm, tview.NewFlex().
 			SetDirection(tview.FlexRow).
 			AddItem(tview.NewTextView().
 				SetText(" Processing"), 3, 0, false).
 			AddItem(processingForm, 3, 0, true).
-			AddItem(logView, 0, 100, false),
-			true, false)
+			AddItem(logView, 0, 100, false))
 
 	mainFlex := tview.NewFlex().
 		SetDirection(tview.FlexRow).
-		AddItem(pages, 0, 100, true).
-		AddItem(footer, 1, 0, false)
+		AddItem(wizard.MakePages(), 0, 100, true).
+		AddItem(wizard.Footer, 1, 0, false)
 	mainFlex.SetBorder(true).
 		SetTitle("Opinionated Debian Installer").
 		SetTitleColor(greenColour).
 		SetTitleAlign(tview.AlignCenter)
-	
-	app.SetInputCapture(func(event *tcell.EventKey) *tcell.EventKey {
-		switch event.Key() {
-		case tcell.KeyF1:
-			pages.SwitchToPage("Device")
-			return nil
-		case tcell.KeyF2:
-			pages.SwitchToPage("Users")
-			return nil
-		case tcell.KeyF3:
-			pages.SwitchToPage("Configuration")
-			return nil
-		case tcell.KeyF4:
-			pages.SwitchToPage("Secure Boot")
-			return nil
-		case tcell.KeyF5:
-			pages.SwitchToPage("Processing")
-			return nil
-		default:
-			return event
-		}
-	})
+
+	app.SetInputCapture(wizard.InputCapture)
 
 	_ = SystemdNotifyReady()
 
