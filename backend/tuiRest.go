@@ -46,6 +46,7 @@ func processOutput(baseUrl *url.URL, log io.Writer) {
 	ws, err := websocket.Dial(wsUrl.String(), "", origin)
 	if err != nil {
 		LOG(log, "Failed to connect to web socket: %v", err)
+		return
 	}
 	go func() {
 		for {
@@ -69,10 +70,14 @@ func (m *Model) startInstallation(baseUrl *url.URL, log io.Writer) error {
 	post.Set("ROOT_PASSWORD", m.UserPassword)
 	post.Set("DISABLE_LUKS", m.DisableLuks)
 	post.Set("LUKS_PASSWORD", m.LuksPassword)
+	post.Set("ENABLE_MOK_SIGNED_UKI", m.EnableMokUki)
+	post.Set("MOK_ENROLL_PASSWORD", m.MokPassword)
 	post.Set("ENABLE_TPM", m.EnableTpm)
 	post.Set("HOSTNAME", m.Hostname)
 	post.Set("TIMEZONE", m.Timezone)
 	post.Set("SWAP_SIZE", m.SwapSize)
+	post.Set("NVIDIA_PACKAGE", m.NvidiaPackage)
+	post.Set("ENABLE_FLATHUB", m.EnableFlathub)
 	post.Set("ENABLE_POPCON", m.EnablePopcon)
 	client := http.Client{}
 	resp, err := client.PostForm(baseUrl.JoinPath("install").String(), post)

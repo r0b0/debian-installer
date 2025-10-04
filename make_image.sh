@@ -49,8 +49,8 @@ cat <<EOF > repart.d/01_efi.conf
 [Partition]
 Type=esp
 UUID=${efi_uuid}
-SizeMinBytes=200M
-SizeMaxBytes=200M
+SizeMinBytes=300M
+SizeMaxBytes=300M
 Format=vfat
 EOF
 
@@ -375,8 +375,8 @@ set -euo pipefail
 export DEBIAN_FRONTEND=noninteractive
 apt update -y
 apt upgrade -y
-apt install -y debootstrap uuid-runtime curl pv
-apt install -y -t ${BACKPORTS_VERSION} systemd-boot systemd-boot-efi-amd64-signed shim-signed systemd-repart dracut cryptsetup nvidia-detect
+apt install -y debootstrap uuid-runtime pv
+apt install -y -t ${BACKPORTS_VERSION} curl systemd-boot systemd-boot-efi-amd64-signed shim-signed systemd-repart dracut cryptsetup nvidia-detect
 apt purge initramfs-tools initramfs-tools-core initramfs-tools-bin busybox klibc-utils libklibc -y
 systemctl enable NetworkManager.service
 systemctl disable systemd-networkd.service  # seems to fight with NetworkManager

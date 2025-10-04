@@ -92,21 +92,21 @@ func Tui(baseUrlString *string) {
 		}, func(text string) {
 			m.SwapSize = text
 		}).
-		AddCheckbox("Enable NVIDIA", false, func(checked bool) {
+		AddCheckbox("Enable NVIDIA", m.NvidiaPackage == "nvidia-driver", func(checked bool) {
 			if checked {
 				m.NvidiaPackage = "nvidia-driver"
 			} else {
 				m.NvidiaPackage = ""
 			}
 		}).
-		AddCheckbox("Enable Flathub", false, func(checked bool) {
+		AddCheckbox("Enable Flathub", m.EnableFlathub == "true", func(checked bool) {
 			if checked {
 				m.EnableFlathub = "true"
 			} else {
 				m.EnableFlathub = "false"
 			}
 		}).
-		AddCheckbox("Enable Popcon", false, func(checked bool) {
+		AddCheckbox("Enable Popcon", m.EnablePopcon == "true", func(checked bool) {
 			if checked {
 				m.EnablePopcon = "true"
 			} else {
@@ -115,7 +115,7 @@ func Tui(baseUrlString *string) {
 		})
 
 	secureBootForm := tview.NewForm().
-		AddCheckbox("MOK-Signed UKI", false, func(checked bool) {
+		AddCheckbox("MOK-Signed UKI", m.EnableMokUki == "true", func(checked bool) {
 			if checked {
 				m.EnableMokUki = "true"
 			} else {

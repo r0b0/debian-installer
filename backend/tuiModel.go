@@ -7,6 +7,7 @@ import (
 	"strings"
 )
 
+// when adding fields here, you need to add them to startInstallation() in tuiRest.go too
 type Model struct {
 	Disk          string `json:"DISK"`
 	DebianVersion string `json:"DEBIAN_VERSION"`
