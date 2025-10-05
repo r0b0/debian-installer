@@ -49,13 +49,11 @@ func processOutput(baseUrl *url.URL, log io.Writer) {
 		return
 	}
 	go func() {
-		for {
-			_, err := io.Copy(log, ws)
-			if err != nil {
-				LOG(log, "Error reading websocket: %v", err)
-				return
-			}
+		_, err := io.Copy(log, ws)
+		if err != nil {
+			LOG(log, "Error reading websocket: %v", err)
 		}
+		LOG(log, "Finished")
 	}()
 }
 

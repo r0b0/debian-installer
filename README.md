@@ -11,7 +11,7 @@ Our opinions of what a modern installation of Debian should look like in 2025 ar
  - Authenticated boot with self-generated Machine Owner Keys
  - Fast installation using an image
  - Browser-based installer
- - One-click installation of a swap file, NVIDIA drivers or flathub
+ - One-click installation of a swap file, nvidia drivers or flathub
   
 ## Limitations
 
@@ -25,7 +25,7 @@ Our opinions of what a modern installation of Debian should look like in 2025 ar
 |---------------------|---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|-------------------------------------------------------------------------|
 | KDE Plasma          | [opinionated-debian-installer-trixie-kde-plasma-20250913a.img (5.5GB)](https://objectstorage.eu-frankfurt-1.oraclecloud.com/n/fr2rf1wke5iq/b/public/o/opinionated-debian-installer-trixie-kde-plasma-20250913a.img) | a25c9a1d 026d4c1e d2b4d149 45ed3f46 ebf08970 84460f1c d0da1133 efc1c720 |
 | Gnome               | [opinionated-debian-installer-trixie-gnome-20250907a.img (4.2GB)](https://objectstorage.eu-frankfurt-1.oraclecloud.com/n/fr2rf1wke5iq/b/public/o/opinionated-debian-installer-trixie-gnome-20250907a.img)           | 9d7c4df0 993d6658 a3b73819 c8d4edea 4d3fcfdf 5b6ab6b6 21ff4e40 b7c7c932 |
-| Server              | [opinionated-debian-installer-trixie-server-20250818a.img (2.4GB)](https://objectstorage.eu-frankfurt-1.oraclecloud.com/n/fr2rf1wke5iq/b/public/o/opinionated-debian-installer-trixie-server-20250818a.img)         | a92e0fe1 daedd9f7 f254a4fc 4fc8bafa e83871dc c22080cf bdce4154 c03909d1 |
+| Server              | [opinionated-debian-installer-trixie-server-20251005a.img (2.1GB)](https://objectstorage.eu-frankfurt-1.oraclecloud.com/n/fr2rf1wke5iq/b/public/o/opinionated-debian-installer-trixie-server-20251005a.img)         | e46c91e9 dfe0c942 4e607a5d 2a260a61 4a05582c c775fb85 53b035cb cda588ae |
 
 ## Instructions
 

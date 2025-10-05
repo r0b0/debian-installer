@@ -8,6 +8,7 @@ USERNAME=live
 DEBIAN_VERSION=trixie
 BACKPORTS_VERSION=${DEBIAN_VERSION}-backports
 FSFLAGS="compress=zstd:15"
+BOOTSTRAP_IMAGE=/var/cache/opinionated-debian-installer/bootstrap.btrfs
 
 target=/target
 SCRIPT_DIR=$( cd -- "$( dirname -- "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )
@@ -88,6 +89,12 @@ else
     mount "${root_device}" /mnt/btrfs1 -o ${FSFLAGS},subvolid=5
 fi
 
+if [ -f $BOOTSTRAP_IMAGE ]; then
+  notify receiving bootstrap data from $BOOTSTRAP_IMAGE
+  btrfs receive -f $BOOTSTRAP_IMAGE /mnt/btrfs1/
+  (cd /mnt/btrfs1; btrfs subvolume delete @; btrfs subvolume snapshot opinionated_installer_bootstrap @; btrfs subvolume delete opinionated_installer_bootstrap)
+fi
+
 if mountpoint -q "${target}" ; then
     echo root subvolume already mounted on ${target}
 else
@@ -120,6 +127,7 @@ else
     mount --make-rslave --rbind /dev ${target}/dev
     mount --make-rslave --rbind /run ${target}/run
     mount --make-rslave --rbind /var/tmp ${target}/var/tmp
+    mount -t tmpfs tmpfs ${target}/boot
 fi
 
 notify setup sources list
@@ -269,6 +277,11 @@ rm -f ${target}/var/log/apt/*log
 if [ ! -f first_phase_done.txt ]; then
   notify create snapshot after first phase
   (cd /mnt/btrfs1; btrfs subvolume snapshot -r @ opinionated_installer_bootstrap)
+  mkdir -p $(dirname $BOOTSTRAP_IMAGE)
+  if [ ! -f $BOOTSTRAP_IMAGE ]; then
+    notify storing bootstrap data to $BOOTSTRAP_IMAGE
+    btrfs send --compressed-data /mnt/btrfs1/opinionated_installer_bootstrap > $BOOTSTRAP_IMAGE
+  fi
   touch first_phase_done.txt
 fi
 
