@@ -40,6 +40,18 @@ func main() {
 		Backend(backendPort, backendStatic)
 		return
 
+	case "wifi":
+		wifi, err := NewWifi()
+		if err != nil {
+			os.Exit(1)
+		}
+		aps, err := wifi.GetAccessPoints()
+		if err != nil {
+			os.Exit(1)
+		}
+		for _, ap := range aps {
+			fmt.Println(ap.String())
+		}
 	default:
 		flag.Usage()
 		os.Exit(3)
