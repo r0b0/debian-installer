@@ -32,6 +32,7 @@ func Tui(baseUrlString *string) {
 	greenColour := tcell.NewRGBColor(0x51, 0xa1, 0xd0)
 
 	app := tview.NewApplication()
+
 	logView := tview.NewTextView().
 		SetScrollable(true).
 		ScrollToEnd().
@@ -53,31 +54,37 @@ func Tui(baseUrlString *string) {
 			} else {
 				m.DisableLuks = "false"
 			}
-		}).
-		AddPasswordField("Disk Encryption Passphrase", m.LuksPassword, 0, '*', func(text string) {
-			m.LuksPassword = text
-		}). // TODO second time
-		AddCheckbox("Unlock with TPM", m.EnableTpm == "true", func(checked bool) {
-			if checked {
-				m.EnableTpm = "true"
-			} else {
-				m.EnableTpm = "false"
-			}
 		})
+	AddPasswordToForm(diskForm, "Disk Encryption Passphrase", m.LuksPassword, func(text string) {
+		m.LuksPassword = text
+	}, func(valid bool) {
+		dataOk = valid
+	})
+	diskForm.AddCheckbox("Unlock with TPM", m.EnableTpm == "true", func(checked bool) {
+		if checked {
+			m.EnableTpm = "true"
+		} else {
+			m.EnableTpm = "false"
+		}
+	})
 
-	usersForm := tview.NewForm().
-		AddPasswordField("Root Password", m.RootPassword, 0, '*', func(text string) {
-			m.RootPassword = text
-		}).
-		AddInputField("Regular User Name", m.Username, 0, nil, func(text string) {
-			m.Username = text
-		}).
+	usersForm := tview.NewForm()
+	AddPasswordToForm(usersForm, "Root Password", m.RootPassword, func(text string) {
+		m.RootPassword = text
+	}, func(valid bool) {
+		dataOk = valid
+	})
+	usersForm.AddInputField("Regular User Name", m.Username, 0, nil, func(text string) {
+		m.Username = text
+	}).
 		AddInputField("Full Name", m.UserFullName, 0, nil, func(text string) {
 			m.UserFullName = text
-		}).
-		AddPasswordField("Regular User Password", m.UserPassword, 0, '*', func(text string) {
-			m.UserPassword = text
 		})
+	AddPasswordToForm(usersForm, "Regular User Password", m.UserPassword, func(text string) {
+		m.UserPassword = text
+	}, func(valid bool) {
+		dataOk = valid
+	})
 
 	configForm := tview.NewForm().
 		AddInputField("Hostname", m.Hostname, 0, nil, func(text string) {
@@ -121,10 +128,12 @@ func Tui(baseUrlString *string) {
 			} else {
 				m.EnableMokUki = "false"
 			}
-		}).
-		AddPasswordField("MOK Password", m.MokPassword, 0, '*', func(text string) {
-			m.MokPassword = text
 		})
+	AddPasswordToForm(secureBootForm, "MOK Password", m.MokPassword, func(text string) {
+		m.MokPassword = text
+	}, func(valid bool) {
+		dataOk = valid
+	})
 
 	processingForm := tview.NewForm().
 		AddButton("Install OVERWRITING THE WHOLE DRIVE", func() {
