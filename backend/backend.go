@@ -19,6 +19,7 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 */
 
 import (
+	"bufio"
 	"bytes"
 	"errors"
 	"fmt"
@@ -27,7 +28,9 @@ import (
 	"net/http"
 	"os"
 	"os/exec"
+	"path"
 	"strings"
+	"syscall"
 
 	"golang.org/x/net/websocket"
 )
@@ -38,6 +41,8 @@ type BackendContext struct {
 	cmdOutput         bytes.Buffer
 	websockets        map[string]*websocket.Conn
 	wsHandlers        map[string]chan string
+	progressFifo      string
+	currentProgress   string
 	ctx               context.Context
 }
 
@@ -69,6 +74,35 @@ func (c *BackendContext) waitForInstallerFinished() {
 	}
 }
 
+func (c *BackendContext) openProgressFifo() error {
+	dir, err := os.MkdirTemp("", "fifo")
+	if err != nil {
+		return err
+	}
+	fileName := path.Join(dir, "fifo")
+	err = syscall.Mkfifo(fileName, 0006)
+	if err != nil {
+		return err
+	}
+	c.progressFifo = fileName
+	return nil
+}
+
+func (c *BackendContext) readProgressFifo() {
+	f, err := os.OpenFile(c.progressFifo, os.O_CREATE, os.ModeNamedPipe)
+	if err != nil {
+		slog.Error("Failed to open progress fifo", "error", err)
+		return
+	}
+
+	scanner := bufio.NewScanner(f)
+	for scanner.Scan() {
+		c.currentProgress = scanner.Text()
+		slog.Info("Current progress", "progress", c.currentProgress)
+		// TODO
+	}
+}
+
 func Backend(listenPort *int, staticPath *string) {
 	slog.SetLogLoggerLevel(slog.LevelDebug)
 
@@ -86,11 +120,18 @@ func Backend(listenPort *int, staticPath *string) {
 		wsHandlers:        make(map[string]chan string),
 		ctx:               context.Background(),
 	}
+	err := app.openProgressFifo()
+	if err != nil {
+		slog.Error("Failed to create progress fifo", "error", err)
+	} else {
+		go app.readProgressFifo()
+	}
 
 	for _, s := range os.Environ() {
 		keyValue := strings.Split(s, "=")
 		app.runningParameters[keyValue[0]] = keyValue[1]
 	}
+	app.runningParameters["PROGRESS_PIPE"] = app.progressFifo
 
 	http.HandleFunc("/login", app.Login)
 	http.HandleFunc("/block_devices", app.GetBlockDevices)
@@ -107,7 +148,7 @@ func Backend(listenPort *int, staticPath *string) {
 		app.doRunInstall()
 	}
 
-	err := SystemdNotifyReady()
+	err = SystemdNotifyReady()
 	if err != nil {
 		slog.Error("failed to notify systemd", "error", err)
 	}

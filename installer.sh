@@ -44,12 +44,21 @@ echo -e "\033[32m Opinionated Debian Installer \033[0m"
 echo Press Enter at green prompts
 fi
 
+progress=0
+readonly total_steps=35
+
 function notify () {
+    progress=$((progress + 1))
+    shift
     if [ -z "${NON_INTERACTIVE}" ]; then
-      echo -en "\033[32m$*\033[0m> "
+      echo -en "\033[34m${progress}/${total_steps} \033[32m$*\033[0m> "
       read -r
     else
       echo "$*"
+    fi
+
+    if [ -n "${PROGRESS_PIPE}" ]; then
+      echo "${progress}/${total_steps}" > "${PROGRESS_PIPE}"
     fi
 }
 
