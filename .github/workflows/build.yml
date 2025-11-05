@@ -1,5 +1,8 @@
 name: Unit test and build compiled components
 
+permissions:
+  contents: read
+
 on:  [push, pull_request]
 
 jobs:
