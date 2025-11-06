@@ -128,7 +128,7 @@ EOF
 cat <<EOF > repart.d/02_root.conf
 [Partition]
 Type=root
-Label=Debian ${DEBIAN_VERSION}
+Label=Debian
 UUID=${main_part_uuid}
 Format=btrfs
 MakeDirectories=/@home
