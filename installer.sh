@@ -40,6 +40,7 @@ TIMEZONE=Europe/Bratislava
 KEYMAP=us
 SSH_PUBLIC_KEY=
 AFTER_INSTALLED_CMD=
+ENABLE_32BIT=true
 
 echo -e "\033[32m Opinionated Debian Installer \033[0m"
 echo Press Enter at green prompts
@@ -324,8 +325,10 @@ if [ "$SHARE_APT_ARCHIVE" = true ] ; then
     fi
 fi
 
-notify enable 32bit
-chroot ${target}/ dpkg --add-architecture i386
+if [ "$ENABLE_32BIT" = true ] ; then
+    notify enable 32bit
+    chroot ${target}/ dpkg --add-architecture i386
+fi
 
 if [ ! -z "${USERNAME}" ]; then
     if grep -qs "^${USERNAME}:" ${target}/etc/shadow ; then
