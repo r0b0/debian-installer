@@ -127,7 +127,7 @@ EOF
 cat <<EOF > repart.d/02_root.conf
 [Partition]
 Type=root
-Label=Debian ${DEBIAN_VERSION}
+Label=Debian
 UUID=${main_part_uuid}
 Format=btrfs
 MakeDirectories=/@home
@@ -195,9 +195,11 @@ if [ -e /root/btrfs1/opinionated_installer_bootstrap ]; then
         (cd ${top_level_mount}; btrfs subvolume snapshot opinionated_installer_bootstrap @; btrfs subvolume delete opinionated_installer_bootstrap)
         touch base_image_copied.txt
     fi
-else
+elif [ ! -e ${top_level_mount}/@ ]; then
   notify create @ subvolume on ${top_level_mount}
   btrfs subvolume create ${top_level_mount}/@
+else
+  notify the @ subvolume already created
 fi
 
 if [ ! -e ${top_level_mount}/@swap ]; then
@@ -265,6 +267,7 @@ systemd-firstboot --root=${target} --locale=${LOCALE} --keymap=${KEYMAP} --timez
   --hostname=${HOSTNAME} --root-password=${ROOT_PASSWORD} --kernel-command-line="${kernel_params}" \
   --force
 echo "127.0.1.1 ${HOSTNAME}" >> ${target}/etc/hosts
+echo "keyboard-configuration keyboard-configuration/layoutcode string ${KEYMAP}"| chroot ${target}/ debconf-set-selections
 echo "locales locales/locales_to_be_generated multiselect     en_US.UTF-8 UTF-8" | chroot ${target}/ debconf-set-selections
 
 notify setup fstab
