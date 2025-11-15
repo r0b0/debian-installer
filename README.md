@@ -63,6 +63,15 @@ You need fast USB storage.
 USB3 is strongly recommended, including any hubs, converters or extension cables you might be using.
 On slow storage, some systemd services might time-out and the boot of the installer will not be successful.
 
+**How to set keyboard layout**
+
+There is rudimentary support for keyboard layouts in the installer.
+You can set the KEYMAP variable in the [installer.ini](#Optional-Configuration-Automatic-Installation) file.
+This will be used in the installed system.
+
+Otherwise, you can set the keyboard layout using the default debian method:
+`sudo dpkg-reconfigure keyboard-configuration`
+
 ## SecureBoot
 
 There are two options with regards to SecureBoot: simple or full.
@@ -267,8 +276,15 @@ The following table contains comparison of features between our opinionated debi
 
 [4] Fixed partitioning (see Details above), LUKS is automatic, BTRFS is used as filesystem
 
-## Support
+## Support The Project
+
+### Seed The Torrents
 
 Please set up your torrent client to follow the RSS feed below and seed all new images:
 
 [feed.xml](https://objectstorage.eu-frankfurt-1.oraclecloud.com/n/fr2rf1wke5iq/b/public/o/feed.xml)
+
+### Spread The Word
+
+Tell your friends about the installer.
+If you are active on social media, please share!

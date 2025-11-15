@@ -263,11 +263,15 @@ else
 fi
 
 notify setup locale, keymap, timezone, hostname, root password, kernel command line
-systemd-firstboot --root=${target} --locale=${LOCALE} --keymap=${KEYMAP} --timezone=${TIMEZONE} \
+systemd-firstboot --root=${target} --locale=${LOCALE} --keymap=${KEYMAP:-us} --timezone=${TIMEZONE} \
   --hostname=${HOSTNAME} --root-password=${ROOT_PASSWORD} --kernel-command-line="${kernel_params}" \
   --force
 echo "127.0.1.1 ${HOSTNAME}" >> ${target}/etc/hosts
-echo "keyboard-configuration keyboard-configuration/layoutcode string ${KEYMAP}"| chroot ${target}/ debconf-set-selections
+
+if [ ! -z "${KEYMAP}" ]; then
+  echo "keyboard-configuration keyboard-configuration/layoutcode string ${KEYMAP}"| chroot ${target}/ debconf-set-selections
+fi
+
 echo "locales locales/locales_to_be_generated multiselect     en_US.UTF-8 UTF-8" | chroot ${target}/ debconf-set-selections
 
 notify setup fstab
