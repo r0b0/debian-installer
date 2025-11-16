@@ -1,0 +1,13 @@
+[Unit]
+Description=Opinionated Debian Installer - Set keyboard layout
+After=systemd-localed.service
+
+[Service]
+EnvironmentFile=-/boot/efi/installer.ini
+ExecStart=/usr/bin/installer_console_setup.sh
+Type=oneshot
+User=root
+Group=root
+
+[Install]
+WantedBy=multi-user.target

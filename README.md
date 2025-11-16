@@ -67,10 +67,10 @@ On slow storage, some systemd services might time-out and the boot of the instal
 
 There is rudimentary support for keyboard layouts in the installer.
 You can set the KEYMAP variable in the [installer.ini](#Optional-Configuration-Automatic-Installation) file.
-This will be used in the installed system.
+This will be used in the installer and the installed system.
 
 Otherwise, you can set the keyboard layout using the default debian method:
-`sudo dpkg-reconfigure keyboard-configuration`
+`sudo dpkg-reconfigure keyboard-configuration` and `sudo setupcon`
 
 ## SecureBoot
 

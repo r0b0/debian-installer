@@ -454,10 +454,13 @@ notify copying the opinionated debian installer to ${target}
 cp "${SCRIPT_DIR}/installer.sh" "${target}/"
 chmod +x ${target}/installer.sh
 mkdir -p ${target}/var/www/html
+install_file usr/bin/installer_console_setup.sh
 install_file var/www/html/opinionated-debian-installer
 install_file etc/systemd/system/installer_backend.service
+install_file etc/systemd/system/setupcon.service
 install_file boot/efi/installer.ini
 chroot ${target}/ systemctl enable installer_backend
+chroot ${target}/ systemctl enable setupcon.service
 
 (cd "${SCRIPT_DIR}/backend" && CGO_ENABLED=0 go build -v -ldflags="-s -w" -o opinionated-installer)
 
