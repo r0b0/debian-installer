@@ -19,6 +19,7 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 */
 
 import (
+	"encoding/json"
 	"github.com/google/uuid"
 	"golang.org/x/net/websocket"
 	"log/slog"
@@ -44,15 +45,33 @@ func (c *BackendContext) addWebsocket(ws *websocket.Conn) chan string {
 	return n
 }
 
-func (c *BackendContext) Write(p []byte) (int, error) {
-	c.cmdOutput.Write(p)
+type SocketWriter struct {
+	backend *BackendContext
+	tag     string
+}
 
-	slog.Debug("writing a message to all web sockets", "data", p)
-	for name, ws := range c.websockets {
-		_, err := ws.Write(p)
+type SocketMessage struct {
+	Data []byte
+	Tag  string
+}
+
+func (w *SocketWriter) Write(p []byte) (int, error) {
+	if w.tag == "cmdOutput" {  // XXX abstract this
+		w.backend.cmdOutput.Write(p)
+	}
+	jData, err := json.Marshal(SocketMessage{
+		p, w.tag,
+	})
+	if err != nil {
+		return 0, err
+	}
+
+	slog.Debug("writing a message to all web sockets", "data", jData)
+	for name, ws := range w.backend.websockets {
+		_, err := ws.Write(jData)
 		if err != nil {
 			slog.Warn("failed to write to websocket, closing", "socket_addr", name, "error", err)
-			c.closeWebSocket(name)
+			w.backend.closeWebSocket(name)
 		}
 	}
 	return len(p), nil

@@ -24,6 +24,7 @@ import (
 	"errors"
 	"fmt"
 	"golang.org/x/net/context"
+	"io"
 	"log/slog"
 	"net/http"
 	"os"
@@ -39,6 +40,8 @@ type BackendContext struct {
 	runningCmd        *exec.Cmd
 	runningParameters map[string]string
 	cmdOutput         bytes.Buffer
+	logWriter         io.Writer
+	progressWriter    io.Writer
 	websockets        map[string]*websocket.Conn
 	wsHandlers        map[string]chan string
 	progressFifo      string
@@ -48,8 +51,8 @@ type BackendContext struct {
 
 func (c *BackendContext) doRunInstall() {
 	c.runningCmd = exec.CommandContext(c.ctx, os.Getenv("INSTALLER_SCRIPT"))
-	c.runningCmd.Stderr = c
-	c.runningCmd.Stdout = c
+	c.runningCmd.Stderr = c.logWriter
+	c.runningCmd.Stdout = c.logWriter
 	for k, v := range c.runningParameters {
 		c.runningCmd.Env = append(c.runningCmd.Env, fmt.Sprintf("%s=%s", k, v))
 	}
@@ -80,7 +83,7 @@ func (c *BackendContext) openProgressFifo() error {
 		return err
 	}
 	fileName := path.Join(dir, "fifo")
-	err = syscall.Mkfifo(fileName, 0006)
+	err = syscall.Mkfifo(fileName, 0600)
 	if err != nil {
 		return err
 	}
@@ -89,17 +92,26 @@ func (c *BackendContext) openProgressFifo() error {
 }
 
 func (c *BackendContext) readProgressFifo() {
-	f, err := os.OpenFile(c.progressFifo, os.O_CREATE, os.ModeNamedPipe)
-	if err != nil {
-		slog.Error("Failed to open progress fifo", "error", err)
-		return
-	}
+	slog.Info("Reading progress from fifo file", "filename", c.progressFifo)
+	for {
+		select {
+		case <-c.ctx.Done():
+			slog.Debug("Context cancelled")
+			return
+		default:
+			f, err := os.OpenFile(c.progressFifo, os.O_CREATE, os.ModeNamedPipe)
+			if err != nil {
+				slog.Error("Failed to open progress fifo", "error", err)
+				return
+			}
 
-	scanner := bufio.NewScanner(f)
-	for scanner.Scan() {
-		c.currentProgress = scanner.Text()
-		slog.Info("Current progress", "progress", c.currentProgress)
-		// TODO
+			scanner := bufio.NewScanner(f)
+			for scanner.Scan() {
+				c.currentProgress = scanner.Text()
+				slog.Info("Current progress", "progress", c.currentProgress)
+				c.progressWriter.Write([]byte(c.currentProgress))
+			}
+		}
 	}
 }
 
@@ -119,6 +131,14 @@ func Backend(listenPort *int, staticPath *string) {
 		websockets:        make(map[string]*websocket.Conn),
 		wsHandlers:        make(map[string]chan string),
 		ctx:               context.Background(),
+	}
+	app.logWriter = &SocketWriter{
+		&app,
+		"cmdOutput",
+	}
+	app.progressWriter = &SocketWriter{
+		&app,
+		"progress",
 	}
 	err := app.openProgressFifo()
 	if err != nil {

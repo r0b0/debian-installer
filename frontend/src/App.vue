@@ -36,6 +36,7 @@ export default {
       running: false,
       finished: false,
       output_reader_connection: null,
+      progress: "",
       timezones: [],
       
       // values for the installer:
@@ -179,10 +180,23 @@ export default {
       this.output_reader_connection.onmessage = (event) => {
         // console.log("Websocket event received");
         // console.log(event);
-        this.install_to_device_status += event.data.toString();
-        nextTick(() => {
-          this.$refs.process_output_ta.scrollTop = 1000000;
-        });
+        const j = JSON.parse(event.data);
+        // console.log(j);
+        switch (j.Tag) {
+          case "cmdOutput":
+            this.install_to_device_status += atob(j.Data);
+            nextTick(() => {
+              this.$refs.process_output_ta.scrollTop = 1000000;
+            });
+            break;
+          case "progress":
+            this.progress = atob(j.Data);
+            break;
+          default:
+            console.error(`Unknown websocket message received: ${j.Tag}`);
+            break;
+        }
+
         // console.log(this.install_to_device_status);
       }
       this.output_reader_connection.onclose = (event) => {
@@ -402,6 +416,9 @@ export default {
         <a v-if="finished" :href="'http://' + hostname + ':5000/download_log'" download>Download Log</a>
       </fieldset>
     </form>
+
+    <!-- TODO -->
+    PROGRESS: {{progress}}
   </main>
 
   <footer>
