@@ -37,7 +37,6 @@ ENABLE_POPCON=false
 ENABLE_FLATHUB=true
 LOCALE=C.UTF-8
 TIMEZONE=Europe/Bratislava
-KEYMAP=us
 SSH_PUBLIC_KEY=
 AFTER_INSTALLED_CMD=
 
@@ -262,12 +261,11 @@ else
     mount ${efi_partition} ${target}/boot/efi -o umask=077
 fi
 
-notify setup locale, keymap, timezone, hostname, root password, kernel command line
-systemd-firstboot --root=${target} --locale=${LOCALE} --keymap=${KEYMAP} --timezone=${TIMEZONE} \
+notify setup locale, timezone, hostname, root password, kernel command line
+systemd-firstboot --root=${target} --locale=${LOCALE} --keymap=us --timezone=${TIMEZONE} \
   --hostname=${HOSTNAME} --root-password=${ROOT_PASSWORD} --kernel-command-line="${kernel_params}" \
   --force
 echo "127.0.1.1 ${HOSTNAME}" >> ${target}/etc/hosts
-echo "keyboard-configuration keyboard-configuration/layoutcode string ${KEYMAP}"| chroot ${target}/ debconf-set-selections
 echo "locales locales/locales_to_be_generated multiselect     en_US.UTF-8 UTF-8" | chroot ${target}/ debconf-set-selections
 
 notify setup fstab

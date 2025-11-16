@@ -25,7 +25,7 @@ Our opinions of what a modern installation of Debian should look like in 2025 ar
 |---------------------|----------|-------|------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|-------------------------------------------------------------------------|
 | KDE Plasma          | 20251102 | 5.1GB | [torrent](https://objectstorage.eu-frankfurt-1.oraclecloud.com/n/fr2rf1wke5iq/b/public/o/opinionated-debian-installer-trixie-kde-plasma-20251102a.torrent) / [slow](https://objectstorage.eu-frankfurt-1.oraclecloud.com/n/fr2rf1wke5iq/b/public/o/opinionated-debian-installer-trixie-kde-plasma-20251102a.img) | 717a41ff 2a5c68e0 d7505c07 f6ebf070 efda746d a0f542fb dcae5bfc 76f26364 |
 | Gnome               | 20251019 | 4.3GB | [torrent](https://objectstorage.eu-frankfurt-1.oraclecloud.com/n/fr2rf1wke5iq/b/public/o/opinionated-debian-installer-trixie-gnome-20251019a.torrent) / [slow](https://objectstorage.eu-frankfurt-1.oraclecloud.com/n/fr2rf1wke5iq/b/public/o/opinionated-debian-installer-trixie-gnome-20251019a.img)           | 836d6cd3 0e20372c 3246c535 cf8143be ebe85499 f2504557 080d75a3 e57874be |
-| Server              | 20251005 | 2.1GB | [torrent](https://objectstorage.eu-frankfurt-1.oraclecloud.com/n/fr2rf1wke5iq/b/public/o/opinionated-debian-installer-trixie-server-20251005a.torrent) / [slow](https://objectstorage.eu-frankfurt-1.oraclecloud.com/n/fr2rf1wke5iq/b/public/o/opinionated-debian-installer-trixie-server-20251005a.img)         | e46c91e9 dfe0c942 4e607a5d 2a260a61 4a05582c c775fb85 53b035cb cda588ae |
+| Server              | 20251116 | 2.0GB | [torrent](https://objectstorage.eu-frankfurt-1.oraclecloud.com/n/fr2rf1wke5iq/b/public/o/opinionated-debian-installer-trixie-server-20251116a.torrent) / [slow](https://objectstorage.eu-frankfurt-1.oraclecloud.com/n/fr2rf1wke5iq/b/public/o/opinionated-debian-installer-trixie-server-20251116a.img)         | d9494702 f50e45cd e3e30c2f d6865566 b4cac031 7da736d8 b3d9a193 175bd4af |
 
 ## Instructions
 
@@ -61,11 +61,18 @@ Find the path to the underlying device (with `lsblk` or similar) and use the fol
 
 You need fast USB storage.
 USB3 is strongly recommended, including any hubs, converters or extension cables you might be using.
-On slow storage, some systemd services might time-out and the boot of the installer will not be successful.
+On slow storage, some systemd services might time out and the boot of the installer will not be successful.
+
+**How to set keyboard layout**
+
+Use the default debian method:
+
+    sudo dpkg-reconfigure keyboard-configuration
+    sudo setupcon
 
 ## SecureBoot
 
-There are two options with regards to SecureBoot: simple or full.
+There are two options in regard to SecureBoot: simple or full.
 
 The **simple mode** will just use shim, systemd-boot and kernel signed by Microsoft and Debian.
 Your initrd file will not be signed.
@@ -90,7 +97,7 @@ See the screenshots of the process below:
 
 </details>
 
-We also recommend to re-enroll the TPM device to decrypt your drive with PCRs 7 (secure-boot-policy) and 14 (shim-policy) after the installation.
+We also recommend re-enrolling the TPM device to decrypt your drive with PCRs 7 (secure-boot-policy) and 14 (shim-policy) after the installation.
 Identify your underlying boot device (with `lsblk`) and use the following command (replacing /dev/vda2 with your device):
 
     sudo systemd-cryptenroll --tpm2-pcrs=secure-boot-policy+shim-policy \
@@ -124,15 +131,15 @@ Reboot after editing the file for the new values to take effect.
 
 You can use the installer for server installation.
 
-As a start, edit the configuration file installer.ini (see above), set option BACK_END_IP_ADDRESS to 0.0.0.0 and reboot the installer.
-**There is no encryption or authentication in the communication so only do this on a trusted network.**
+As a start, edit the configuration file installer.ini (see above), set the option BACK_END_IP_ADDRESS to 0.0.0.0 and reboot the installer.
+**There is no encryption or authentication in the communication, so only do this on a trusted network.**
 
 You have several options to access the installer. 
-Assuming the IP address of the installed machine is 192.168.1.29 and you can reach it from your PC:
+Assuming the IP address of the installed machine is 192.168.1.29, and you can reach it from your PC:
 
 * Use the web interface in a browser on a PC - open `http://192.168.1.29:5000/`
 * Use the text mode interface - start `opinionated-installer tui -baseUrl http://192.168.1.29:5000`
-* Use curl - again, see the [installer.ini](installer-files/boot/efi/installer.ini) file for list of all options for the form data in -F parameters:
+* Use curl - again, see the [installer.ini](installer-files/boot/efi/installer.ini) file for a list of all options for the form data in -F parameters:
 
       curl -v -F "DISK=/dev/vda" -F "USER_PASSWORD=hunter2" \
         -F "ROOT_PASSWORD=changeme" -F "LUKS_PASSWORD=luke" \ 
@@ -160,7 +167,7 @@ To test with [libvirt](https://libvirt.org/), make sure to create the VM with UE
 
 To add a TPM module, you need to install the [swtpm-tools](https://packages.debian.org/trixie/swtpm-tools) package.
 
-Attach the downloaded installer image file as _Device type: Disk device_, not ~~CDROM device~~.
+Attach the downloaded installer image file as _Device type: Disk device_, not ~~CD-ROM device~~.
 
 ### Hyper-V
 
@@ -178,7 +185,7 @@ Attach the generated VHDx file as a disk, not as a ~~CD~~.
 
 ## Hacking
 
-Alternatively to running the whole browser based GUI, you can run the `installer.sh` script manually from a root shell.
+Alternatively to running the whole browser-based GUI, you can run the `installer.sh` script manually from a root shell.
 The end result will be exactly the same.
 Just don't forget to edit the configuration options (especially the `DISK` variable) before running it.
 
@@ -199,7 +206,7 @@ In the first phase, a basic, neutral debian installation is created by debootstr
 At this point, a snapshot called **opinionated_installer_bootstrap** is created.
 When installing the target system, the installer will detect the snapshot and copy its contents to the target root subvolume using btrfs send/receive.
 
-In the second phase, all the installer specific files are added to the installer Btrfs filesystem.
+In the second phase, all the installer-specific files are added to the installer Btrfs filesystem.
 Obviously, these are not part of the target installed system.
 
 ### Building the Frontend
@@ -244,7 +251,7 @@ flowchart RL
 
 ## Comparison
 
-The following table contains comparison of features between our opinionated debian installer and official debian installers.
+The following table contains a comparison of features between our opinionated debian installer and official debian installers.
 
 | Feature                                             | ODIN  | [Netinstall](https://www.debian.org/CD/netinst/) | [Calamares](https://get.debian.org/debian-cd/current-live/amd64/iso-hybrid/) |
 |-----------------------------------------------------|-------|--------------------------------------------------|------------------------------------------------------------------------------|
@@ -267,8 +274,15 @@ The following table contains comparison of features between our opinionated debi
 
 [4] Fixed partitioning (see Details above), LUKS is automatic, BTRFS is used as filesystem
 
-## Support
+## Support The Project
+
+### Seed The Torrents
 
 Please set up your torrent client to follow the RSS feed below and seed all new images:
 
 [feed.xml](https://objectstorage.eu-frankfurt-1.oraclecloud.com/n/fr2rf1wke5iq/b/public/o/feed.xml)
+
+### Spread The Word
+
+Tell your friends about the installer.
+If you are active on social media, please share!
