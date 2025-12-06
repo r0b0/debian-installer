@@ -6,7 +6,7 @@ require (
 	github.com/gdamore/tcell/v2 v2.13.1
 	github.com/google/uuid v1.6.0
 	github.com/rivo/tview v0.42.0
-	golang.org/x/net v0.46.0
+	golang.org/x/net v0.47.0
 )
 
 require (
