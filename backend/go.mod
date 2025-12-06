@@ -1,6 +1,6 @@
 module github.com/r0b0/debian-installer/backend
 
-go 1.25.4
+go 1.25.5
 
 require (
 	github.com/gdamore/tcell/v2 v2.13.1

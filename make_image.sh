@@ -390,6 +390,7 @@ omit_dracutmodules+=" lvm dmraid mdraid "
 kernel_cmdline="${kernel_params}"
 use_fstab="yes"
 add_fstab+=" /etc/fstab "
+hostonly="no"
 EOF
 cat <<EOF > ${target}/etc/kernel/cmdline
 ${kernel_params}

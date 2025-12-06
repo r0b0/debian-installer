@@ -1,0 +1,61 @@
+IMAGE=opinionated-debian-installer-trixie-gnome-20251206a
+
+sudo truncate -s 4301M /var/lib/libvirt/images/usb1.img
+(cd internal-tools/virsh && ./build.sh)
+internal-tools/build-compiled-components.sh
+internal-tools/upload.sh
+ssh odin
+# in the installer VM
+sudo su -
+rm -rf *; rm -f /var/cache/opinionated-debian-installer/bootstrap.btrfs; fdisk /dev/vdb
+# in fdisk
+d
+d
+w
+# back to shell
+/home/user/opinionated-debian-installer/make_image.sh
+# click up to "storing bootstrap data to /var/cache/opinionated-debian-installer/bootstrap.btrfs"
+# Ctrl+C,
+reboot
+# back to host
+ssh odin
+# in the installer VM
+sudo su -
+rm -rf *; fdisk /dev/vdb
+# in fdisk
+d
+d
+w
+# back to shell
+/home/user/opinionated-debian-installer/make_image.sh
+# click all the way through
+poweroff
+# back to host
+sudo cp /var/lib/libvirt/images/usb1.img /var/lib/libvirt/images/$IMAGE.img
+sudo truncate -s +500M /var/lib/libvirt/images/usb1.img
+(cd internal-tools/virsh/ && ./test.sh)
+# test the installer in the VM
+sudo sha256sum /var/lib/libvirt/images/$IMAGE.img
+# update README.md
+rclone copy /var/lib/libvirt/images/$IMAGE.img oracle_oci:public
+torrent-file-editor $IMAGE.torrent
+# Name: $IMAGE.img
+# Trackers:
+udp://tracker.opentrackr.org:1337/announce
+udp://open.demonii.com:1337/announce
+udp://open.stealth.si:80/announce
+udp://exodus.desync.com:6969/announce
+udp://explodie.org:6969/announce
+# Files: /var/lib/libvirt/images/$IMAGE.img
+# Piece size: 32MiB
+# Calculate piece hashes
+# Tree url-list string https://objectstorage.eu-frankfurt-1.oraclecloud.com/n/fr2rf1wke5iq/b/public/o/$IMAGE.img
+# Save As $IMAGE.torrent
+rclone copy $IMAGE.torrent oracle_oci:public
+cp /var/lib/libvirt/images/$IMAGE.img /var/lib/transmission-daemon/downloads/
+# https://torrent.lamac.cc/transmission/web/
+# Add $IMAGE.torrent
+python3 internal-tools/rss.py
+rclone copy feed.xml oracle_oci:public
+# git commit and push
+# post to mastodon https://mas.to/@r0b0

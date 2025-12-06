@@ -1,0 +1,5 @@
+<disk type="file" device="disk">
+  <driver name="qemu" type="qcow2" cache="writeback"/>
+  <source file="/var/lib/libvirt/images/diskA.qcow2"/>
+  <target dev="vdb" bus="virtio"/>
+</disk>

@@ -24,7 +24,7 @@ Our opinions of what a modern installation of Debian should look like in 2025 ar
 | Desktop environment | Date     | Size  | Download                                                                                                                                                                                                                                                                                                         | SHA-256 Checksum                                                        |
 |---------------------|----------|-------|------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|-------------------------------------------------------------------------|
 | KDE Plasma          | 20251102 | 5.1GB | [torrent](https://objectstorage.eu-frankfurt-1.oraclecloud.com/n/fr2rf1wke5iq/b/public/o/opinionated-debian-installer-trixie-kde-plasma-20251102a.torrent) / [slow](https://objectstorage.eu-frankfurt-1.oraclecloud.com/n/fr2rf1wke5iq/b/public/o/opinionated-debian-installer-trixie-kde-plasma-20251102a.img) | 717a41ff 2a5c68e0 d7505c07 f6ebf070 efda746d a0f542fb dcae5bfc 76f26364 |
-| Gnome               | 20251019 | 4.3GB | [torrent](https://objectstorage.eu-frankfurt-1.oraclecloud.com/n/fr2rf1wke5iq/b/public/o/opinionated-debian-installer-trixie-gnome-20251019a.torrent) / [slow](https://objectstorage.eu-frankfurt-1.oraclecloud.com/n/fr2rf1wke5iq/b/public/o/opinionated-debian-installer-trixie-gnome-20251019a.img)           | 836d6cd3 0e20372c 3246c535 cf8143be ebe85499 f2504557 080d75a3 e57874be |
+| Gnome               | 20251206 | 4.3GB | [torrent](https://objectstorage.eu-frankfurt-1.oraclecloud.com/n/fr2rf1wke5iq/b/public/o/opinionated-debian-installer-trixie-gnome-20251206a.torrent) / [slow](https://objectstorage.eu-frankfurt-1.oraclecloud.com/n/fr2rf1wke5iq/b/public/o/opinionated-debian-installer-trixie-gnome-20251206a.img)           | ee877011 88c05ca5 6b90ea3d f29741d9 73865fff 897198e9 3406beb0 dddaffe7 |
 | Server              | 20251116 | 2.0GB | [torrent](https://objectstorage.eu-frankfurt-1.oraclecloud.com/n/fr2rf1wke5iq/b/public/o/opinionated-debian-installer-trixie-server-20251116a.torrent) / [slow](https://objectstorage.eu-frankfurt-1.oraclecloud.com/n/fr2rf1wke5iq/b/public/o/opinionated-debian-installer-trixie-server-20251116a.img)         | d9494702 f50e45cd e3e30c2f d6865566 b4cac031 7da736d8 b3d9a193 175bd4af |
 
 ## Instructions
@@ -282,7 +282,7 @@ Please set up your torrent client to follow the RSS feed below and seed all new 
 
 [feed.xml](https://objectstorage.eu-frankfurt-1.oraclecloud.com/n/fr2rf1wke5iq/b/public/o/feed.xml)
 
-### Spread The Word
+### Spread the Word
 
 Tell your friends about the installer.
 If you are active on social media, please share!

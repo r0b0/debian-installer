@@ -9,3 +9,6 @@ installer-image-part.uuid
 backend/opinionated-installer
 repart.d/01_efi.conf
 repart.d/02_baseImage.conf
+*.torrent
+feed.xml
+*/.fleet
