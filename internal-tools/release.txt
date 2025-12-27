@@ -1,6 +1,6 @@
 IMAGE=opinionated-debian-installer-trixie-gnome-20251206a
 
-sudo truncate -s 4301M /var/lib/libvirt/images/usb1.img
+sudo truncate -s 6144M /var/lib/libvirt/images/usb1.img
 (cd internal-tools/virsh && ./build.sh)
 internal-tools/build-compiled-components.sh
 internal-tools/upload.sh
@@ -16,8 +16,14 @@ w
 /home/user/opinionated-debian-installer/make_image.sh
 # click up to "storing bootstrap data to /var/cache/opinionated-debian-installer/bootstrap.btrfs"
 # Ctrl+C,
-reboot
+poweroff
 # back to host
+# resize as needed:
+# kde: 5223
+# gnome: 4301
+# server: 2048
+sudo truncate -s 4301M /var/lib/libvirt/images/usb1.img
+# start the VM
 ssh odin
 # in the installer VM
 sudo su -
@@ -37,7 +43,7 @@ sudo truncate -s +500M /var/lib/libvirt/images/usb1.img
 # test the installer in the VM
 sudo sha256sum /var/lib/libvirt/images/$IMAGE.img
 # update README.md
-rclone copy /var/lib/libvirt/images/$IMAGE.img oracle_oci:public
+rclone copy /var/lib/libvirt/images/$IMAGE.img oracle_oci:public &
 torrent-file-editor $IMAGE.torrent
 # Name: $IMAGE.img
 # Trackers:
