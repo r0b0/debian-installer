@@ -35,6 +35,7 @@ w
 # back to shell
 /home/user/opinionated-debian-installer/make_image.sh
 # click all the way through
+# note filesystem usage
 poweroff
 # back to host
 sudo cp /var/lib/libvirt/images/usb1.img /var/lib/libvirt/images/$IMAGE.img

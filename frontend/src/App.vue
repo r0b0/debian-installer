@@ -1,6 +1,6 @@
 <!--
 Opinionated Debian Installer
-Copyright (C) 2022-2025 Robert T.
+Copyright (C) 2022-2026 Robert T.
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
@@ -405,8 +405,8 @@ export default {
   </main>
 
   <footer>
-    <span>Opinionated Debian Installer version 20251227a 🎄</span>
-    <span>Installer &copy;2022-2025 <a href="https://github.com/r0b0/debian-installer">Robert T</a></span>
+    <span>Opinionated Debian Installer version 20260117a</span>
+    <span>Installer &copy;2022-2026 <a href="https://github.com/r0b0/debian-installer">Robert T</a></span>
     <span>Banner &copy;2024 <a href="https://github.com/pccouper/trixie">Elise Couper</a></span>
   </footer>
 

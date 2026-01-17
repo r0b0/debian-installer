@@ -1,7 +1,7 @@
 # Opinionated Debian Installer
 
 This tool can be used to create a modern installation of Debian. 
-Our opinions of what a modern installation of Debian should look like in 2025 are:
+Our opinions of what a modern installation of Debian should look like in 2026 are:
 
  - Debian 13 (Trixie)
  - Backports and non-free enabled
@@ -25,7 +25,7 @@ Our opinions of what a modern installation of Debian should look like in 2025 ar
 |---------------------|----------|-------|------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|-------------------------------------------------------------------------|
 | KDE Plasma          | 20251227 | 5.2GB | [torrent](https://objectstorage.eu-frankfurt-1.oraclecloud.com/n/fr2rf1wke5iq/b/public/o/opinionated-debian-installer-trixie-kde-plasma-20251227a.torrent) / [slow](https://objectstorage.eu-frankfurt-1.oraclecloud.com/n/fr2rf1wke5iq/b/public/o/opinionated-debian-installer-trixie-kde-plasma-20251227a.img) | 5de8a0c0 ad0ca89c d3dd5219 f83a889f 02b4f61d c25cd4ce 23d9e5d7 92ef336a |
 | Gnome               | 20251206 | 4.3GB | [torrent](https://objectstorage.eu-frankfurt-1.oraclecloud.com/n/fr2rf1wke5iq/b/public/o/opinionated-debian-installer-trixie-gnome-20251206a.torrent) / [slow](https://objectstorage.eu-frankfurt-1.oraclecloud.com/n/fr2rf1wke5iq/b/public/o/opinionated-debian-installer-trixie-gnome-20251206a.img)           | ee877011 88c05ca5 6b90ea3d f29741d9 73865fff 897198e9 3406beb0 dddaffe7 |
-| Server              | 20251116 | 2.0GB | [torrent](https://objectstorage.eu-frankfurt-1.oraclecloud.com/n/fr2rf1wke5iq/b/public/o/opinionated-debian-installer-trixie-server-20251116a.torrent) / [slow](https://objectstorage.eu-frankfurt-1.oraclecloud.com/n/fr2rf1wke5iq/b/public/o/opinionated-debian-installer-trixie-server-20251116a.img)         | d9494702 f50e45cd e3e30c2f d6865566 b4cac031 7da736d8 b3d9a193 175bd4af |
+| Server              | 20260117 | 2.1GB | [torrent](https://objectstorage.eu-frankfurt-1.oraclecloud.com/n/fr2rf1wke5iq/b/public/o/opinionated-debian-installer-trixie-server-20260117a.torrent) / [slow](https://objectstorage.eu-frankfurt-1.oraclecloud.com/n/fr2rf1wke5iq/b/public/o/opinionated-debian-installer-trixie-server-20260117a.img)         | 18b26a17 4affc74f 74e7e205 f6183e1d 0ee2282a e5a01b55 638c8e30 a2516d96 |
 
 ## Instructions
 
