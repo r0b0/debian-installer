@@ -23,7 +23,7 @@ poweroff
 # gnome: 4301
 # server: 2048
 sudo truncate -s 4301M /var/lib/libvirt/images/usb1.img
-# start the VM
+sudo virsh start debian2025
 ssh odin
 # in the installer VM
 sudo su -
