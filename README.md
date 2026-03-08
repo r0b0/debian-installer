@@ -70,6 +70,15 @@ Use the default debian method:
     sudo dpkg-reconfigure keyboard-configuration
     sudo setupcon
 
+**How to rebuild initrd**
+
+    sudo dpkg-reconfigure linux-image-$(uname -r)
+
+**How to allow emergency root shell**
+
+Debian disables emergency root shell by default when using dracut.
+Enable it by adding `SYSTEMD_SULOGIN_FORCE=1` to `/etc/kernel/cmdline` and rebuild the initrd.
+
 ## SecureBoot
 
 There are two options in regard to SecureBoot: simple or full.
