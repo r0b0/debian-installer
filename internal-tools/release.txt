@@ -2,6 +2,7 @@ IMAGE=opinionated-debian-installer-trixie-gnome-20251206a
 
 sudo truncate -s 6144M /var/lib/libvirt/images/usb1.img
 (cd internal-tools/virsh && ./build.sh)
+# edit frontend/src/App.vue
 internal-tools/build-compiled-components.sh
 internal-tools/upload.sh
 ssh odin
