@@ -19,20 +19,150 @@
 set -euo pipefail
 
 # edit this:
-DISK=/dev/vdb
-USERNAME=live
-DEBIAN_VERSION=trixie
+DISK=${DISK:-/dev/vdb}
+IMAGE_FILE=${IMAGE_FILE:-}
+IMAGE_SIZE=${IMAGE_SIZE:-5G}
+USERNAME=${USERNAME:-live}
+DEBIAN_VERSION=${DEBIAN_VERSION:-trixie}
 BACKPORTS_VERSION=${DEBIAN_VERSION}-backports
-FSFLAGS="compress=zstd:15"
-BOOTSTRAP_IMAGE=/var/cache/opinionated-debian-installer/bootstrap.btrfs
+FSFLAGS=${FSFLAGS:-"compress=zstd:15"}
+BOOTSTRAP_IMAGE=${BOOTSTRAP_IMAGE:-/var/cache/opinionated-debian-installer/bootstrap.btrfs}
+NON_INTERACTIVE=${NON_INTERACTIVE:-false}
+TASKSEL_TASKS=${TASKSEL_TASKS:-"task-ssh-server"}
+
+for arg in "$@"; do
+    case "$arg" in
+        --non-interactive|-y)
+            NON_INTERACTIVE=true
+            ;;
+        -h|--help)
+            cat <<EOF
+Usage: $(basename "$0") [--non-interactive|-y]
+
+Options:
+  --non-interactive, -y   Accept defaults and skip Enter prompts.
+  --help, -h              Show this help.
+
+Configuration values are set via environment variables:
+  DISK                    Target disk (default: /dev/vdb)
+  IMAGE_FILE              Output image file path (if set, creates loop image)
+  IMAGE_SIZE              Image size (default: 3G)
+  USERNAME                Default user (default: live)
+  DEBIAN_VERSION          Debian version (default: trixie)
+  TASKSEL_TASKS           Space-separated tasksel tasks (default: task-ssh-server)
+                          Available: task-desktop, task-kde-desktop, task-gnome-desktop,
+                          task-xfce-desktop, task-ssh-server, task-web-server, etc.
+EOF
+            exit 0
+            ;;
+        *)
+            echo "Unknown argument: $arg" >&2
+            exit 2
+            ;;
+    esac
+done
 
 target=/target
 SCRIPT_DIR=$( cd -- "$( dirname -- "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )
+LOOP_DEVICE=
+STATE_DIR=${STATE_DIR:-/var/tmp/opinionated-debian-installer}
+REPART_DIR="${STATE_DIR}/repart.d"
+EFI_UUID_FILE="${STATE_DIR}/efi-part.uuid"
+INSTALLER_IMAGE_UUID_FILE="${STATE_DIR}/installer-image-part.uuid"
+DISK_WIPED_MARKER="${STATE_DIR}/disk_wiped.txt"
+FIRST_PHASE_DONE_MARKER="${STATE_DIR}/first_phase_done.txt"
+
+mkdir -p "${STATE_DIR}"
+
+function cleanup() {
+    if mountpoint -q "${target}/home"; then
+        umount "${target}/home"
+    fi
+    if mountpoint -q "${target}"; then
+        umount -R "${target}"
+    fi
+    if mountpoint -q "/mnt/btrfs1"; then
+        umount -R /mnt/btrfs1
+    fi
+    if [ -n "${LOOP_DEVICE}" ] && losetup "${LOOP_DEVICE}" >/dev/null 2>&1; then
+        losetup -d "${LOOP_DEVICE}"
+    fi
+}
+
+trap cleanup EXIT
 
 function notify {
-  echo -en "\033[32m$*\033[0m> "
-  read -r
+    if [ "${NON_INTERACTIVE}" = "true" ]; then
+        echo "$*"
+    else
+        echo -en "\033[32m$*\033[0m> "
+        read -r
+    fi
 }
+
+function attach_loop_image() {
+    local image_file="$1"
+    local loop_dev
+
+    # In containers, /dev/loopN nodes can be sparse (for example missing loop1).
+    # Try explicitly to attach using existing block devices.
+    for loop_dev in /dev/loop[0-9]*; do
+        if [[ "${loop_dev}" =~ p[0-9]+$ ]]; then
+            continue
+        fi
+        if [ ! -b "${loop_dev}" ]; then
+            continue
+        fi
+        # Check if the device is free
+        if losetup "${loop_dev}" >/dev/null 2>&1; then
+            continue
+        fi
+        # Try to attach the image to this device
+        if losetup -P --show "${loop_dev}" "${image_file}"; then
+            return 0
+        fi
+    done
+
+    # If no explicit device works, fall back to losetup -f 
+    # but do NOT try to create missing nodes (leads to permission errors in containers).
+    losetup -fP --show "${image_file}"
+}
+
+if [ "$(id -u)" -ne 0 ]; then
+    echo 'This script must be run by root' >&2
+    exit 1
+fi
+
+if [ -n "${IMAGE_FILE}" ]; then
+    mkdir -p "$(dirname "${IMAGE_FILE}")"
+    if [ ! -f "${FIRST_PHASE_DONE_MARKER}" ]; then
+        # Phase 1 not completed - always start with a clean image to avoid
+        # stale partition tables / corrupt btrfs from a previous failed run.
+        if [ -f "${IMAGE_FILE}" ]; then
+            notify removing stale image file ${IMAGE_FILE} to start fresh
+            rm -f "${IMAGE_FILE}"
+        fi
+        rm -f "${DISK_WIPED_MARKER}"
+    fi
+    if [ ! -f "${IMAGE_FILE}" ]; then
+        notify creating raw image file ${IMAGE_FILE} with size ${IMAGE_SIZE}
+        truncate -s "${IMAGE_SIZE}" "${IMAGE_FILE}"
+    fi
+    notify attaching ${IMAGE_FILE} as a loop device
+    if ! LOOP_DEVICE=$(attach_loop_image "${IMAGE_FILE}"); then
+        cat >&2 <<EOF
+Failed to attach ${IMAGE_FILE} to a loop device.
+
+If running in a devcontainer, ensure it has the needed privileges/devices:
+  - privileged mode (or CAP_SYS_ADMIN + CAP_MKNOD)
+  - /dev/loop-control
+  - /dev/loop* device nodes
+EOF
+        exit 1
+    fi
+    DISK=${LOOP_DEVICE}
+    udevadm settle
+fi
 
 notify install required packages
 apt update -y
@@ -41,28 +171,30 @@ DEBIAN_FRONTEND=noninteractive apt install -y \
     debootstrap \
     dosfstools \
     golang-go \
+    kpartx \
     npm \
     systemd-repart \
+    udev \
     uuid-runtime
 
-if [ ! -f efi-part.uuid ]; then
+if [ ! -f "${EFI_UUID_FILE}" ]; then
     echo generate uuid for efi partition
-    uuidgen > efi-part.uuid
+    uuidgen > "${EFI_UUID_FILE}"
 fi
-if [ ! -f installer-image-part.uuid ]; then
+if [ ! -f "${INSTALLER_IMAGE_UUID_FILE}" ]; then
     echo generate uuid for installer image partition
-    uuidgen > installer-image-part.uuid
+    uuidgen > "${INSTALLER_IMAGE_UUID_FILE}"
 fi
-efi_uuid=$(cat efi-part.uuid)
-installer_image_uuid=$(cat installer-image-part.uuid)
+efi_uuid=$(cat "${EFI_UUID_FILE}")
+installer_image_uuid=$(cat "${INSTALLER_IMAGE_UUID_FILE}")
 
 notify setting up partitions on ${DISK}
 mkdir -p /mnt/btrfs1
 mkdir -p ${target}/home
-rm -rf repart.d
-mkdir -p repart.d
+rm -rf "${REPART_DIR}"
+mkdir -p "${REPART_DIR}"
 
-cat <<EOF > repart.d/01_efi.conf
+cat <<EOF > "${REPART_DIR}/01_efi.conf"
 [Partition]
 Type=esp
 UUID=${efi_uuid}
@@ -71,7 +203,7 @@ SizeMaxBytes=300M
 Format=vfat
 EOF
 
-cat <<EOF > repart.d/02_baseImage.conf
+cat <<EOF > "${REPART_DIR}/02_baseImage.conf"
 [Partition]
 Type=root
 Label=Opinionated Debian Installer
@@ -84,14 +216,20 @@ GrowFileSystem=on
 Encrypt=off
 EOF
 
-if [ ! -f disk_wiped.txt ]; then
+if [ ! -f "${DISK_WIPED_MARKER}" ]; then
   wipefs --all ${DISK}
-  touch disk_wiped.txt
+    touch "${DISK_WIPED_MARKER}"
 fi
 
 # sector-size: see https://github.com/systemd/systemd/issues/37801
 # remove with systemd 258
-systemd-repart --sector-size=512 --empty=allow --no-pager --definitions=repart.d --dry-run=no ${DISK}
+systemd-repart --sector-size=512 --empty=allow --no-pager --definitions="${REPART_DIR}" --dry-run=no ${DISK}
+
+# Wait for kernel to recognize new partitions and create device symlinks
+notify waiting for kernel to probe partitions
+sleep 2
+blockdev --rereadpt ${DISK} || true
+udevadm settle --timeout=30
 
 root_device=/dev/disk/by-partuuid/${installer_image_uuid}
 efi_device=/dev/disk/by-partuuid/${efi_uuid}
@@ -228,7 +366,6 @@ firmware-misc-nonfree
 firmware-myricom
 firmware-netronome
 firmware-netxen
-firmware-qcom-soc
 firmware-qlogic
 firmware-realtek
 firmware-ti-connectivity
@@ -252,8 +389,10 @@ xargs apt install -t ${BACKPORTS_VERSION} -y < /tmp/packages_backports.txt
 EOF
 chroot ${target}/ bash /tmp/run2.sh
 
-notify running tasksel
-chroot ${target}/ tasksel
+notify installing tasksel selections: ${TASKSEL_TASKS}
+for task in ${TASKSEL_TASKS}; do
+    chroot ${target}/ apt install -y "${task}" || echo "Warning: failed to install ${task}"
+done
 
 if mountpoint -q "${target}/var/cache/apt/archives" ; then
     notify unmounting apt cache directory from target
@@ -290,7 +429,7 @@ rm -f ${target}/etc/crypttab
 rm -f ${target}/var/log/*log
 rm -f ${target}/var/log/apt/*log
 
-if [ ! -f first_phase_done.txt ]; then
+if [ ! -f "${FIRST_PHASE_DONE_MARKER}" ]; then
   notify create snapshot after first phase
   (cd /mnt/btrfs1; btrfs subvolume snapshot -r @ opinionated_installer_bootstrap)
   mkdir -p $(dirname $BOOTSTRAP_IMAGE)
@@ -298,7 +437,7 @@ if [ ! -f first_phase_done.txt ]; then
     notify storing bootstrap data to $BOOTSTRAP_IMAGE
     btrfs send --compressed-data /mnt/btrfs1/opinionated_installer_bootstrap > $BOOTSTRAP_IMAGE
   fi
-  touch first_phase_done.txt
+    touch "${FIRST_PHASE_DONE_MARKER}"
 fi
 
 function install_file() {
@@ -424,7 +563,8 @@ cat <<EOF > ${target}/tmp/run1.sh
 set -euo pipefail
 
 # see https://bugs.debian.org/cgi-bin/bugreport.cgi?bug=1095646
-ln -s /dev/null /etc/kernel/install.d/50-dracut.install
+mkdir -p /etc/kernel/install.d
+ln -sf /dev/null /etc/kernel/install.d/50-dracut.install
 
 export DEBIAN_FRONTEND=noninteractive
 apt -t ${BACKPORTS_VERSION} install linux-image-amd64 -y
@@ -493,4 +633,8 @@ sync
 umount -R ${target}
 umount -R /mnt/btrfs1
 
-echo "INSTALLATION FINISHED"
+if [ -n "${IMAGE_FILE}" ]; then
+    echo "INSTALLATION FINISHED: ${IMAGE_FILE}"
+else
+    echo "INSTALLATION FINISHED"
+fi

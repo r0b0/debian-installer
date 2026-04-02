@@ -385,6 +385,9 @@ fi
 cat <<EOF > ${target}/tmp/run1.sh
 #!/bin/bash
 export DEBIAN_FRONTEND=noninteractive
+
+# Ensure package lists are updated before installing from backports
+apt update -y
 apt install -y locales tasksel network-manager sudo
 apt install -y -t ${BACKPORTS_VERSION} systemd shim-signed systemd-boot systemd-boot-efi-amd64-signed systemd-ukify sbsigntool dracut btrfs-progs cryptsetup tpm2-tools tpm-udev
 
@@ -466,7 +469,6 @@ firmware-misc-nonfree
 firmware-myricom
 firmware-netronome
 firmware-netxen
-firmware-qcom-soc
 firmware-qlogic
 firmware-realtek
 firmware-ti-connectivity
@@ -485,6 +487,8 @@ cat <<EOF > ${target}/tmp/run2.sh
 set -euo pipefail
 
 export DEBIAN_FRONTEND=noninteractive
+apt update -y || echo "Warning: apt update failed, continuing anyway"
+
 xargs apt install -y < /tmp/packages.txt
 apt install -t ${BACKPORTS_VERSION} -y dracut initramfs-tools- initramfs-tools-core- initramfs-tools-bin- \
   busybox- klibc-utils- libklibc-
