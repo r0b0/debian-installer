@@ -296,6 +296,7 @@ export default {
       <li>Firmware installed</li>
       <li>Installed on btrfs subvolumes</li>
       <li>Full disk encryption, unlocked by TPM (if available)</li>
+      <li>Authenticated boot with self-generated Machine Owner Keys</li>
       <li>Fast installation using an image</li>
       <li>Browser-based installer</li>
     </ul>
@@ -405,7 +406,7 @@ export default {
   </main>
 
   <footer>
-    <span>Opinionated Debian Installer version 20260321a</span>
+    <span>Opinionated Debian Installer version 20260411a</span>
     <span>Installer &copy;2022-2026 <a href="https://github.com/r0b0/debian-installer">Robert T</a></span>
     <span>Banner &copy;2024 <a href="https://github.com/pccouper/trixie">Elise Couper</a></span>
   </footer>

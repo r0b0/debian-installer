@@ -240,6 +240,8 @@ plymouth-themes
 polkitd
 tpm2-tools
 tpm-udev
+libxkbcommon-x11-0
+libxkbregistry0
 EOF
 cat <<EOF > ${target}/tmp/run2.sh
 #!/bin/bash
