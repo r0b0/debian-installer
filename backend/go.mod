@@ -3,7 +3,7 @@ module github.com/r0b0/debian-installer/backend
 go 1.26.2
 
 require (
-	github.com/gdamore/tcell/v2 v2.13.8
+	github.com/gdamore/tcell/v2 v2.13.9
 	github.com/google/uuid v1.6.0
 	github.com/rivo/tview v0.42.0
 	golang.org/x/net v0.52.0
