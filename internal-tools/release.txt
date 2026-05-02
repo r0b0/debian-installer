@@ -1,5 +1,5 @@
 IMAGE=opinionated-debian-installer-trixie-gnome-20251206a
-
+# merge all dependabot PRs
 sudo truncate -s 6144M /var/lib/libvirt/images/usb1.img
 (cd internal-tools/virsh && ./build.sh)
 # edit frontend/src/App.vue
@@ -20,7 +20,7 @@ w
 poweroff
 # back to host
 # resize as needed:
-# kde: 5223
+# kde: 5325
 # gnome: 4301
 # server: 2048
 sudo truncate -s 4301M /var/lib/libvirt/images/usb1.img
@@ -46,6 +46,7 @@ sudo truncate -s +500M /var/lib/libvirt/images/usb1.img
 sudo sha256sum /var/lib/libvirt/images/$IMAGE.img
 # update README.md
 rclone copy /var/lib/libvirt/images/$IMAGE.img oracle_oci:public &
+scp -q /var/lib/libvirt/images/$IMAGE.img starfive:/var/lib/transmission-daemon/downloads/ &
 torrent-file-editor $IMAGE.torrent
 # Name: $IMAGE.img
 # Trackers:
@@ -60,7 +61,6 @@ udp://explodie.org:6969/announce
 # Tree url-list string https://objectstorage.eu-frankfurt-1.oraclecloud.com/n/fr2rf1wke5iq/b/public/o/$IMAGE.img
 # Save As $IMAGE.torrent
 rclone copy $IMAGE.torrent oracle_oci:public
-cp /var/lib/libvirt/images/$IMAGE.img /var/lib/transmission-daemon/downloads/
 # https://torrent.lamac.cc/transmission/web/
 # Add $IMAGE.torrent
 python3 internal-tools/rss.py
