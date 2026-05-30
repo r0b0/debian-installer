@@ -22,7 +22,7 @@ poweroff
 # resize as needed:
 # kde: 5325
 # gnome: 4301
-# server: 2048
+# server: 2151
 sudo truncate -s 4301M /var/lib/libvirt/images/usb1.img
 sudo virsh start debian2025
 ssh odin
