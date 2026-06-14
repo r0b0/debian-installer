@@ -21,7 +21,7 @@ poweroff
 # back to host
 # resize as needed:
 # kde: 5325
-# gnome: 4301
+# gnome: 4096
 # server: 2151
 sudo truncate -s 4301M /var/lib/libvirt/images/usb1.img
 sudo virsh start debian2025
