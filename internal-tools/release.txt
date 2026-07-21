@@ -20,7 +20,7 @@ w
 poweroff
 # back to host
 # resize as needed:
-# kde: 5325
+# kde: 5120
 # gnome: 4096
 # server: 2151
 sudo truncate -s 4301M /var/lib/libvirt/images/usb1.img
@@ -40,9 +40,10 @@ w
 poweroff
 # back to host
 sudo cp /var/lib/libvirt/images/usb1.img /var/lib/libvirt/images/$IMAGE.img
-sudo truncate -s +500M /var/lib/libvirt/images/usb1.img
+sudo truncate -s +1024M /var/lib/libvirt/images/usb1.img
 (cd internal-tools/virsh/ && ./test.sh)
 # test the installer in the VM
+# remove old images from https://cloud.oracle.com/object-storage/buckets/fr2rf1wke5iq/public/objects?region=eu-frankfurt-1
 sudo sha256sum /var/lib/libvirt/images/$IMAGE.img
 # update README.md
 rclone copy /var/lib/libvirt/images/$IMAGE.img oracle_oci:public &
@@ -61,6 +62,8 @@ udp://explodie.org:6969/announce
 # Tree url-list string https://objectstorage.eu-frankfurt-1.oraclecloud.com/n/fr2rf1wke5iq/b/public/o/$IMAGE.img
 # Save As $IMAGE.torrent
 rclone copy $IMAGE.torrent oracle_oci:public
+# wait for the rclone and scp jobs to finish
+jobs
 # https://torrent.lamac.cc/transmission/web/
 # Add $IMAGE.torrent
 python3 internal-tools/rss.py
