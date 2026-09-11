@@ -104,7 +104,6 @@ top_level_mount=/mnt/top_level_mount
 target=/target
 kernel_params="rw quiet rootfstype=btrfs rootflags=${FSFLAGS},subvol=@ rd.auto=1 splash"
 if [ "${DISABLE_LUKS}" != "true" ]; then
-  kernel_params="rd.luks.options=tpm2-device=auto ${kernel_params}"
   luks_device_name=root
   root_device=/dev/mapper/${luks_device_name}
 else
@@ -171,10 +170,15 @@ if [ "${DISABLE_LUKS}" != "true" ]; then
   rm -f /tmp/passwd
   cryptsetup luksUUID "${main_partition}" > luks.uuid
   root_uuid=$(cat luks.uuid)
+  # Add LUKS parameters to kernel cmdline
+  kernel_params="rd.luks.uuid=${root_uuid} rd.luks.name=${root_uuid}=${luks_device_name} rd.luks.options=tpm2-device=auto root=${root_device} ${kernel_params}"
   if [ ! -e ${root_device} ]; then
       notify open luks on root
       cryptsetup luksOpen ${main_partition} ${luks_device_name} --key-file $KEYFILE
   fi
+else
+  # Without LUKS, just set the root device
+  kernel_params="root=${root_device} ${kernel_params}"
 fi
 
 btrfs_uuid=$(lsblk -no UUID ${root_device})
