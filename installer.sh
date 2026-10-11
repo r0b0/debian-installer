@@ -104,7 +104,6 @@ top_level_mount=/mnt/top_level_mount
 target=/target
 kernel_params="rw quiet rootfstype=btrfs rootflags=${FSFLAGS},subvol=@ rd.auto=1 splash"
 if [ "${DISABLE_LUKS}" != "true" ]; then
-  kernel_params="rd.luks.options=tpm2-device=auto ${kernel_params}"
   luks_device_name=root
   root_device=/dev/mapper/${luks_device_name}
 else
@@ -171,10 +170,15 @@ if [ "${DISABLE_LUKS}" != "true" ]; then
   rm -f /tmp/passwd
   cryptsetup luksUUID "${main_partition}" > luks.uuid
   root_uuid=$(cat luks.uuid)
+  # Add LUKS parameters to kernel cmdline
+  kernel_params="rd.luks.uuid=${root_uuid} rd.luks.name=${root_uuid}=${luks_device_name} rd.luks.options=tpm2-device=auto root=${root_device} ${kernel_params}"
   if [ ! -e ${root_device} ]; then
       notify open luks on root
       cryptsetup luksOpen ${main_partition} ${luks_device_name} --key-file $KEYFILE
   fi
+else
+  # Without LUKS, just set the root device
+  kernel_params="root=${root_device} ${kernel_params}"
 fi
 
 btrfs_uuid=$(lsblk -no UUID ${root_device})
@@ -381,6 +385,9 @@ fi
 cat <<EOF > ${target}/tmp/run1.sh
 #!/bin/bash
 export DEBIAN_FRONTEND=noninteractive
+
+# Ensure package lists are updated before installing from backports
+apt update -y
 apt install -y locales tasksel network-manager sudo
 apt install -y -t ${BACKPORTS_VERSION} systemd shim-signed systemd-boot systemd-boot-efi-amd64-signed systemd-ukify sbsigntool dracut btrfs-progs cryptsetup tpm2-tools tpm-udev
 
@@ -462,7 +469,6 @@ firmware-misc-nonfree
 firmware-myricom
 firmware-netronome
 firmware-netxen
-firmware-qcom-soc
 firmware-qlogic
 firmware-realtek
 firmware-ti-connectivity
@@ -481,6 +487,8 @@ cat <<EOF > ${target}/tmp/run2.sh
 set -euo pipefail
 
 export DEBIAN_FRONTEND=noninteractive
+apt update -y || echo "Warning: apt update failed, continuing anyway"
+
 xargs apt install -y < /tmp/packages.txt
 apt install -t ${BACKPORTS_VERSION} -y dracut initramfs-tools- initramfs-tools-core- initramfs-tools-bin- \
   busybox- klibc-utils- libklibc-
