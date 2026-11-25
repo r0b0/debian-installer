@@ -198,11 +198,43 @@ Alternatively to running the whole browser-based GUI, you can run the `installer
 The end result will be exactly the same.
 Just don't forget to edit the configuration options (especially the `DISK` variable) before running it.
 
+### Building Locally Or In A VM
+
+Build compiled components with:
+
+    ./build-compiled-components.sh
+
+or manually:
+
+    cd frontend && npm run build
+    cd ../backend && go build -o opinionated-installer
+
+For installer image work (`make_image.sh`, `installer.sh`), keep in mind:
+
+- The safest default is to build a raw image file first and only write that image to a USB stick as a separate, explicit step.
+
+Example flow using the new native image-file mode in `make_image.sh`:
+
+    sudo IMAGE_FILE=/tmp/odin-test-disk.img IMAGE_SIZE=20G ./make_image.sh --non-interactive
+
+This creates the raw image file, attaches it to a loop device automatically, builds the installer image into it and detaches the loop device on exit.
+
+To write the resulting image to a USB stick afterwards:
+
+    sudo dd if=/tmp/odin-test-disk.img of=/dev/sdX bs=256M oflag=dsync status=progress
+    sync
+
 ### Creating Your Own Installer Image
 
- 1. Insert a blank storage device
- 2. Edit the **DISK** and other variables at the top of `make_image.sh`
- 3. Execute  `make_image.sh` as root
+ 1. Build to a raw image file first (recommended): `sudo IMAGE_FILE=/tmp/opinionated.img IMAGE_SIZE=20G ./make_image.sh --non-interactive`
+ 2. If you need interactive prompts, remove `--non-interactive`
+ 3. If you really want to build directly to a block device, set **DISK** and other variables at the top of `make_image.sh` or pass them via environment
+ 4. Optionally write the generated image file to removable media with `dd`
+
+Minimal host/VM package set for `make_image.sh`:
+
+    sudo apt update
+    sudo apt install -y btrfs-progs debootstrap dosfstools golang-go kpartx npm systemd-repart udev uuid-runtime
 
 In the first stage of image generation, you will get a _tasksel_ prompt where you can select a different set of packages for your image.
 
